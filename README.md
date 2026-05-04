@@ -71,6 +71,11 @@ docker build -t dnd-scheduler .
 docker run -p 8000:8000 -v dnd-data:/data dnd-scheduler
 ```
 
+## Fly.io
+
+See [deploy/fly.md](deploy/fly.md) for `fly.toml`, a persistent **volume** for
+SQLite on `/data`, and **GitHub Actions** deploy on push to `main`.
+
 ## Tests
 
 ```bash

@@ -9,6 +9,12 @@
     get one secret admin link plus a private link per player.
   </p>
 
+  {% if new_campaigns_disabled %}
+  <div class="mt-8 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+    <strong>New campaigns are disabled</strong> on this instance (operator setting).
+    Existing campaign links still work.
+  </div>
+  {% else %}
   <form method="post" action="/" class="mt-8 space-y-5 bg-white border border-stone-300 rounded-lg p-6 shadow-sm">
     <div>
       <label class="block text-sm font-medium text-stone-700">Campaign name</label>
@@ -49,5 +55,6 @@
       </button>
     </div>
   </form>
+  {% endif %}
 </div>
 {% endblock %}

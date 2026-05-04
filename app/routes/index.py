@@ -12,6 +12,7 @@ from sqlmodel import Session
 from app.db import get_session
 from app.models import Campaign, Player
 from app.security import hash_token, new_token
+from app.settings import new_campaigns_disabled
 from app.templates_setup import COMMON_TIMEZONES, templates
 
 router = APIRouter()
@@ -22,7 +23,11 @@ def landing(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         request,
         "index.html",
-        {"timezones": COMMON_TIMEZONES, "default_tz": "America/New_York"},
+        {
+            "timezones": COMMON_TIMEZONES,
+            "default_tz": "America/New_York",
+            "new_campaigns_disabled": new_campaigns_disabled(),
+        },
     )
 
 
@@ -35,6 +40,17 @@ def create_campaign(
     horizon_weeks: int = Form(12),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
+    if new_campaigns_disabled():
+        return templates.TemplateResponse(
+            request,
+            "index.html",
+            {
+                "timezones": COMMON_TIMEZONES,
+                "default_tz": "America/New_York",
+                "new_campaigns_disabled": True,
+            },
+            status_code=403,
+        )
     name = name.strip()
     if not name:
         raise HTTPException(status_code=400, detail="Campaign name is required")
