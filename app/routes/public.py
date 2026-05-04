@@ -57,6 +57,7 @@ def public_home(
     ]
 
     player_lookup_map = player_lookup(players)
+    has_dm = any(bool(p.is_dm) for p in players)
 
     return templates.TemplateResponse(
         request,
@@ -71,6 +72,7 @@ def public_home(
             "occurrence_rows": occurrence_rows,
             "player_lookup": player_lookup_map,
             "total_players": len(players),
+            "has_dm": has_dm,
             "timezones": COMMON_TIMEZONES,
         },
     )

@@ -8,6 +8,11 @@ doesn't over-promise.
 Per-occurrence opt-outs: if a player said *yes* to a recurring slot but
 recorded an opt-out for ``May 29``'s concrete start time, they count as
 missing for that occurrence only.
+
+If any player is marked **DM** (``Player.is_dm``), every DM must be in the
+yes set (and not opted out) for that occurrence; otherwise it never counts
+toward ``find_next_meet`` / ``list_consensus_occurrences``, including when
+``max_missing`` would otherwise allow one absent player.
 """
 
 from __future__ import annotations
@@ -30,6 +35,16 @@ class ConsensusResult:
     @property
     def missing_count(self) -> int:
         return len(self.missing_player_ids)
+
+
+def _dm_missing(players: Sequence[Player], missing_ids: tuple[int, ...]) -> bool:
+    """True if any designated DM is absent (unset, no, or opted out) for this occurrence."""
+    missing = set(missing_ids)
+    for player in players:
+        pid = player.id  # type: ignore[assignment]
+        if player.is_dm and pid in missing:
+            return True
+    return False
 
 
 def _yes_set_for_occurrence(
@@ -71,6 +86,8 @@ def find_next_meet(
     oo = opt_outs or set()
     for occ in occurrences:
         yes_ids, missing_ids = _yes_set_for_occurrence(occ, players, availability, oo)
+        if _dm_missing(players, missing_ids):
+            continue
         if len(missing_ids) <= max_missing:
             return ConsensusResult(occ, yes_ids, missing_ids)
     return None
@@ -92,6 +109,8 @@ def list_consensus_occurrences(
     out: list[ConsensusResult] = []
     for occ in occurrences:
         yes_ids, missing_ids = _yes_set_for_occurrence(occ, players, availability, oo)
+        if _dm_missing(players, missing_ids):
+            continue
         if len(missing_ids) <= max_missing:
             out.append(ConsensusResult(occ, yes_ids, missing_ids))
             if len(out) >= limit:

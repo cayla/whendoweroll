@@ -18,6 +18,13 @@
   </p>
 </header>
 
+{% if has_dm %}
+<p class="mb-4 text-sm text-stone-600 max-w-3xl">
+  A <strong>DM</strong> is set for this campaign. Consensus windows count only when <em>every</em> DM is available
+  (yes on the slot, and no per-date opt-out for that session). If a DM is absent, that time is never offered here.
+</p>
+{% endif %}
+
 <section class="grid gap-4 md:grid-cols-2 mb-8">
   <div class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm">
     <h2 class="heading text-lg text-emerald-800">Next time everyone can meet</h2>
@@ -31,7 +38,7 @@
       <p class="mt-2 text-sm text-stone-600">{{ everyone.occurrence.label }}</p>
     {% else %}
       <p class="mt-2 text-stone-500 italic">
-        No window in the next {{ campaign.horizon_weeks }} weeks where every player has said yes.
+        No window in the next {{ campaign.horizon_weeks }} weeks where every player has said yes{% if has_dm %}, with every DM available{% endif %}.
       </p>
     {% endif %}
   </div>
@@ -57,7 +64,7 @@
         </p>
       {% endif %}
     {% else %}
-      <p class="mt-2 text-stone-500 italic">No near-consensus window yet.</p>
+      <p class="mt-2 text-stone-500 italic">No near-consensus window yet{% if has_dm %} (every DM must still be available){% endif %}.</p>
     {% endif %}
   </div>
 </section>
@@ -92,7 +99,10 @@
 <section class="mt-8 text-sm text-stone-500">
   <p>Players: open the link the DM sent you to update your availability.</p>
   <p class="mt-1">
-    Roster: {{ players | map(attribute='display_name') | join(', ') }}
+    Roster:
+    {% for p in players %}
+      <span class="inline">{{ p.display_name }}{% if p.is_dm %} <span class="text-amber-800 font-medium">(DM)</span>{% endif %}{% if not loop.last %}, {% endif %}</span>
+    {% endfor %}
   </p>
 </section>
 <script>

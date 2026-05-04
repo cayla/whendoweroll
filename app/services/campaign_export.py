@@ -51,7 +51,12 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
             "created_at": _iso(campaign.created_at),
         },
         "players": [
-            {"id": p.id, "display_name": p.display_name, "sort_order": p.sort_order}
+            {
+                "id": p.id,
+                "display_name": p.display_name,
+                "sort_order": p.sort_order,
+                "is_dm": bool(p.is_dm),
+            }
             for p in players
         ],
         "slots": [

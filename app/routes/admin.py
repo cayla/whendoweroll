@@ -103,6 +103,35 @@ def update_settings(
     return _redirect_to_admin(public_id, secret)
 
 
+@router.post("/dm", response_class=HTMLResponse)
+def set_campaign_dm(
+    public_id: str,
+    secret: str,
+    dm_player_id: str = Form(""),
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    """Exactly one player may be DM, or none (empty selection)."""
+    campaign = require_admin(session, public_id, secret)
+    players = session.exec(
+        select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)
+    ).all()
+    raw = (dm_player_id or "").strip()
+    target_id: int | None = None
+    if raw:
+        try:
+            target_id = int(raw)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid player id") from exc
+    valid_ids = {p.id for p in players if p.id is not None}
+    if target_id is not None and target_id not in valid_ids:
+        raise HTTPException(status_code=400, detail="Player not in this campaign")
+    for p in players:
+        p.is_dm = p.id == target_id
+        session.add(p)
+    session.commit()
+    return _redirect_to_admin(public_id, secret)
+
+
 @router.post("/players", response_class=HTMLResponse)
 def add_player(
     public_id: str,

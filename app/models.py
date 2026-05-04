@@ -57,6 +57,10 @@ class Player(SQLModel, table=True):
     display_name: str
     token_hash: str = Field(index=True, unique=True)
     sort_order: int = 0
+    is_dm: bool = Field(
+        default=False,
+        description="If true, public consensus never counts a window where this player is absent.",
+    )
     created_at: datetime = Field(default_factory=_utcnow)
 
 

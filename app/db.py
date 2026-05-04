@@ -98,6 +98,17 @@ _DEFAULT_DURATION_H = 3.0
 _MIN_FALLBACK_H = 1.0 / 60.0
 
 
+def migrate_sqlite_player_is_dm(eng) -> None:
+    """Add ``is_dm`` for legacy SQLite ``player`` rows (default false)."""
+    with eng.begin() as conn:
+        info = conn.execute(text("PRAGMA table_info(player)")).fetchall()
+        if not info:
+            return
+        names = {row[1] for row in info}
+        if "is_dm" not in names:
+            conn.execute(text("ALTER TABLE player ADD COLUMN is_dm INTEGER NOT NULL DEFAULT 0"))
+
+
 def init_db() -> None:
     # Importing models registers them on SQLModel.metadata before create_all.
     from app import models  # noqa: F401
@@ -105,6 +116,7 @@ def init_db() -> None:
     SQLModel.metadata.create_all(engine)
     if DATABASE_URL.startswith("sqlite"):
         migrate_sqlite_slot_schema(engine)
+        migrate_sqlite_player_is_dm(engine)
 
 
 def get_session() -> Iterator[Session]:
