@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ player.display_name }} &middot; {{ campaign.name }}{% endblock %}
+
+{% block header_right %}
+{% with tz_prefix="player", tz_submit_url=("/c/" ~ campaign.public_id ~ "/p/" ~ token ~ "/viewer-timezone"), campaign_timezone=campaign.timezone %}
+  {% include "fragments/viewer_tz_modal.html" %}
+{% endwith %}
+{% endblock %}
+
+{% block content %}
+<header class="mb-6">
+  <h1 class="heading text-3xl text-red-800">{{ campaign.name }}</h1>
+  <p class="text-sm text-stone-600">
+    Hi <span class="font-medium">{{ player.display_name }}</span>. Mark which slots you're free for.
+    Changes save instantly.
+  </p>
+  <p class="mt-1 text-xs text-stone-500">
+    Public campaign view: <a class="underline hover:text-red-800" href="/c/{{ campaign.public_id }}">/c/{{ campaign.public_id }}</a>
+    &middot;
+    <a class="underline hover:text-red-800" href="{{ calendar_url }}">Subscribe (.ics)</a>
+  </p>
+</header>
+
+{% if not slots %}
+<p class="text-stone-500 italic">The DM hasn't added any time slots yet.</p>
+{% else %}
+<div class="bg-white border border-stone-300 rounded-lg shadow-sm overflow-hidden">
+  <p class="px-4 py-2 text-xs text-stone-600 border-b border-stone-100 bg-stone-50/90">
+    Times use your zone from the button above. Recurring rows show your <em>next</em> occurrence there, with the campaign&rsquo;s fixed wall clock in <strong>{{ campaign.timezone }}</strong> underneath.
+  </p>
+  <table class="w-full text-sm">
+    <thead class="text-left bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
+      <tr><th class="px-4 py-2">Slot</th><th class="py-2">Status</th></tr>
+    </thead>
+    <tbody>
+      {% for slot in slots %}
+        {% with current = availability.get(slot.id) %}
+          {% include "fragments/avail_row.html" %}
+        {% endwith %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if has_recurring %}
+<div id="player-recurring-exceptions"
+     hx-get="/c/{{ campaign.public_id }}/p/{{ token }}/_recurring-exceptions"
+     hx-trigger="refreshExceptions from:body"
+     hx-swap="innerHTML">{%- include "fragments/player_recurring_exceptions_inner.html" -%}
+</div>
+{% endif %}
+{% endif %}
+
+<section class="mt-6 text-xs text-stone-500">
+  <p>This link is your edit credential &mdash; treat it like a password and don't share publicly.</p>
+</section>
+<script>
+(function () {
+  try {
+    if (document.cookie.split(';').some(function (c) { return c.trim().indexOf('dnd_viewer_tz=') === 0; })) return;
+    var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!tz) return;
+    document.cookie = 'dnd_viewer_tz=' + encodeURIComponent(tz) + ';path=/;max-age=34560000;SameSite=Lax';
+    location.reload();
+  } catch (e) {}
+})();
+</script>
+{% endblock %}

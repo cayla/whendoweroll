@@ -1,0 +1,10 @@
+{% if unified_rows %}
+<section class="mt-8">
+  <h2 class="heading text-lg text-stone-800">Recurring slot exceptions</h2>
+  <p class="text-sm text-stone-600 mt-1">
+    One table, soonest first. Use only for recurring rows you marked <em>Yes</em> on.
+    Each row is one session start in <strong>{{ display_tz }}</strong> (with slot label when the DM set one).
+  </p>
+  {% include "fragments/recurring_opt_outs_unified.html" %}
+</section>
+{% endif %}

@@ -1,0 +1,55 @@
+{# Expects: tz_prefix, tz_submit_url, display_tz, timezones, campaign_timezone, extra_help (optional) #}
+<style>
+#{{ tz_prefix }}-tz-dlg::backdrop { background: rgba(28, 25, 23, 0.45); }
+</style>
+<button type="button" id="{{ tz_prefix }}-tz-open"
+        class="inline-flex items-center gap-1 rounded-md border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50 max-w-[min(72vw,16rem)] min-w-0"
+        aria-haspopup="dialog" aria-controls="{{ tz_prefix }}-tz-dlg">
+  <span class="truncate">{{ display_tz }}</span>
+  <span class="text-stone-400 shrink-0" aria-hidden="true">▾</span>
+</button>
+<dialog id="{{ tz_prefix }}-tz-dlg" class="max-w-md w-[calc(100%-2rem)] rounded-lg border border-stone-300 bg-white p-4 shadow-xl text-sm text-stone-800">
+  <div class="flex justify-between items-start gap-2 mb-3">
+    <h2 class="text-sm font-semibold text-stone-800 m-0">Show times in</h2>
+    <button type="button" id="{{ tz_prefix }}-tz-close" class="rounded p-1 text-stone-500 hover:bg-stone-100 text-lg leading-none" aria-label="Close">&times;</button>
+  </div>
+  <div class="flex flex-wrap items-end gap-3">
+    <form method="post" action="{{ tz_submit_url }}" class="flex flex-wrap items-end gap-2">
+      <label class="block min-w-0 flex-1 basis-48">
+        <span class="text-xs font-medium text-stone-600">Time zone</span>
+        <select name="timezone" class="mt-1 block w-full max-w-full rounded-md border-stone-300 text-sm">
+          {% for tz in timezones %}
+            <option value="{{ tz }}" {% if tz == display_tz %}selected{% endif %}>{{ tz }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit" class="rounded-md bg-stone-800 px-3 py-1.5 text-white text-sm hover:bg-stone-900 shrink-0">Apply</button>
+    </form>
+    <form method="post" action="{{ tz_submit_url }}" class="inline shrink-0" id="{{ tz_prefix }}-tz-device-form">
+      <input type="hidden" name="timezone" id="{{ tz_prefix }}-browser-tz-input" value="">
+      <button type="button"
+              class="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-100"
+              onclick="(function(){try{var z=Intl.DateTimeFormat().resolvedOptions().timeZone;if(!z)return;document.getElementById('{{ tz_prefix }}-browser-tz-input').value=z;document.getElementById('{{ tz_prefix }}-tz-device-form').submit();}catch(e){}})()">
+        Use this device
+      </button>
+    </form>
+  </div>
+  <p class="mt-3 text-xs text-stone-500">
+    Slots are defined in <strong>{{ campaign_timezone }}</strong>; this only changes how times are shown to you.
+    On first visit we detect your browser zone and reload once.
+  </p>
+  {% if extra_help %}
+  <p class="mt-2 text-xs text-stone-500">{{ extra_help }}</p>
+  {% endif %}
+</dialog>
+<script>
+(function () {
+  var d = document.getElementById("{{ tz_prefix }}-tz-dlg");
+  var o = document.getElementById("{{ tz_prefix }}-tz-open");
+  var c = document.getElementById("{{ tz_prefix }}-tz-close");
+  if (!d || !o) return;
+  o.addEventListener("click", function () { d.showModal(); });
+  if (c) c.addEventListener("click", function () { d.close(); });
+  d.addEventListener("click", function (ev) { if (ev.target === d) d.close(); });
+})();
+</script>

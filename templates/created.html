@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ campaign.name }} &middot; created{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <h1 class="heading text-3xl text-red-800">"{{ campaign.name }}" is ready</h1>
+  <div class="mt-4 rounded-md border border-amber-400 bg-amber-50 p-4 text-sm text-amber-900">
+    <strong>Save these links now.</strong> Player tokens are hashed in the database;
+    if you lose a player URL you'll have to regenerate it from the admin page,
+    which invalidates the old one.
+  </div>
+
+  <section class="mt-6 bg-white border border-stone-300 rounded-lg p-5 shadow-sm">
+    <h2 class="heading text-lg">Admin link <span class="text-xs text-stone-500 font-sans">(keep secret)</span></h2>
+    <input readonly value="{{ admin_url }}" class="mt-2 w-full rounded-md border-stone-300 bg-stone-50 font-mono text-xs"
+           onclick="this.select()">
+    <a href="{{ admin_url }}" class="mt-3 inline-block rounded-md bg-red-800 px-3 py-1.5 text-white text-sm hover:bg-red-900">
+      Open admin dashboard
+    </a>
+  </section>
+
+  <section class="mt-6 bg-white border border-stone-300 rounded-lg p-5 shadow-sm">
+    <h2 class="heading text-lg">Public campaign page</h2>
+    <p class="mt-1 text-sm text-stone-600">
+      Safe to share with anyone. Read-only consensus view; players use their private links to edit.
+    </p>
+    <input readonly value="{{ public_url }}" class="mt-2 w-full rounded-md border-stone-300 bg-stone-50 font-mono text-xs"
+           onclick="this.select()">
+  </section>
+
+  {% if players_with_urls %}
+  <section class="mt-6 bg-white border border-stone-300 rounded-lg p-5 shadow-sm">
+    <h2 class="heading text-lg">Player links <span class="text-xs text-stone-500 font-sans">(DM these privately)</span></h2>
+    <ul class="mt-3 space-y-3">
+      {% for player, url in players_with_urls %}
+      <li>
+        <div class="font-medium">{{ player.display_name }}</div>
+        <input readonly value="{{ url }}" class="mt-1 w-full rounded-md border-stone-300 bg-stone-50 font-mono text-xs"
+               onclick="this.select()">
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

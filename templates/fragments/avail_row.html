@@ -1,0 +1,53 @@
+{# Renders one slot row. Use real <form> posts (not hx-vals) for Safari/Firefox reliability. #}
+{% set status_value = current.value if current else "" %}
+<tr id="slot-row-{{ slot.id }}" class="border-t border-stone-100">
+  <td class="px-4 py-2">
+    {% if slot.kind.value == "recurring" %}
+      <span class="rounded bg-indigo-50 text-indigo-800 px-1.5 py-0.5 text-xs font-medium mr-2 align-top">recurring</span>
+      <span class="inline-block">
+        <span class="font-medium text-stone-800">{{ slot|recurring_slot_viewer(campaign, display_tz) }}</span>
+        {% set weekday_names = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] %}
+        <span class="block text-xs text-stone-500 mt-0.5">
+          In {{ campaign.timezone }}: {{ weekday_names[slot.weekday] }} {{ slot.start_local }}, {{ slot.duration_hours }} h
+        </span>
+      </span>
+    {% else %}
+      <span class="rounded bg-amber-50 text-amber-800 px-1.5 py-0.5 text-xs font-medium mr-2 align-top">one-off</span>
+      <span class="inline-block">
+        <span class="font-medium text-stone-800">{{ slot.starts_at_utc|local_window(slot.ends_at_utc, display_tz) }}</span>
+        <span class="block text-xs text-stone-500 mt-0.5">{{ slot.duration_hours }} h &middot; {{ display_tz }}</span>
+      </span>
+    {% endif %}
+    {% if slot.label %}<span class="text-stone-500 ml-1">&mdash; {{ slot.label }}</span>{% endif %}
+  </td>
+  <td class="py-2">
+    <div class="inline-flex rounded-md border border-stone-300 overflow-hidden text-xs divide-x divide-stone-300">
+      <form class="inline m-0"
+            hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/availability/{{ slot.id }}"
+            hx-target="#slot-row-{{ slot.id }}"
+            hx-swap="outerHTML">
+        <input type="hidden" name="status" value="{% if status_value == 'yes' %}clear{% else %}yes{% endif %}">
+        <button type="submit"
+                class="px-3 py-1 {% if status_value == 'yes' %}bg-emerald-700 text-white{% else %}hover:bg-emerald-50 text-emerald-800{% endif %}">
+          Yes
+        </button>
+      </form>
+      <form class="inline m-0"
+            hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/availability/{{ slot.id }}"
+            hx-target="#slot-row-{{ slot.id }}"
+            hx-swap="outerHTML">
+        <input type="hidden" name="status" value="{% if status_value == 'no' %}clear{% else %}no{% endif %}">
+        <button type="submit"
+                class="px-3 py-1 {% if status_value == 'no' %}bg-stone-700 text-white{% else %}hover:bg-stone-100 text-stone-700{% endif %}">
+          No
+        </button>
+      </form>
+    </div>
+    {% if not status_value %}
+      <span class="ml-2 text-xs text-stone-400 italic">no answer yet</span>
+    {% endif %}
+    {% if slot.kind.value == "recurring" and status_value == "yes" %}
+      <p class="mt-1 text-xs text-stone-400 max-w-xs">Scroll down to block specific dates.</p>
+    {% endif %}
+  </td>
+</tr>

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Create campaign &middot; D&D Scheduler{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <h1 class="heading text-3xl text-red-800">Roll for initiative</h1>
+  <p class="mt-2 text-stone-600">
+    Spin up a lightweight scheduler for your campaign. No accounts &mdash; you'll
+    get one secret admin link plus a private link per player.
+  </p>
+
+  <form method="post" action="/" class="mt-8 space-y-5 bg-white border border-stone-300 rounded-lg p-6 shadow-sm">
+    <div>
+      <label class="block text-sm font-medium text-stone-700">Campaign name</label>
+      <input name="name" required maxlength="80" placeholder="The Lost Mines"
+             class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-stone-700">Timezone</label>
+      <select name="timezone" required
+              class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
+        {% for tz in timezones %}
+          <option value="{{ tz }}" {% if tz == default_tz %}selected{% endif %}>{{ tz }}</option>
+        {% endfor %}
+      </select>
+      <p class="mt-1 text-xs text-stone-500">Used to interpret weekly recurring slots.</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-stone-700">Players (one name per line)</label>
+      <textarea name="player_names" rows="5" placeholder="Tav&#10;Karlach&#10;Astarion"
+                class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700 font-mono text-sm"></textarea>
+      <p class="mt-1 text-xs text-stone-500">Optional &mdash; you can add more later.</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-stone-700">Scheduling horizon</label>
+      <div class="mt-1 flex items-center gap-2">
+        <input name="horizon_weeks" type="number" min="1" max="52" value="12"
+               class="w-24 rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
+        <span class="text-sm text-stone-600">weeks of recurring sessions to consider</span>
+      </div>
+    </div>
+
+    <div class="pt-2">
+      <button type="submit" class="rounded-md bg-red-800 px-4 py-2 text-white font-medium hover:bg-red-900 transition">
+        Create campaign
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

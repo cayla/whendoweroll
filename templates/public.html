@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}{{ campaign.name }} &middot; D&D Scheduler{% endblock %}
+
+{% block header_right %}
+{% with tz_prefix="public", tz_submit_url=("/c/" ~ campaign.public_id ~ "/display-timezone"), campaign_timezone=campaign.timezone %}
+  {% include "fragments/viewer_tz_modal.html" %}
+{% endwith %}
+{% endblock %}
+
+{% block content %}
+<header class="mb-6">
+  <h1 class="heading text-3xl text-red-800">{{ campaign.name }}</h1>
+  <p class="text-sm text-stone-500">
+    {{ players|length }} player{% if players|length != 1 %}s{% endif %} &middot;
+    {{ slots|length }} slot{% if slots|length != 1 %}s{% endif %} &middot;
+    {{ campaign.horizon_weeks }}-week horizon
+    &middot; times shown in your chosen zone (top right).
+  </p>
+</header>
+
+<section class="grid gap-4 md:grid-cols-2 mb-8">
+  <div class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm">
+    <h2 class="heading text-lg text-emerald-800">Next time everyone can meet</h2>
+    {% if everyone %}
+      <p class="mt-2 text-2xl font-semibold">
+        {{ everyone.occurrence.starts_at_utc|local_time(display_tz) }}
+      </p>
+      <p class="text-sm text-stone-500">
+        until {{ everyone.occurrence.ends_at_utc|local_time(display_tz) }}
+      </p>
+      <p class="mt-2 text-sm text-stone-600">{{ everyone.occurrence.label }}</p>
+    {% else %}
+      <p class="mt-2 text-stone-500 italic">
+        No window in the next {{ campaign.horizon_weeks }} weeks where every player has said yes.
+      </p>
+    {% endif %}
+  </div>
+
+  <div class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm">
+    <h2 class="heading text-lg text-amber-700">Next time all but one can meet</h2>
+    {% if almost %}
+      <p class="mt-2 text-2xl font-semibold">
+        {{ almost.occurrence.starts_at_utc|local_time(display_tz) }}
+      </p>
+      <p class="text-sm text-stone-500">
+        until {{ almost.occurrence.ends_at_utc|local_time(display_tz) }}
+      </p>
+      <p class="mt-2 text-sm text-stone-600">{{ almost.occurrence.label }}</p>
+      {% if almost.missing_player_ids %}
+        <p class="mt-2 text-xs text-stone-500">
+          Missing:
+          {% for pid in almost.missing_player_ids %}
+            <span class="inline-block rounded bg-stone-100 px-1.5 py-0.5 ml-1 first:ml-0">
+              {{ player_lookup[pid].display_name }}
+            </span>
+          {% endfor %}
+        </p>
+      {% endif %}
+    {% else %}
+      <p class="mt-2 text-stone-500 italic">No near-consensus window yet.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm">
+  <h2 class="heading text-lg">Upcoming windows</h2>
+  {% if occurrence_rows %}
+  <table class="mt-3 w-full text-sm">
+    <thead class="text-left text-xs text-stone-500 uppercase tracking-wide">
+      <tr><th class="py-1">When</th><th>Slot</th><th class="text-right">Yes</th></tr>
+    </thead>
+    <tbody>
+      {% for row in occurrence_rows %}
+      {% set occ = row.occ %}
+      <tr class="border-t border-stone-100">
+        <td class="py-1.5 pr-4">{{ occ.starts_at_utc|local_time(display_tz) }}</td>
+        <td class="pr-4 text-stone-600">{{ occ.label }}</td>
+        <td class="text-right">
+          <span class="rounded bg-emerald-50 text-emerald-800 px-1.5 py-0.5 text-xs font-medium">
+            {{ row.yes_count }} / {{ total_players }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="mt-2 text-stone-500 italic">The DM hasn't added any time slots yet.</p>
+  {% endif %}
+</section>
+
+<section class="mt-8 text-sm text-stone-500">
+  <p>Players: open the link the DM sent you to update your availability.</p>
+  <p class="mt-1">
+    Roster: {{ players | map(attribute='display_name') | join(', ') }}
+  </p>
+</section>
+<script>
+(function () {
+  try {
+    if (document.cookie.split(';').some(function (c) { return c.trim().indexOf('dnd_viewer_tz=') === 0; })) return;
+    var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!tz) return;
+    document.cookie = 'dnd_viewer_tz=' + encodeURIComponent(tz) + ';path=/;max-age=34560000;SameSite=Lax';
+    location.reload();
+  } catch (e) {}
+})();
+</script>
+{% endblock %}
