@@ -305,6 +305,43 @@ def delete_slot(
     return _redirect_to_admin(public_id, secret)
 
 
+@router.post("/delete", response_class=HTMLResponse)
+def delete_campaign(
+    public_id: str,
+    secret: str,
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    """Remove the campaign and all related rows (players, slots, availability, opt-outs)."""
+    campaign = require_admin(session, public_id, secret)
+    cid = campaign.id
+    if cid is None:
+        raise HTTPException(status_code=500, detail="Campaign has no id")
+
+    slots = session.exec(select(Slot).where(Slot.campaign_id == cid)).all()
+    for slot in slots:
+        if slot.id is None:
+            continue
+        avails = session.exec(select(Availability).where(Availability.slot_id == slot.id)).all()
+        for a in avails:
+            session.delete(a)
+        delete_for_slot(session, slot.id)
+        session.delete(slot)
+
+    players = session.exec(select(Player).where(Player.campaign_id == cid)).all()
+    for player in players:
+        if player.id is None:
+            continue
+        avails = session.exec(select(Availability).where(Availability.player_id == player.id)).all()
+        for a in avails:
+            session.delete(a)
+        delete_for_player(session, player.id)
+        session.delete(player)
+
+    session.delete(campaign)
+    session.commit()
+    return RedirectResponse(url="/", status_code=303)
+
+
 @router.get("/export.json")
 def export_json(
     public_id: str,

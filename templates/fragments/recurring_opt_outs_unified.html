@@ -16,6 +16,7 @@
         <td class="py-1.5 pr-2">
           <div class="whitespace-nowrap">{{ row.occ.starts_at_utc|local_time(display_tz) }}</div>
           {% if row.slot.label %}<div class="text-stone-500 mt-0.5 normal-case tracking-normal">{{ row.slot.label }}</div>{% endif %}
+          <div class="text-stone-500 mt-0.5 normal-case tracking-normal">({{ row.can_make }}/{{ row.roster_n }} can make it)</div>
         </td>
         <td class="py-1.5 text-right">
           <form hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/opt-out"

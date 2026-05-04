@@ -11,8 +11,8 @@ from sqlmodel import Session, select
 
 from app.db import get_session
 from app.deps import require_player
-from app.models import AvailabilityStatus, OccurrenceOptOut, Slot, SlotKind
-from app.services.availability import load_availability_map, set_availability
+from app.models import AvailabilityStatus, OccurrenceOptOut, Player, Slot, SlotKind
+from app.services.availability import load_availability_map, roster_can_make_occurrence, set_availability
 from app.services.ical import build_ics
 from app.services.occurrence_match import resolve_occurrence
 from app.services.opt_outs import (
@@ -35,6 +35,10 @@ def _unified_recurring_opt_out_rows(
     slots: list[Slot],
     session: Session,
     availability_by_slot: dict[int, AvailabilityStatus],
+    *,
+    all_players: list[Player],
+    full_availability: dict[tuple[int, int], AvailabilityStatus],
+    opt_outs: set[tuple[int, int, datetime]],
 ) -> list[dict]:
     """Recurring occurrences in the horizon where this player said *yes*, sorted by start."""
     campaign_tz = ZoneInfo(campaign.timezone)
@@ -53,14 +57,26 @@ def _unified_recurring_opt_out_rows(
             continue
         if availability_by_slot.get(slot.id) is not AvailabilityStatus.yes:
             continue
+        sid = slot.id
+        if sid is None:
+            continue
         occs = upcoming_occurrences_for_slot(slot, tz=campaign_tz, horizon_weeks=horizon)
         for o in occs:
+            can_make, roster_n = roster_can_make_occurrence(
+                full_availability,
+                all_players,
+                opt_outs,
+                slot_id=sid,
+                starts_at_utc=o.starts_at_utc,
+            )
             rows.append(
                 {
                     "slot": slot,
                     "occ": o,
                     "start_iso": normalize_occurrence_start(o.starts_at_utc).isoformat(),
-                    "busy": (slot.id, normalize_occurrence_start(o.starts_at_utc).isoformat()) in iso_keys,
+                    "busy": (sid, normalize_occurrence_start(o.starts_at_utc).isoformat()) in iso_keys,
+                    "can_make": can_make,
+                    "roster_n": roster_n,
                 }
             )
     rows.sort(key=lambda r: r["occ"].starts_at_utc)
@@ -69,6 +85,54 @@ def _unified_recurring_opt_out_rows(
 
 def _has_recurring_slot(slots: list[Slot]) -> bool:
     return any(s.kind is SlotKind.recurring for s in slots)
+
+
+def _roster_availability_context(
+    session: Session, campaign_id: int
+) -> tuple[list[Player], dict[tuple[int, int], AvailabilityStatus], set[tuple[int, int, datetime]]]:
+    all_players = session.exec(
+        select(Player).where(Player.campaign_id == campaign_id).order_by(Player.sort_order)
+    ).all()
+    full_map = load_availability_map(session, all_players)
+    player_ids = [p.id for p in all_players if p.id is not None]
+    opt_outs = load_opt_out_set(session, player_ids)
+    return all_players, full_map, opt_outs
+
+
+def _primary_occurrence_start_for_counts(slot: Slot, campaign) -> datetime | None:
+    """UTC start used for roster counts on the main slot table (matches primary row label)."""
+    if slot.kind is SlotKind.recurring:
+        z = ZoneInfo(campaign.timezone)
+        horizon = min(campaign.horizon_weeks, 26)
+        occs = upcoming_occurrences_for_slot(slot, tz=z, horizon_weeks=horizon)
+        if not occs:
+            return None
+        return occs[0].starts_at_utc
+    if slot.kind is SlotKind.adhoc:
+        return slot.starts_at_utc
+    return None
+
+
+def _slot_can_make_pairs(
+    slots: list[Slot],
+    campaign,
+    full_map: dict[tuple[int, int], AvailabilityStatus],
+    all_players: list[Player],
+    opt_outs: set[tuple[int, int, datetime]],
+) -> dict[int, tuple[int, int]]:
+    """``slot_id -> (can_make, roster_n)`` for the window shown on that row."""
+    out: dict[int, tuple[int, int]] = {}
+    for slot in slots:
+        sid = slot.id
+        if sid is None:
+            continue
+        start = _primary_occurrence_start_for_counts(slot, campaign)
+        if start is None:
+            continue
+        out[sid] = roster_can_make_occurrence(
+            full_map, all_players, opt_outs, slot_id=sid, starts_at_utc=start
+        )
+    return out
 
 
 def _player_calendar_events(campaign, player, slots: list[Slot], session: Session) -> list[tuple[str, datetime, datetime, str]]:
@@ -111,7 +175,25 @@ def player_home(
     availability = load_availability_map(session, [player])
     avail_by_slot = {sid: st for (_pid, sid), st in availability.items()}
     display_tz = effective_display_timezone(request, campaign.timezone)
-    unified_rows = _unified_recurring_opt_out_rows(campaign, player, slots, session, avail_by_slot)
+    cid = campaign.id
+    if cid is None:
+        all_players: list[Player] = []
+        full_map: dict[tuple[int, int], AvailabilityStatus] = {}
+        opt_outs: set[tuple[int, int, datetime]] = set()
+        slot_can_make_pairs: dict[int, tuple[int, int]] = {}
+    else:
+        all_players, full_map, opt_outs = _roster_availability_context(session, cid)
+        slot_can_make_pairs = _slot_can_make_pairs(slots, campaign, full_map, all_players, opt_outs)
+    unified_rows = _unified_recurring_opt_out_rows(
+        campaign,
+        player,
+        slots,
+        session,
+        avail_by_slot,
+        all_players=all_players,
+        full_availability=full_map,
+        opt_outs=opt_outs,
+    )
     base_url = str(request.base_url).rstrip("/")
     return templates.TemplateResponse(
         request,
@@ -127,6 +209,7 @@ def player_home(
             "calendar_url": f"{base_url}/c/{campaign.public_id}/p/{token}/calendar.ics",
             "display_tz": display_tz,
             "timezones": COMMON_TIMEZONES,
+            "slot_can_make_pairs": slot_can_make_pairs,
         },
     )
 
@@ -200,6 +283,15 @@ def set_my_availability(
         delete_opt_outs_for_player_slot(session, player.id, slot_id)  # type: ignore[arg-type]
 
     slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
+    cid = campaign.id
+    can_make_pair: tuple[int, int] | None = None
+    if cid is not None and slot.id is not None:
+        all_players, full_map, opt_outs = _roster_availability_context(session, cid)
+        start = _primary_occurrence_start_for_counts(slot, campaign)
+        if start is not None:
+            can_make_pair = roster_can_make_occurrence(
+                full_map, all_players, opt_outs, slot_id=slot.id, starts_at_utc=start
+            )
     resp = templates.TemplateResponse(
         request,
         "fragments/avail_row.html",
@@ -209,6 +301,7 @@ def set_my_availability(
             "token": token,
             "campaign": campaign,
             "display_tz": display_tz,
+            "can_make_pair": can_make_pair,
         },
     )
     if _has_recurring_slot(slots):
@@ -230,7 +323,21 @@ def player_recurring_exceptions_fragment(
     availability = load_availability_map(session, [player])
     avail_by_slot = {sid: st for (_pid, sid), st in availability.items()}
     display_tz = effective_display_timezone(request, campaign.timezone)
-    unified_rows = _unified_recurring_opt_out_rows(campaign, player, slots, session, avail_by_slot)
+    cid = campaign.id
+    if cid is None:
+        all_players, full_map, opt_outs = [], {}, set()
+    else:
+        all_players, full_map, opt_outs = _roster_availability_context(session, cid)
+    unified_rows = _unified_recurring_opt_out_rows(
+        campaign,
+        player,
+        slots,
+        session,
+        avail_by_slot,
+        all_players=all_players,
+        full_availability=full_map,
+        opt_outs=opt_outs,
+    )
     return templates.TemplateResponse(
         request,
         "fragments/player_recurring_exceptions_inner.html",
@@ -283,7 +390,21 @@ def toggle_occurrence_opt_out(
     slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
     availability = load_availability_map(session, [player])
     avail_by_slot = {sid: st for (_pid, sid), st in availability.items()}
-    unified_rows = _unified_recurring_opt_out_rows(campaign, player, slots, session, avail_by_slot)
+    cid = campaign.id
+    if cid is None:
+        all_players, full_map, opt_outs = [], {}, set()
+    else:
+        all_players, full_map, opt_outs = _roster_availability_context(session, cid)
+    unified_rows = _unified_recurring_opt_out_rows(
+        campaign,
+        player,
+        slots,
+        session,
+        avail_by_slot,
+        all_players=all_players,
+        full_availability=full_map,
+        opt_outs=opt_outs,
+    )
     return templates.TemplateResponse(
         request,
         "fragments/recurring_opt_outs_unified.html",

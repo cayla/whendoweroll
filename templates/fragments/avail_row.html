@@ -10,12 +10,20 @@
         <span class="block text-xs text-stone-500 mt-0.5">
           In {{ campaign.timezone }}: {{ weekday_names[slot.weekday] }} {{ slot.start_local }}, {{ slot.duration_hours }} h
         </span>
+        {% if can_make_pair is not none %}
+        {% set cx, cy = can_make_pair %}
+        <span class="block text-xs text-stone-500 mt-0.5">({{ cx }}/{{ cy }} indicated this time generally works)</span>
+        {% endif %}
       </span>
     {% else %}
       <span class="rounded bg-amber-50 text-amber-800 px-1.5 py-0.5 text-xs font-medium mr-2 align-top">one-off</span>
       <span class="inline-block">
         <span class="font-medium text-stone-800">{{ slot.starts_at_utc|local_window(slot.ends_at_utc, display_tz) }}</span>
         <span class="block text-xs text-stone-500 mt-0.5">{{ slot.duration_hours }} h &middot; {{ display_tz }}</span>
+        {% if can_make_pair is not none %}
+        {% set cx, cy = can_make_pair %}
+        <span class="block text-xs text-stone-500 mt-0.5">({{ cx }}/{{ cy }} indicated this time generally works)</span>
+        {% endif %}
       </span>
     {% endif %}
     {% if slot.label %}<span class="text-stone-500 ml-1">&mdash; {{ slot.label }}</span>{% endif %}

@@ -34,7 +34,7 @@
     </thead>
     <tbody>
       {% for slot in slots %}
-        {% with current = availability.get(slot.id) %}
+        {% with current = availability.get(slot.id), can_make_pair = slot_can_make_pairs.get(slot.id) %}
           {% include "fragments/avail_row.html" %}
         {% endwith %}
       {% endfor %}

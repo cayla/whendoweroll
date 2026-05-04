@@ -200,6 +200,20 @@
   </div>
 </section>
 
+<section class="bg-white border border-red-200 rounded-lg p-5 shadow-sm mb-6">
+  <h2 class="heading text-lg mb-2 text-red-900">Delete campaign</h2>
+  <p class="text-sm text-stone-600 mb-3">
+    Permanently removes this campaign, every player, slot, saved answer, and per-date exception. Admin and player links will stop working.
+  </p>
+  <form method="post" action="{{ admin_url }}/delete">
+    <button type="submit"
+            class="rounded-md border border-red-700 bg-white px-3 py-1.5 text-sm text-red-800 hover:bg-red-50"
+            onclick="return confirm('Delete this entire campaign and all of its data? This cannot be undone.')">
+      Delete campaign…
+    </button>
+  </form>
+</section>
+
 <section class="text-xs text-stone-500">
   <p>Bookmark this admin URL &mdash; anyone with it can edit the campaign.</p>
 </section>

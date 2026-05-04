@@ -8,6 +8,33 @@ from typing import Iterable
 from sqlmodel import Session, select
 
 from app.models import Availability, AvailabilityStatus, Player
+from app.services.timeutil import normalize_occurrence_start
+
+
+def roster_can_make_occurrence(
+    availability: dict[tuple[int, int], AvailabilityStatus],
+    players: Iterable[Player],
+    opt_outs: set[tuple[int, int, datetime]],
+    *,
+    slot_id: int,
+    starts_at_utc: datetime,
+) -> tuple[int, int]:
+    """How many roster members can attend this occurrence vs roster size.
+
+    Counts players with standing *yes* on the slot who have not opted out of
+    this concrete start. ``(can_make, roster_n)``.
+    """
+    roster = [p for p in players if p.id is not None]
+    n = len(roster)
+    key_start = normalize_occurrence_start(starts_at_utc)
+    can = 0
+    for p in roster:
+        if availability.get((p.id, slot_id)) is not AvailabilityStatus.yes:
+            continue
+        if (p.id, slot_id, key_start) in opt_outs:
+            continue
+        can += 1
+    return can, n
 
 
 def load_availability_map(
