@@ -13,6 +13,7 @@ from app.db import get_session
 from app.deps import require_admin
 from app.models import Availability, Player, Slot, SlotKind
 from app.security import hash_token, new_token
+from app.services.campaign_delete import delete_campaign_cascade
 from app.services.campaign_export import build_export_payload
 from app.services.consensus import list_consensus_occurrences
 from app.services.ical import build_ics
@@ -313,32 +314,7 @@ def delete_campaign(
 ) -> RedirectResponse:
     """Remove the campaign and all related rows (players, slots, availability, opt-outs)."""
     campaign = require_admin(session, public_id, secret)
-    cid = campaign.id
-    if cid is None:
-        raise HTTPException(status_code=500, detail="Campaign has no id")
-
-    slots = session.exec(select(Slot).where(Slot.campaign_id == cid)).all()
-    for slot in slots:
-        if slot.id is None:
-            continue
-        avails = session.exec(select(Availability).where(Availability.slot_id == slot.id)).all()
-        for a in avails:
-            session.delete(a)
-        delete_for_slot(session, slot.id)
-        session.delete(slot)
-
-    players = session.exec(select(Player).where(Player.campaign_id == cid)).all()
-    for player in players:
-        if player.id is None:
-            continue
-        avails = session.exec(select(Availability).where(Availability.player_id == player.id)).all()
-        for a in avails:
-            session.delete(a)
-        delete_for_player(session, player.id)
-        session.delete(player)
-
-    session.delete(campaign)
-    session.commit()
+    delete_campaign_cascade(session, campaign)
     return RedirectResponse(url="/", status_code=303)
 
 
