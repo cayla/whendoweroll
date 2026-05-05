@@ -37,14 +37,24 @@
 fly deploy
 ```
 
-`--remote-only` builds on Fly’s builders (same as CI).
+By default that builds the `production` stage from this repo’s `Dockerfile` on Fly’s builders.
 
-## GitHub Actions (merge → deploy)
+To deploy the same image CI pushed to GitHub Container Registry (after a **`main`** workflow run):
+
+```bash
+fly deploy --image ghcr.io/<owner>/dnd-scheduler:<git-sha>
+```
+
+Use the **commit SHA** tag from the Actions run (immutable). The workflow also updates a **`latest`** tag on each `main` push.
+
+**GHCR pull access:** Fly Machines must be allowed to pull the image. Easiest path: in GitHub, open the **Packages** entry for this image and set visibility to **public**. For a private package, configure Fly with a registry credential (see [Using GHCR on Fly.io](https://fly.io/docs/app-guides/using-github-container-registry/)).
+
+## GitHub Actions (merge → build → push → deploy)
 
 1. Create a deploy token: [Fly.io tokens](https://fly.io/dashboard/personal/tokens) or `fly tokens create deploy -x 8760h`.
 2. In the GitHub repo: **Settings → Secrets and variables → Actions** → add **`FLY_API_TOKEN`**.
 
-Pushes to **`main`** run `.github/workflows/fly-deploy.yml`. Adjust the branch list there if your default branch differs.
+Pushes to **`main`** run `.github/workflows/ci.yml`: build the **test** Docker stage and run pytest, then build **production**, push **`ghcr.io/<repo-owner>/<repo>:<sha>`** and **`:latest`**, then **`fly deploy --image`** with the SHA tag. Pull requests run build + tests only (no push, no deploy).
 
 ## Notes
 

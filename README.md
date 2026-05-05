@@ -41,10 +41,11 @@ reloads once so times match the browser without opening the dropdown.
 
 ## Run it
 
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
+
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-.venv/bin/uvicorn app.main:app --reload
+uv sync --group dev
+uv run uvicorn app.main:app --reload
 ```
 
 Then open <http://127.0.0.1:8000> and create a campaign.
@@ -52,9 +53,10 @@ Then open <http://127.0.0.1:8000> and create a campaign.
 ## Docker (ECS / Fargate-friendly)
 
 The image runs **uvicorn** as a non-root user and stores SQLite at
-`/data/dnd_scheduler.sqlite3` by default. It installs from
-[`requirements-prod.txt`](requirements-prod.txt) (runtime deps only; dev
-tests still use [`requirements.txt`](requirements.txt)). Mount an **EFS**
+`/data/dnd_scheduler.sqlite3` by default. Dependencies are installed with
+**uv** from [`pyproject.toml`](pyproject.toml) and a frozen
+[`uv.lock`](uv.lock) (production images use `uv sync --frozen` without dev
+groups). Mount an **EFS**
 (or EBS) volume on
 `/data` so the file survives task restarts. Use **one task** (or one worker)
 per SQLite file — SQLite is not a multi-writer cluster store. For horizontal
@@ -79,7 +81,7 @@ SQLite on `/data`, and **GitHub Actions** deploy on push to `main`.
 ## Tests
 
 ```bash
-.venv/bin/pytest
+uv run pytest
 ```
 
 The suite covers consensus math (including per-occurrence opt-outs),

@@ -1,0 +1,77 @@
+# Build multi-stage Dockerfile → run tests from the test image → on main, push
+# production image to GHCR and deploy Fly with `fly deploy --image` (no remote build).
+#
+# After the first successful push, open the package on GitHub and set visibility to
+# **public** (or configure Fly to authenticate to GHCR) so Machines can pull the image.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker image names (GHCR requires lowercase)
+        id: image
+        run: |
+          repo_lc=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "repository_lc=$repo_lc" >> "$GITHUB_OUTPUT"
+          echo "prod=ghcr.io/${repo_lc}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          echo "prod_latest=ghcr.io/${repo_lc}:latest" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build test image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: test
+          tags: dnd-scheduler:ci-test
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run tests
+        run: docker run --rm dnd-scheduler:ci-test
+
+      - name: Build and push production image
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: production
+          push: true
+          tags: |
+            ${{ steps.image.outputs.prod }}
+            ${{ steps.image.outputs.prod_latest }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+      - name: Deploy to Fly.io
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: flyctl deploy --image "${{ steps.image.outputs.prod }}"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
