@@ -47,7 +47,7 @@ fly deploy --image ghcr.io/<owner>/dnd-scheduler:<git-sha>
 
 Use the **commit SHA** tag from the Actions run (immutable). The workflow also updates a **`latest`** tag on each `main` push.
 
-**GHCR pull access:** Fly Machines must be allowed to pull the image. Easiest path: in GitHub, open the **Packages** entry for this image and set visibility to **public**. For a private package, configure Fly with a registry credential (see [Using GHCR on Fly.io](https://fly.io/docs/app-guides/using-github-container-registry/)).
+**Registry visibility:** This flow assumes the image lives on a **public** registry (GHCR is fine once the package is **public** in GitHub), which matches how Fly documents deploying from Docker Hub or another public registry—see [To deploy a public image from Docker Hub or another public registry](https://fly.io/docs/blueprints/using-the-fly-docker-registry/#to-deploy-a-public-image-from-docker-hub-or-another-public-registry) in Fly’s [Managing Docker Images with Fly.io’s Private Registry](https://fly.io/docs/blueprints/using-the-fly-docker-registry/) blueprint. For images that stay **private**, Fly’s own path is build/push to **`registry.fly.io/<app>:<tag>`** with `fly auth docker`, then `fly deploy --image` (same guide, [private image](https://fly.io/docs/blueprints/using-the-fly-docker-registry/#to-deploy-a-private-image-pushed-to-flyios-registry) section).
 
 ## GitHub Actions (merge → build → push → deploy)
 
