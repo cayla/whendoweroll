@@ -29,6 +29,14 @@
    fly secrets set DND_SCHEDULER_DISABLE_NEW_CAMPAIGNS=1
    ```
 
+   **Super admin** (`/internal/super-admin`): set a stable password and cookie signing secret so restarts do not rotate them:
+
+   ```bash
+   fly secrets set DND_SCHEDULER_SUPER_ADMIN_PASSWORD='...' DND_SCHEDULER_SUPER_ADMIN_COOKIE_SECRET='...'
+   ```
+
+   If you omit these, the app logs a random password once per process start (check `fly logs`).
+
    The image already sets `DND_SCHEDULER_DB_URL=sqlite:////data/dnd_scheduler.sqlite3`; override with `fly secrets set` if you change layout.
 
 ## Deploy from laptop
