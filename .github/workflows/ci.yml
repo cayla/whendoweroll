@@ -1,8 +1,8 @@
 # Build multi-stage Dockerfile → run tests from the test image → on main, push
 # production image to GHCR and deploy Fly with `fly deploy --image` (no remote build).
 #
-# After the first successful push, open the package on GitHub and set visibility to
-# **public** (or configure Fly to authenticate to GHCR) so Machines can pull the image.
+# After the first successful push, set the GHCR package to **public** so Fly can pull
+# it without extra registry auth (see Fly: public images from any public registry).
 name: CI
 
 on:
