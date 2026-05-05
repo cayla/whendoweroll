@@ -1,5 +1,24 @@
-# Python 3.12 matches a widely available slim image for ECS/Fargate.
-FROM python:3.12-slim
+# Debian Trixie slim image (Python 3.14).
+
+# Test image: pytest + dev deps (CI and `docker compose --profile test run test`).
+FROM python:3.14-slim-trixie AS test
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+COPY app ./app
+COPY templates ./templates
+COPY tests ./tests
+
+ENV PYTHONUNBUFFERED=1
+
+CMD ["pytest"]
+
+# Production image (default stage for `docker build` with no --target).
+FROM python:3.14-slim-trixie AS production
 
 WORKDIR /app
 

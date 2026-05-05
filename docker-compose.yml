@@ -1,6 +1,23 @@
 services:
+  # Run: docker compose --profile test run --build --rm test
+  # (--build avoids a stale tag if this image name was previously used for another stage.)
+  test:
+    profiles: [test]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    image: dnd-scheduler:test-runner
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["pytest"]
+
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
     ports:
       - "8000:8000"
     environment:
