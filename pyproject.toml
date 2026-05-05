@@ -1,0 +1,21 @@
+[project]
+name = "dnd-scheduler"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "jinja2",
+    "sqlmodel",
+    "python-multipart",
+    "itsdangerous",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "httpx",
+]
+
+[tool.uv]
+package = false
