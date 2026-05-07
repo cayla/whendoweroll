@@ -22,7 +22,7 @@
 </header>
 
 {% if not slots %}
-<p class="text-stone-500 italic">The DM hasn't added any time slots yet.</p>
+<p class="text-stone-500 italic">No time slots have been added yet.</p>
 {% else %}
 <div class="bg-white border border-stone-300 rounded-lg shadow-sm overflow-hidden">
   <p class="px-4 py-2 text-xs text-stone-600 border-b border-stone-100 bg-stone-50/90">
@@ -57,10 +57,10 @@
 <script>
 (function () {
   try {
-    if (document.cookie.split(';').some(function (c) { return c.trim().indexOf('dnd_viewer_tz=') === 0; })) return;
+    if (document.cookie.split(';').some(function (c) { return c.trim().indexOf('whendoweroll_viewer_tz=') === 0; })) return;
     var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (!tz) return;
-    document.cookie = 'dnd_viewer_tz=' + encodeURIComponent(tz) + ';path=/;max-age=34560000;SameSite=Lax';
+    document.cookie = 'whendoweroll_viewer_tz=' + encodeURIComponent(tz) + ';path=/;max-age=34560000;SameSite=Lax';
     location.reload();
   } catch (e) {}
 })();

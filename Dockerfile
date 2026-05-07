@@ -45,7 +45,7 @@ COPY app ./app
 COPY templates ./templates
 
 # Writable SQLite path inside the container (mount a volume at /data on ECS).
-ENV DND_SCHEDULER_DB_URL=sqlite:////data/dnd_scheduler.sqlite3
+ENV WHENDOWEROLL_DB_URL=sqlite:////data/whendoweroll.sqlite3
 
 RUN mkdir -p /data && chown -R appuser:appuser /data /app
 

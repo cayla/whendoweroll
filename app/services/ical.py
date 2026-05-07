@@ -27,7 +27,7 @@ def build_ics(events: list[tuple[str, datetime, datetime, str]]) -> bytes:
     lines: list[str] = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
-        "PRODID:-//dnd-scheduler//EN",
+        "PRODID:-//whendoweroll.com//EN",
         "CALSCALE:GREGORIAN",
     ]
     for uid, start, end, summary in events:

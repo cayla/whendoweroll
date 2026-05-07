@@ -74,7 +74,7 @@ def test_super_admin_delete_requires_session(client):
 
 
 def test_super_admin_new_campaigns_override(client, monkeypatch):
-    monkeypatch.delenv("DND_SCHEDULER_DISABLE_NEW_CAMPAIGNS", raising=False)
+    monkeypatch.delenv("WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS", raising=False)
     _login(client)
 
     client.post(
@@ -111,7 +111,7 @@ def test_super_admin_new_campaigns_override(client, monkeypatch):
     )
     assert ok.status_code == 200
 
-    monkeypatch.setenv("DND_SCHEDULER_DISABLE_NEW_CAMPAIGNS", "1")
+    monkeypatch.setenv("WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS", "1")
     client.post(
         "/internal/super-admin/new-campaigns-override",
         data={"mode": "env"},

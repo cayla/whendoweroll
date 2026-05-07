@@ -16,7 +16,7 @@ def test_build_ics_contains_calendar_wrappers():
 def test_build_ics_single_event():
     start = datetime(2026, 5, 29, 22, 0, tzinfo=timezone.utc)
     end = start + timedelta(hours=3)
-    body = build_ics([("uid-test@dnd-scheduler", start, end, "Game night")])
+    body = build_ics([("uid-test@whendoweroll.com", start, end, "Game night")])
     assert b"BEGIN:VEVENT" in body
     assert b"DTSTART:20260529T220000Z" in body
     assert b"SUMMARY:Game night" in body

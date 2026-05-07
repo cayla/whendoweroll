@@ -1,6 +1,6 @@
 # Fly.io Machines — https://fly.io/docs/reference/configuration/
 # Set `app` to a globally unique name (or run `fly launch` and merge changes).
-app = "dnd-scheduler"
+app = "whendoweroll"
 primary_region = "iad"
 
 [build]
@@ -13,8 +13,8 @@ primary_region = "iad"
   min_machines_running = 0
 
 # SQLite persistence — create once before first deploy:
-#   fly volumes create dnd_data --region iad --size 1
+#   fly volumes create whendoweroll_data --region iad --size 1
 # Use the same region as `primary_region`.
 [[mounts]]
-  source = "dnd_data"
+  source = "whendoweroll_data"
   destination = "/data"

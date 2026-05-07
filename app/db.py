@@ -15,8 +15,8 @@ from sqlalchemy import text
 from sqlmodel import Session, SQLModel, create_engine
 
 DATABASE_URL = os.environ.get(
-    "DND_SCHEDULER_DB_URL",
-    "sqlite:///./dnd_scheduler.sqlite3",
+    "WHENDOWEROLL_DB_URL",
+    "sqlite:///./whendoweroll.sqlite3",
 )
 
 # check_same_thread=False is required because FastAPI may run handlers in a

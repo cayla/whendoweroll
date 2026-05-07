@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: test
-    image: dnd-scheduler:test-runner
+    image: whendoweroll:test-runner
     working_dir: /app
     volumes:
       - .:/app
@@ -21,10 +21,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DND_SCHEDULER_DB_URL: sqlite:////data/dnd_scheduler.sqlite3
-      # DND_SCHEDULER_DISABLE_NEW_CAMPAIGNS: "1"  # set to block POST / (new campaigns only)
+      WHENDOWEROLL_DB_URL: sqlite:////data/whendoweroll.sqlite3
+      # WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS: "1"  # set to block POST / (new campaigns only)
     volumes:
-      - dnd_data:/data
+      - whendoweroll_data:/data
 
 volumes:
-  dnd_data:
+  whendoweroll_data:

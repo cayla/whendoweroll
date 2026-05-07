@@ -18,7 +18,7 @@ def test_post_allowed_by_default(client):
 
 
 def test_post_blocked_when_env_set(client, monkeypatch):
-    monkeypatch.setenv("DND_SCHEDULER_DISABLE_NEW_CAMPAIGNS", "1")
+    monkeypatch.setenv("WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS", "1")
     r = client.post(
         "/",
         data={
@@ -33,7 +33,7 @@ def test_post_blocked_when_env_set(client, monkeypatch):
 
 
 def test_get_shows_banner_when_env_set(client, monkeypatch):
-    monkeypatch.setenv("DND_SCHEDULER_DISABLE_NEW_CAMPAIGNS", "true")
+    monkeypatch.setenv("WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS", "true")
     r = client.get("/")
     assert r.status_code == 200
     assert "disabled" in r.text.lower()

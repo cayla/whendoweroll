@@ -151,7 +151,7 @@ def _player_calendar_events(campaign, player, slots: list[Slot], session: Sessio
         key = (player.id, occ.slot_id, normalize_occurrence_start(occ.starts_at_utc))
         if key in opt_outs:
             continue
-        uid = f"{campaign.public_id}-p{player.id}-s{occ.slot_id}-{int(occ.starts_at_utc.timestamp())}@dnd-scheduler"
+        uid = f"{campaign.public_id}-p{player.id}-s{occ.slot_id}-{int(occ.starts_at_utc.timestamp())}@whendoweroll.com"
         events.append(
             (
                 uid,

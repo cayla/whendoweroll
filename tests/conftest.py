@@ -34,8 +34,8 @@ def session(engine):
 
 @pytest.fixture
 def client(engine, monkeypatch):
-    monkeypatch.setenv("DND_SCHEDULER_SUPER_ADMIN_PASSWORD", "test-super-pass")
-    monkeypatch.setenv("DND_SCHEDULER_SUPER_ADMIN_COOKIE_SECRET", "x" * 40)
+    monkeypatch.setenv("WHENDOWEROLL_SUPER_ADMIN_PASSWORD", "test-super-pass")
+    monkeypatch.setenv("WHENDOWEROLL_SUPER_ADMIN_COOKIE_SECRET", "x" * 40)
 
     def override_get_session():
         with Session(engine) as s:

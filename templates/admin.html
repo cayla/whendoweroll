@@ -84,15 +84,15 @@
   <div id="new-player-info" class="mt-4"></div>
 
   <form method="post" action="{{ admin_url }}/dm" class="mt-6 rounded-md border border-stone-200 bg-stone-50 p-4">
-    <h3 class="text-sm font-medium text-stone-800">Dungeon Master</h3>
+    <h3 class="text-sm font-medium text-stone-800">Mandatory attendee (e.g. DM)</h3>
     <p class="text-xs text-stone-500 mt-1">
-      The DM must be available to count toward consensus on the public page. Only one player can be DM.
+      The mandatory attendee (e.g. DM) must be available for any window to count toward consensus on the public page. Only one player can be marked mandatory.
     </p>
     <div class="mt-3 flex flex-wrap items-end gap-3">
       <label class="block text-sm min-w-[12rem] flex-1">
-        <span class="text-stone-600">Who is the DM?</span>
+        <span class="text-stone-600">Who is the mandatory attendee (e.g. DM)?</span>
         <select name="dm_player_id" class="mt-1 w-full rounded-md border-stone-300">
-          <option value="">No DM set</option>
+          <option value="">No mandatory attendee</option>
           {% for player in players %}
             <option value="{{ player.id }}" {% if player.is_dm %}selected{% endif %}>{{ player.display_name }}</option>
           {% endfor %}

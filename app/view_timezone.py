@@ -12,7 +12,7 @@ from fastapi import Request
 from fastapi.responses import Response
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-COOKIE_NAME = "dnd_viewer_tz"
+COOKIE_NAME = "whendoweroll_viewer_tz"
 COOKIE_MAX_AGE_SECONDS = 400 * 24 * 3600
 _MAX_TZ_LEN = 120
 

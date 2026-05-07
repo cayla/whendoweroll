@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ campaign.name }} &middot; D&D Scheduler{% endblock %}
+{% block title %}{{ campaign.name }} &middot; When Do We Roll{% endblock %}
 
 {% block header_right %}
 {% with tz_prefix="public", tz_submit_url=("/c/" ~ campaign.public_id ~ "/display-timezone"), campaign_timezone=campaign.timezone %}
@@ -57,7 +57,7 @@
     {% else %}
       <p class="mt-2 text-stone-500 italic">
         {% if has_dm %}
-          There are no options in the next {{ campaign.horizon_weeks }} weeks where the DM plus all but one are available.
+          There are no options in the next {{ campaign.horizon_weeks }} weeks where the mandatory attendee (e.g. DM) plus all but one are available.
         {% else %}
           There are no options in the next {{ campaign.horizon_weeks }} weeks where all but one player is available.
         {% endif %}
@@ -88,26 +88,26 @@
     </tbody>
   </table>
   {% else %}
-    <p class="mt-2 text-stone-500 italic">The DM hasn't added any time slots yet.</p>
+    <p class="mt-2 text-stone-500 italic">No time slots have been added yet.</p>
   {% endif %}
 </section>
 
 <section class="mt-8 text-sm text-stone-500">
-  <p>Players: open the link the DM sent you to update your availability.</p>
+  <p>Players: open the link the organizer sent you to update your availability.</p>
   <p class="mt-1">
     Roster:
     {% for p in players %}
-      <span class="inline">{{ p.display_name }}{% if p.is_dm %} <span class="text-amber-800 font-medium">(DM)</span>{% endif %}{% if not loop.last %}, {% endif %}</span>
+      <span class="inline">{{ p.display_name }}{% if p.is_dm %} <span class="text-amber-800 font-medium" title="Mandatory attendee (e.g. DM)">(mandatory)</span>{% endif %}{% if not loop.last %}, {% endif %}</span>
     {% endfor %}
   </p>
 </section>
 <script>
 (function () {
   try {
-    if (document.cookie.split(';').some(function (c) { return c.trim().indexOf('dnd_viewer_tz=') === 0; })) return;
+    if (document.cookie.split(';').some(function (c) { return c.trim().indexOf('whendoweroll_viewer_tz=') === 0; })) return;
     var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (!tz) return;
-    document.cookie = 'dnd_viewer_tz=' + encodeURIComponent(tz) + ';path=/;max-age=34560000;SameSite=Lax';
+    document.cookie = 'whendoweroll_viewer_tz=' + encodeURIComponent(tz) + ';path=/;max-age=34560000;SameSite=Lax';
     location.reload();
   } catch (e) {}
 })();
