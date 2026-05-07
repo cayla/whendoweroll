@@ -26,7 +26,7 @@ async def lifespan(_: FastAPI):
     settings_module.reset_runtime_settings()
 
 
-app = FastAPI(title="D&D Scheduler", lifespan=lifespan)
+app = FastAPI(title="When Do We Roll", lifespan=lifespan)
 
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

@@ -4,7 +4,7 @@
 
 1. Install [flyctl](https://fly.io/docs/hands-on/install-flyctl/).
 2. `fly auth login`
-3. Pick a **globally unique** app name. Edit `fly.toml` top-level `app = "..."` if `dnd-scheduler` is taken.
+3. Pick a **globally unique** app name. Edit `fly.toml` top-level `app = "..."` if `whendoweroll` is taken.
 4. Create the app (if it does not exist yet):
 
    ```bash
@@ -14,10 +14,10 @@
 5. **Persistent SQLite** — create a volume in the **same region** as `primary_region` in `fly.toml` (default `iad`):
 
    ```bash
-   fly volumes create dnd_data --region iad --size 1
+   fly volumes create whendoweroll_data --region iad --size 1
    ```
 
-   The volume name `dnd_data` must match `[[mounts]]` → `source` in `fly.toml`.
+   The volume name `whendoweroll_data` must match `[[mounts]]` → `source` in `fly.toml`.
 
    **About Fly’s “create two or more volumes” warning** — Volumes are [pinned to one physical host](https://fly.io/docs/volumes/overview/). If that host has a bad day, a single volume can be unavailable until Fly recovers or you restore from backup. Fly therefore nudges you toward **two volumes** so you can run **two Machines** in the same region and stay up if one host dies.
 
@@ -26,18 +26,18 @@
 6. Optional secrets / env (no secrets required for the stock SQLite path):
 
    ```bash
-   fly secrets set DND_SCHEDULER_DISABLE_NEW_CAMPAIGNS=1
+   fly secrets set WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS=1
    ```
 
    **Super admin** (`/internal/super-admin`): set a stable password and cookie signing secret so restarts do not rotate them:
 
    ```bash
-   fly secrets set DND_SCHEDULER_SUPER_ADMIN_PASSWORD='...' DND_SCHEDULER_SUPER_ADMIN_COOKIE_SECRET='...'
+   fly secrets set WHENDOWEROLL_SUPER_ADMIN_PASSWORD='...' WHENDOWEROLL_SUPER_ADMIN_COOKIE_SECRET='...'
    ```
 
    If you omit these, the app logs a random password once per process start (check `fly logs`).
 
-   The image already sets `DND_SCHEDULER_DB_URL=sqlite:////data/dnd_scheduler.sqlite3`; override with `fly secrets set` if you change layout.
+   The image already sets `WHENDOWEROLL_DB_URL=sqlite:////data/whendoweroll.sqlite3`; override with `fly secrets set` if you change layout.
 
 ## Deploy from laptop
 
@@ -50,7 +50,7 @@ By default that builds the `production` stage from this repo’s `Dockerfile` on
 To deploy the same image CI pushed to GitHub Container Registry (after a **`main`** workflow run):
 
 ```bash
-fly deploy --image ghcr.io/<owner>/dnd-scheduler:<git-sha>
+fly deploy --image ghcr.io/<owner>/whendoweroll:<git-sha>
 ```
 
 Use the **commit SHA** tag from the Actions run (immutable). The workflow also updates a **`latest`** tag on each `main` push.

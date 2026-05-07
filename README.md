@@ -1,4 +1,4 @@
-# D&D Scheduler
+# When Do We Roll
 
 A lightweight Python web app for scheduling tabletop sessions. No accounts —
 each campaign hands out three kinds of unguessable URL: an admin link, a
@@ -6,8 +6,9 @@ public read-only link, and one private link per player.
 
 ## What it does
 
-- DM creates a campaign with a name, timezone, and the player roster.
-- DM defines time slots: any number of recurring weekly windows
+- The campaign creator (typically a mandatory attendee — e.g. the DM) sets up a
+  campaign with a name, timezone, and the player roster.
+- They define time slots: any number of recurring weekly windows
   (Friday 18:00–21:00, Sunday 11:00–14:00, …) plus one-off sessions.
 - Each player gets a private URL. Opening it shows every slot with
   Yes / No buttons. Their answers stick "indefinitely" — saying yes to
@@ -26,16 +27,19 @@ public read-only link, and one private link per player.
 - The campaign home page shows two answers prominently:
   - **Next session: everyone** — earliest window where every player said yes.
   - **Next session: all but one** — earliest window with at most one holdout
-    (with the holdout's name, so the DM can nudge them).
+    (with the holdout's name, so the organizer can nudge them).
+- A campaign can mark **one player as the mandatory attendee (e.g. DM)**.
+  When set, that player must be available for any window to count toward
+  consensus on the public page.
 
 A response of "no answer yet" is treated as **not available** for those
-calculations, so the DM never over-promises.
+calculations, so the organizer never over-promises.
 
 ### Display timezone (player + public pages)
 
 Times default to the **campaign** timezone (how recurring rules are defined).
-Visitors can switch to their own IANA zone: a `dnd_viewer_tz` cookie (path `/`)
-stores the choice. On first load, a small script reads
+Visitors can switch to their own IANA zone: a `whendoweroll_viewer_tz` cookie
+(path `/`) stores the choice. On first load, a small script reads
 `Intl.DateTimeFormat().resolvedOptions().timeZone`, sets the cookie, and
 reloads once so times match the browser without opening the dropdown.
 
@@ -53,14 +57,14 @@ Then open <http://127.0.0.1:8000> and create a campaign.
 ## Docker (ECS / Fargate-friendly)
 
 The image runs **uvicorn** as a non-root user and stores SQLite at
-`/data/dnd_scheduler.sqlite3` by default. Dependencies are installed with
+`/data/whendoweroll.sqlite3` by default. Dependencies are installed with
 **uv** from [`pyproject.toml`](pyproject.toml) and a frozen
 [`uv.lock`](uv.lock) (production images use `uv sync --frozen` without dev
 groups). Mount an **EFS**
 (or EBS) volume on
 `/data` so the file survives task restarts. Use **one task** (or one worker)
 per SQLite file — SQLite is not a multi-writer cluster store. For horizontal
-scale, point `DND_SCHEDULER_DB_URL` at Postgres instead.
+scale, point `WHENDOWEROLL_DB_URL` at Postgres instead.
 
 ```bash
 docker compose up --build
@@ -69,8 +73,8 @@ docker compose up --build
 Build only:
 
 ```bash
-docker build -t dnd-scheduler .
-docker run -p 8000:8000 -v dnd-data:/data dnd-scheduler
+docker build -t whendoweroll .
+docker run -p 8000:8000 -v whendoweroll_data:/data whendoweroll
 ```
 
 ## Fly.io
@@ -118,6 +122,6 @@ strings (so they don't end up in access logs). Use HTTPS in production.
 ## Hosting notes
 
 SQLite + a single uvicorn worker is enough for a few campaigns and
-players. If you ever want multiple workers, point `DND_SCHEDULER_DB_URL`
+players. If you ever want multiple workers, point `WHENDOWEROLL_DB_URL`
 at Postgres and you're done — there is no SQLite-specific code in the
 services.

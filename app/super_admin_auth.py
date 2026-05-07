@@ -17,7 +17,7 @@ _SERIALIZER: URLSafeTimedSerializer | None = None
 _BOOTSTRAPPED = False
 
 SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
-SESSION_COOKIE_NAME = "dnd_sa_session"
+SESSION_COOKIE_NAME = "whendoweroll_sa_session"
 
 
 def reset_super_admin_auth() -> None:
@@ -35,23 +35,23 @@ def bootstrap() -> None:
         return
     _BOOTSTRAPPED = True
 
-    env_pwd = (os.environ.get("DND_SCHEDULER_SUPER_ADMIN_PASSWORD") or "").strip()
+    env_pwd = (os.environ.get("WHENDOWEROLL_SUPER_ADMIN_PASSWORD") or "").strip()
     _PASSWORD = env_pwd or secrets.token_urlsafe(18)
-    cookie_secret = (os.environ.get("DND_SCHEDULER_SUPER_ADMIN_COOKIE_SECRET") or "").strip() or secrets.token_urlsafe(
+    cookie_secret = (os.environ.get("WHENDOWEROLL_SUPER_ADMIN_COOKIE_SECRET") or "").strip() or secrets.token_urlsafe(
         32
     )
-    _SERIALIZER = URLSafeTimedSerializer(cookie_secret, salt="dnd-scheduler-super-admin")
+    _SERIALIZER = URLSafeTimedSerializer(cookie_secret, salt="whendoweroll-super-admin")
 
     # Uvicorn often shows WARNING for app loggers but not INFO; use WARNING so Docker/Fly logs
     # always include the one-time password when no env var is set.
     if not env_pwd:
         logger.warning(
-            "Super admin: DND_SCHEDULER_SUPER_ADMIN_PASSWORD not set. "
+            "Super admin: WHENDOWEROLL_SUPER_ADMIN_PASSWORD not set. "
             "Open /internal/super-admin and sign in with this one-time password: %s",
             _PASSWORD,
         )
     else:
-        logger.info("Super admin UI: /internal/super-admin (password from DND_SCHEDULER_SUPER_ADMIN_PASSWORD)")
+        logger.info("Super admin UI: /internal/super-admin (password from WHENDOWEROLL_SUPER_ADMIN_PASSWORD)")
 
 
 def challenge_password() -> str:

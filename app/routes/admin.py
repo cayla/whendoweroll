@@ -111,7 +111,7 @@ def set_campaign_dm(
     dm_player_id: str = Form(""),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
-    """Exactly one player may be DM, or none (empty selection)."""
+    """Exactly one player may be the mandatory attendee (e.g. DM), or none (empty selection)."""
     campaign = require_admin(session, public_id, secret)
     players = session.exec(
         select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)
@@ -350,7 +350,7 @@ def calendar_consensus_ics(
     events: list[tuple[str, datetime, datetime, str]] = []
     for res in results:
         occ = res.occurrence
-        uid = f"{campaign.public_id}-s{occ.slot_id}-{int(occ.starts_at_utc.timestamp())}@dnd-scheduler"
+        uid = f"{campaign.public_id}-s{occ.slot_id}-{int(occ.starts_at_utc.timestamp())}@whendoweroll.com"
         events.append(
             (
                 uid,

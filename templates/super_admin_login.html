@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Super admin &middot; D&amp;D Scheduler{% endblock %}
+{% block title %}Super admin &middot; When Do We Roll{% endblock %}
 {% block subtitle %}Operator{% endblock %}
 
 {% block content %}
@@ -7,7 +7,7 @@
   <h1 class="heading text-2xl text-red-800">Super admin</h1>
   <p class="mt-2 text-sm text-stone-600">
     Enter the challenge password from the server logs (or set
-    <code class="text-xs bg-stone-200 px-1 rounded">DND_SCHEDULER_SUPER_ADMIN_PASSWORD</code>).
+    <code class="text-xs bg-stone-200 px-1 rounded">WHENDOWEROLL_SUPER_ADMIN_PASSWORD</code>).
   </p>
   {% if error %}
   <p class="mt-4 text-sm text-red-700">{{ error }}</p>

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Super admin &middot; D&amp;D Scheduler{% endblock %}
+{% block title %}Super admin &middot; When Do We Roll{% endblock %}
 {% block subtitle %}Operator{% endblock %}
 
 {% block content %}
@@ -25,7 +25,7 @@
       {% endif %}
     </p>
     <p class="mt-1 text-xs text-stone-500">
-      Environment uses <code class="bg-stone-100 px-1 rounded">DND_SCHEDULER_DISABLE_NEW_CAMPAIGNS</code>.
+      Environment uses <code class="bg-stone-100 px-1 rounded">WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS</code>.
       {% if new_campaigns_override is none %}
       Override: <strong>none</strong> (follow environment).
       {% elif new_campaigns_override %}
