@@ -9,10 +9,12 @@ Per-occurrence opt-outs: if a player said *yes* to a recurring slot but
 recorded an opt-out for ``May 29``'s concrete start time, they count as
 missing for that occurrence only.
 
-If any player is marked **DM** (``Player.is_dm``), every DM must be in the
-yes set (and not opted out) for that occurrence; otherwise it never counts
-toward ``find_next_meet`` / ``list_consensus_occurrences``, including when
-``max_missing`` would otherwise allow one absent player.
+Mandatory attendees: every player with ``Player.is_mandatory == True`` must
+be in the yes set (and not opted out) for the occurrence to qualify.
+Multiple mandatory attendees are supported — *all* of them must be present.
+This rule overrides ``max_missing``: an occurrence with a missing mandatory
+attendee never qualifies, even if the total missing count is otherwise low
+enough.
 """
 
 from __future__ import annotations
@@ -37,12 +39,12 @@ class ConsensusResult:
         return len(self.missing_player_ids)
 
 
-def _dm_missing(players: Sequence[Player], missing_ids: tuple[int, ...]) -> bool:
-    """True if any designated DM is absent (unset, no, or opted out) for this occurrence."""
+def _mandatory_missing(players: Sequence[Player], missing_ids: tuple[int, ...]) -> bool:
+    """True if any mandatory attendee is absent (unset, no, or opted out) for this occurrence."""
     missing = set(missing_ids)
     for player in players:
         pid = player.id  # type: ignore[assignment]
-        if player.is_dm and pid in missing:
+        if player.is_mandatory and pid in missing:
             return True
     return False
 
@@ -86,7 +88,7 @@ def find_next_meet(
     oo = opt_outs or set()
     for occ in occurrences:
         yes_ids, missing_ids = _yes_set_for_occurrence(occ, players, availability, oo)
-        if _dm_missing(players, missing_ids):
+        if _mandatory_missing(players, missing_ids):
             continue
         if len(missing_ids) <= max_missing:
             return ConsensusResult(occ, yes_ids, missing_ids)
@@ -109,7 +111,7 @@ def list_consensus_occurrences(
     out: list[ConsensusResult] = []
     for occ in occurrences:
         yes_ids, missing_ids = _yes_set_for_occurrence(occ, players, availability, oo)
-        if _dm_missing(players, missing_ids):
+        if _mandatory_missing(players, missing_ids):
             continue
         if len(missing_ids) <= max_missing:
             out.append(ConsensusResult(occ, yes_ids, missing_ids))

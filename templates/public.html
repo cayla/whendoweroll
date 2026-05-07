@@ -56,8 +56,8 @@
       {% endif %}
     {% else %}
       <p class="mt-2 text-stone-500 italic">
-        {% if has_dm %}
-          There are no options in the next {{ campaign.horizon_weeks }} weeks where the mandatory attendee (e.g. DM) plus all but one are available.
+        {% if has_mandatory %}
+          There are no options in the next {{ campaign.horizon_weeks }} weeks where every mandatory attendee plus all but one of the rest are available.
         {% else %}
           There are no options in the next {{ campaign.horizon_weeks }} weeks where all but one player is available.
         {% endif %}
@@ -97,7 +97,7 @@
   <p class="mt-1">
     Roster:
     {% for p in players %}
-      <span class="inline">{{ p.display_name }}{% if p.is_dm %} <span class="text-amber-800 font-medium" title="Mandatory attendee (e.g. DM)">(mandatory)</span>{% endif %}{% if not loop.last %}, {% endif %}</span>
+      <span class="inline">{{ p.display_name }}{% if p.is_mandatory %} <span class="text-amber-800 font-medium" title="Mandatory attendee">(mandatory)</span>{% endif %}{% if not loop.last %}, {% endif %}</span>
     {% endfor %}
   </p>
 </section>

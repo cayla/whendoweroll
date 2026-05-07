@@ -57,9 +57,14 @@ class Player(SQLModel, table=True):
     display_name: str
     token_hash: str = Field(index=True, unique=True)
     sort_order: int = 0
-    is_dm: bool = Field(
+    is_mandatory: bool = Field(
         default=False,
-        description="If true, public consensus never counts a window where this player is absent.",
+        description=(
+            "If true, public consensus never counts a window where this "
+            "player is absent. Multiple players may be mandatory; every "
+            "mandatory attendee must be present (and not opted out) for an "
+            "occurrence to qualify."
+        ),
     )
     created_at: datetime = Field(default_factory=_utcnow)
 

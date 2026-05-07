@@ -79,7 +79,7 @@ def admin_home(
     )
 
 
-@router.post("/settings", response_class=HTMLResponse)
+@router.post("/settings", response_class=RedirectResponse)
 def update_settings(
     public_id: str,
     secret: str,
@@ -104,30 +104,36 @@ def update_settings(
     return _redirect_to_admin(public_id, secret)
 
 
-@router.post("/dm", response_class=HTMLResponse)
-def set_campaign_dm(
+@router.post("/mandatory-attendees", response_class=RedirectResponse)
+def set_campaign_mandatory_attendees(
     public_id: str,
     secret: str,
-    dm_player_id: str = Form(""),
+    mandatory_player_ids: list[str] = Form(default=[]),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
-    """Exactly one player may be the mandatory attendee (e.g. DM), or none (empty selection)."""
+    """Replace the set of mandatory attendees with the submitted player ids.
+
+    The form sends ``mandatory_player_ids`` once per checked box. None selected
+    means no mandatory attendees.
+    """
     campaign = require_admin(session, public_id, secret)
     players = session.exec(
         select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)
     ).all()
-    raw = (dm_player_id or "").strip()
-    target_id: int | None = None
-    if raw:
+    target_ids: set[int] = set()
+    for raw in mandatory_player_ids:
+        s = (raw or "").strip()
+        if not s:
+            continue
         try:
-            target_id = int(raw)
+            target_ids.add(int(s))
         except ValueError as exc:
             raise HTTPException(status_code=400, detail="Invalid player id") from exc
     valid_ids = {p.id for p in players if p.id is not None}
-    if target_id is not None and target_id not in valid_ids:
+    if not target_ids.issubset(valid_ids):
         raise HTTPException(status_code=400, detail="Player not in this campaign")
     for p in players:
-        p.is_dm = p.id == target_id
+        p.is_mandatory = p.id in target_ids
         session.add(p)
     session.commit()
     return _redirect_to_admin(public_id, secret)
@@ -223,7 +229,7 @@ def delete_player(
     return HTMLResponse("")
 
 
-@router.post("/slots", response_class=HTMLResponse)
+@router.post("/slots", response_class=RedirectResponse)
 def add_slot(
     public_id: str,
     secret: str,
@@ -284,7 +290,7 @@ def add_slot(
     return _redirect_to_admin(public_id, secret)
 
 
-@router.post("/slots/{slot_id}/delete", response_class=HTMLResponse)
+@router.post("/slots/{slot_id}/delete", response_class=RedirectResponse)
 def delete_slot(
     public_id: str,
     secret: str,
@@ -306,7 +312,7 @@ def delete_slot(
     return _redirect_to_admin(public_id, secret)
 
 
-@router.post("/delete", response_class=HTMLResponse)
+@router.post("/delete", response_class=RedirectResponse)
 def delete_campaign(
     public_id: str,
     secret: str,
@@ -363,5 +369,5 @@ def calendar_consensus_ics(
     return Response(
         content=body,
         media_type="text/calendar; charset=utf-8",
-        headers={"Content-Disposition": 'inline; filename="campaign-consensus.ics"'},
+        headers={"Content-Disposition": 'inline; filename="calendar-consensus.ics"'},
     )
