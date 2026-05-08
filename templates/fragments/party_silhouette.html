@@ -1,0 +1,63 @@
+{#-
+  Adventuring-party silhouette: wizard, warrior, cleric, rogue.
+  Drawn with currentColor so the parent controls hue; "missing" member is
+  rendered as a low-opacity dashed ghost so absence reads at a glance even
+  for color-blind viewers (the SVG is the second, non-color cue beyond the
+  card's emerald/amber styling).
+
+  Caller scope variables:
+    missing_idx -- 0..3 to fade that member, or omit/None for the full party.
+-#}
+{%- set _missing = missing_idx if (missing_idx is defined and missing_idx is not none) else -1 -%}
+<svg viewBox="0 0 240 80" xmlns="http://www.w3.org/2000/svg"
+     class="w-full h-16 sm:h-20" aria-hidden="true" focusable="false"
+     preserveAspectRatio="xMidYMid meet">
+  <g fill="currentColor" stroke="currentColor" stroke-linejoin="round">
+
+    {#- 0: WIZARD (pointy hat + staff) -#}
+    <g{% if _missing == 0 %} opacity="0.18"{% endif %}>
+      <path d="M30 4 C28 4 27 5 26 7 L14 30 Q30 26 46 30 L34 7 C33 5 32 4 30 4 Z" stroke-width="0.5"/>
+      <ellipse cx="30" cy="32" rx="18" ry="3"/>
+      <circle cx="30" cy="38" r="4"/>
+      <path d="M22 42 Q30 40 38 42 L44 78 L16 78 Z" stroke-width="0.5"/>
+      <rect x="50" y="20" width="2.5" height="58" rx="1"/>
+      <circle cx="51.25" cy="18" r="3.5"/>
+    </g>
+
+    {#- 1: WARRIOR (big axe over shoulder) -#}
+    <g{% if _missing == 1 %} opacity="0.18"{% endif %}>
+      <circle cx="92" cy="22" r="5"/>
+      <path d="M78 28 Q92 26 106 28 L108 50 L96 50 L96 78 L88 78 L88 50 L76 50 Z" stroke-width="0.5"/>
+      <line x1="113" y1="6" x2="86" y2="50" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path d="M108 2 L124 0 L128 16 Q120 14 112 18 Z" stroke-width="0.5"/>
+    </g>
+
+    {#- 2: CLERIC (robe + holy symbol + mace) -#}
+    <g{% if _missing == 2 %} opacity="0.18"{% endif %}>
+      <circle cx="152" cy="22" r="4.5"/>
+      <path d="M141 28 Q152 26 163 28 L168 78 L136 78 Z" stroke-width="0.5"/>
+      {#- white "cuts" form the cross emblem on the dark robe; -#}
+      {#- works because cards have a white background. -#}
+      <rect x="150" y="42" width="4" height="14" fill="white" stroke="none"/>
+      <rect x="146" y="46" width="12" height="4" fill="white" stroke="none"/>
+      <rect x="170" y="42" width="2.5" height="34" rx="1"/>
+      <circle cx="171.25" cy="40" r="4"/>
+    </g>
+
+    {#- 3: ROGUE (hooded cloak + crossed daggers) -#}
+    <g{% if _missing == 3 %} opacity="0.18"{% endif %}>
+      <path d="M212 6
+               Q199 8 197 22
+               Q197 28 201 32
+               L188 78 L236 78 L223 32
+               Q227 28 227 22
+               Q225 8 212 6 Z" stroke-width="0.5"/>
+      {#- shadowed face inside the hood (white cut on white card bg) -#}
+      <path d="M205 20 Q212 18 219 20 Q219 28 212 30 Q205 28 205 20 Z" fill="white" stroke="none"/>
+      <circle cx="212" cy="25" r="1.6"/>
+      <line x1="200" y1="50" x2="190" y2="62" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <line x1="224" y1="50" x2="234" y2="62" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    </g>
+
+  </g>
+</svg>

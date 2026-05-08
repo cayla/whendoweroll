@@ -2,41 +2,63 @@
 <style>
 #{{ tz_prefix }}-tz-dlg::backdrop { background: rgba(28, 25, 23, 0.45); }
 </style>
+{% set _tz_short = display_tz|tz_abbrev %}
+{% set _tz_pretty = display_tz|pretty_tz %}
 <button type="button" id="{{ tz_prefix }}-tz-open"
-        class="inline-flex items-center gap-1 rounded-md border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50 max-w-[min(72vw,16rem)] min-w-0"
-        aria-haspopup="dialog" aria-controls="{{ tz_prefix }}-tz-dlg">
-  <span class="truncate">{{ display_tz }}</span>
-  <span class="text-stone-400 shrink-0" aria-hidden="true">▾</span>
+        class="inline-flex items-center gap-1.5 rounded-md border border-stone-300 bg-white pl-2.5 pr-2 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50 max-w-[min(72vw,18rem)] min-w-0"
+        aria-haspopup="dialog" aria-controls="{{ tz_prefix }}-tz-dlg"
+        title="All times on this page are shown in {{ _tz_pretty }}{% if _tz_short %} ({{ _tz_short }}){% endif %}">
+  {% if _tz_short %}
+    <span class="rounded bg-stone-800 px-1.5 py-0.5 text-[0.65rem] font-semibold tracking-wide text-white shrink-0">{{ _tz_short }}</span>
+  {% endif %}
+  <span class="truncate">{{ _tz_pretty }}</span>
+  <span class="text-stone-700 text-base leading-none shrink-0 -mr-0.5" aria-hidden="true">▾</span>
 </button>
-<dialog id="{{ tz_prefix }}-tz-dlg" class="max-w-md w-[calc(100%-2rem)] rounded-lg border border-stone-300 bg-white p-4 shadow-xl text-sm text-stone-800">
-  <div class="flex justify-between items-start gap-2 mb-3">
+<dialog id="{{ tz_prefix }}-tz-dlg" class="max-w-md w-[calc(100%-2rem)] rounded-lg border border-stone-300 bg-white p-5 shadow-xl text-sm text-stone-800">
+  <div class="flex justify-between items-start gap-2 mb-4">
     <h2 class="text-sm font-semibold text-stone-800 m-0">Show times in</h2>
-    <button type="button" id="{{ tz_prefix }}-tz-close" class="rounded p-1 text-stone-500 hover:bg-stone-100 text-lg leading-none" aria-label="Close">&times;</button>
+    <button type="button" id="{{ tz_prefix }}-tz-close" class="rounded p-1 text-stone-500 hover:bg-stone-100 text-lg leading-none -mt-1 -mr-1" aria-label="Close">&times;</button>
   </div>
-  <div class="flex flex-wrap items-end gap-3">
-    <form method="post" action="{{ tz_submit_url }}" class="flex flex-wrap items-end gap-2">
-      <label class="block min-w-0 flex-1 basis-48">
-        <span class="text-xs font-medium text-stone-600">Time zone</span>
-        <select name="timezone" class="mt-1 block w-full max-w-full rounded-md border-stone-300 text-sm">
-          {% for tz in timezones %}
-            <option value="{{ tz }}" {% if tz == display_tz %}selected{% endif %}>{{ tz }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <button type="submit" class="rounded-md bg-stone-800 px-3 py-1.5 text-white text-sm hover:bg-stone-900 shrink-0">Apply</button>
-    </form>
-    <form method="post" action="{{ tz_submit_url }}" class="inline shrink-0" id="{{ tz_prefix }}-tz-device-form">
-      <input type="hidden" name="timezone" id="{{ tz_prefix }}-browser-tz-input" value="">
-      <button type="button"
-              class="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-100"
-              onclick="(function(){try{var z=Intl.DateTimeFormat().resolvedOptions().timeZone;if(!z)return;document.getElementById('{{ tz_prefix }}-browser-tz-input').value=z;document.getElementById('{{ tz_prefix }}-tz-device-form').submit();}catch(e){}})()">
-        Use this device
-      </button>
-    </form>
+
+  {#- Row 1: explicit time zone selection. -#}
+  <form method="post" action="{{ tz_submit_url }}" class="flex flex-wrap items-end gap-2">
+    <label class="block min-w-0 flex-1 basis-48">
+      <span class="text-xs font-medium text-stone-600">Pick a time zone</span>
+      <select name="timezone" class="mt-1 block w-full max-w-full rounded-md border-stone-300 text-sm">
+        {% for tz in timezones %}
+          <option value="{{ tz }}" {% if tz == display_tz %}selected{% endif %}>{{ tz|pretty_tz }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" class="rounded-md bg-stone-800 px-3 py-1.5 text-white text-sm hover:bg-stone-900 shrink-0">Apply</button>
+  </form>
+
+  {#- Visual "or" separator between the two ways to set the zone. -#}
+  <div class="my-4 flex items-center gap-3 text-[0.65rem] uppercase tracking-[0.15em] text-stone-400">
+    <span class="h-px flex-1 bg-stone-200"></span>
+    <span>or</span>
+    <span class="h-px flex-1 bg-stone-200"></span>
   </div>
-  <p class="mt-3 text-xs text-stone-500">
-    Slots are defined in <strong>{{ campaign_timezone }}</strong>; this only changes how times are shown to you.
-    On first visit we detect your browser zone and reload once.
+
+  {#- Row 2: browser-detected time zone. The detected zone is filled in by JS
+      when the dialog opens so users can see what they'd be applying. -#}
+  <form method="post" action="{{ tz_submit_url }}" class="flex flex-wrap items-center gap-2" id="{{ tz_prefix }}-tz-device-form">
+    <input type="hidden" name="timezone" id="{{ tz_prefix }}-browser-tz-input" value="">
+    <div class="flex-1 min-w-0 text-xs text-stone-600 leading-snug">
+      Use your browser's time zone
+      <span id="{{ tz_prefix }}-browser-tz-display"
+            class="block mt-0.5 font-medium text-stone-800 truncate">detecting…</span>
+    </div>
+    <button type="submit"
+            class="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-800 hover:bg-stone-100 shrink-0"
+            id="{{ tz_prefix }}-tz-device-btn"
+            disabled>
+      Use this device
+    </button>
+  </form>
+
+  <p class="mt-5 text-xs text-stone-500">
+    Slots are defined in <strong>{{ campaign_timezone|pretty_tz }}</strong>; this only changes how times are shown to you.
   </p>
   {% if extra_help %}
   <p class="mt-2 text-xs text-stone-500">{{ extra_help }}</p>
@@ -44,11 +66,34 @@
 </dialog>
 <script>
 (function () {
-  var d = document.getElementById("{{ tz_prefix }}-tz-dlg");
-  var o = document.getElementById("{{ tz_prefix }}-tz-open");
-  var c = document.getElementById("{{ tz_prefix }}-tz-close");
+  var prefix = "{{ tz_prefix }}";
+  var d = document.getElementById(prefix + "-tz-dlg");
+  var o = document.getElementById(prefix + "-tz-open");
+  var c = document.getElementById(prefix + "-tz-close");
+  var bzInput = document.getElementById(prefix + "-browser-tz-input");
+  var bzDisplay = document.getElementById(prefix + "-browser-tz-display");
+  var bzBtn = document.getElementById(prefix + "-tz-device-btn");
+
+  function detectBrowserTz() {
+    try {
+      var z = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (!z) return null;
+      return z;
+    } catch (e) { return null; }
+  }
+  function applyDetected() {
+    var z = detectBrowserTz();
+    if (!z) {
+      if (bzDisplay) bzDisplay.textContent = "Could not detect a time zone in this browser.";
+      if (bzBtn) bzBtn.disabled = true;
+      return;
+    }
+    if (bzInput) bzInput.value = z;
+    if (bzDisplay) bzDisplay.textContent = z.replace(/_/g, " ");
+    if (bzBtn) bzBtn.disabled = false;
+  }
   if (!d || !o) return;
-  o.addEventListener("click", function () { d.showModal(); });
+  o.addEventListener("click", function () { applyDetected(); d.showModal(); });
   if (c) c.addEventListener("click", function () { d.close(); });
   d.addEventListener("click", function (ev) { if (ev.target === d) d.close(); });
 })();

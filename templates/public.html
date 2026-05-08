@@ -10,11 +10,10 @@
 {% block content %}
 <header class="mb-6">
   <h1 class="heading text-3xl text-red-800">{{ campaign.name }}</h1>
-  <p class="text-sm text-stone-500">
+  <p class="text-sm">
     {{ players|length }} player{% if players|length != 1 %}s{% endif %} &middot;
     {{ slots|length }} slot{% if slots|length != 1 %}s{% endif %} &middot;
-    {{ campaign.horizon_weeks }}-week horizon
-    &middot; times shown in your chosen zone (top right).
+    Rolling {{ campaign.horizon_weeks }}-week horizon
   </p>
   <p class="mt-1 text-xs text-stone-500">
     <a class="underline hover:text-red-800" href="/c/{{ campaign.public_id }}/calendar-consensus.ics">Subscribe to consensus calendar (.ics)</a>
@@ -25,27 +24,51 @@
   {% if upcoming_meets %}
     {% for meet in upcoming_meets %}
       {% set is_full = meet.missing_count == 0 %}
-      <div class="bg-white border {% if is_full %}border-emerald-200{% else %}border-amber-200{% endif %} rounded-lg p-5 shadow-sm">
-        <h2 class="heading text-lg {% if is_full %}text-emerald-800{% else %}text-amber-700{% endif %}">
-          {% if loop.first %}
-            {% if is_full %}Next time everyone can meet{% else %}Next time we could meet{% endif %}
-          {% else %}
-            {% if is_full %}Then everyone can meet{% else %}Then we could meet{% endif %}
-          {% endif %}
-        </h2>
-        <p class="mt-2 text-2xl font-semibold">
-          {{ meet.occurrence.starts_at_utc|local_time(display_tz) }}
-        </p>
-        <p class="text-sm text-stone-500">
-          until {{ meet.occurrence.ends_at_utc|local_time(display_tz) }}
-        </p>
+      {# Pick which silhouette to fade for near-consensus, deterministically per missing player. #}
+      {% set missing_idx = none if is_full else (meet.missing_player_ids[0] % 4) %}
+      {% set is_oneoff = meet.occurrence.kind.value == "adhoc" %}
+      <div class="bg-white border-2 {% if is_full %}border-emerald-400{% else %}border-amber-500 border-dashed{% endif %} rounded-lg p-5 shadow-sm">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1 min-w-0">
+            <h2 class="heading text-lg {% if is_full %}text-emerald-800{% else %}text-amber-800{% endif %}">
+              {% if loop.first %}
+                {% if is_full %}Next time everyone can meet{% else %}Next time we could meet{% endif %}
+              {% else %}
+                {% if is_full %}Then everyone can meet{% else %}Then we could meet{% endif %}
+              {% endif %}
+            </h2>
+            {% if is_oneoff %}
+              <p class="mt-1">
+                <span class="inline-block rounded bg-amber-50 text-amber-800 px-1.5 py-0.5 text-xs font-medium">one-off</span>
+              </p>
+            {% endif %}
+            {% set start_parts = (meet.occurrence.starts_at_utc|local_time(display_tz)).split(", ", 1) %}
+            <p class="mt-2 text-2xl font-semibold leading-tight">
+              {{ start_parts[0] }}
+              {% if start_parts|length > 1 %}
+                <span class="block">{{ start_parts[1] }}</span>
+              {% endif %}
+            </p>
+            <p class="mt-1 text-sm text-stone-500">
+              until {{ meet.occurrence.ends_at_utc|local_time(display_tz) }}
+            </p>
+            {% if meet.occurrence.user_label %}
+              <p class="mt-2 text-sm font-medium text-stone-700">&ldquo;{{ meet.occurrence.user_label }}&rdquo;</p>
+            {% endif %}
+          </div>
+          <div class="shrink-0 w-28 sm:w-36 {% if is_full %}text-emerald-900{% else %}text-amber-900{% endif %}">
+            {% include "fragments/party_silhouette.html" %}
+          </div>
+        </div>
         {% if is_full %}
-          <p class="mt-2 text-xs text-emerald-700">Everyone is available.</p>
+          <p class="mt-2 text-xs text-emerald-800 font-medium">
+            <span aria-hidden="true">&#x2714;</span> Everyone is available.
+          </p>
         {% else %}
-          <p class="mt-2 text-xs text-stone-500">
+          <p class="mt-2 text-xs text-stone-600">
             Missing:
             {% for pid in meet.missing_player_ids %}
-              <span class="inline-block rounded bg-amber-50 text-amber-900 px-1.5 py-0.5 ml-1 first:ml-0">
+              <span class="inline-block rounded bg-amber-100 text-amber-900 px-1.5 py-0.5 ml-1 first:ml-0">
                 {{ player_lookup[pid].display_name }}
               </span>
             {% endfor %}
@@ -78,7 +101,15 @@
       {% for row in occurrence_rows %}
       {% set occ = row.occ %}
       <tr class="border-t border-stone-100">
-        <td class="py-1.5 pr-4">{{ occ.starts_at_utc|local_time(display_tz) }}</td>
+        <td class="py-1.5 pr-4">
+          {% if occ.kind.value == "adhoc" %}
+            <span class="rounded bg-amber-50 text-amber-800 px-1.5 py-0.5 text-xs font-medium mr-2 align-middle">one-off</span>
+          {% endif %}
+          <span class="align-middle">{{ occ.starts_at_utc|local_time(display_tz) }}</span>
+          {% if occ.user_label %}
+            <span class="block sm:inline sm:ml-2 text-xs text-stone-500">&mdash; {{ occ.user_label }}</span>
+          {% endif %}
+        </td>
         <td class="text-right">
           <span class="rounded bg-emerald-50 text-emerald-800 px-1.5 py-0.5 text-xs font-medium">
             {{ row.yes_count }} / {{ total_players }}

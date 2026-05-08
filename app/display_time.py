@@ -17,18 +17,12 @@ def ensure_utc(value: datetime) -> datetime:
     return value.astimezone(UTC)
 
 
-def _tz_suffix(dt: datetime, tz_name: str) -> str:
-    z = dt.strftime("%Z")
-    if z:
-        return z
-    name = dt.tzname()
-    if name:
-        return name
-    return tz_name
-
-
 def format_local_window(starts_utc: datetime, ends_utc: datetime, tz_name: str) -> str:
-    """Wall-clock window in ``tz_name``, e.g. ``Thu 11:00 AM–2:00 PM SST``."""
+    """Wall-clock window in ``tz_name``, e.g. ``Thu 11:00 AM–2:00 PM``.
+
+    The displayed zone is shown once per page (in the top-right TZ pill /
+    abbreviation chip) so we omit a per-row tz suffix to cut visual noise.
+    """
     z = ZoneInfo(tz_name)
     a = ensure_utc(starts_utc).astimezone(z)
     b = ensure_utc(ends_utc).astimezone(z)
@@ -38,12 +32,9 @@ def format_local_window(starts_utc: datetime, ends_utc: datetime, tz_name: str) 
 
     day_a = a.strftime("%a")
     day_b = b.strftime("%a")
-    za, zb = _tz_suffix(a, tz_name), _tz_suffix(b, tz_name)
     if a.date() == b.date():
-        if za == zb:
-            return f"{day_a} {fmt_t(a)}–{fmt_t(b)} {za}"
-        return f"{day_a} {fmt_t(a)} {za}–{fmt_t(b)} {zb}"
-    return f"{day_a} {fmt_t(a)} {za} – {day_b} {fmt_t(b)} {zb}"
+        return f"{day_a} {fmt_t(a)}–{fmt_t(b)}"
+    return f"{day_a} {fmt_t(a)} – {day_b} {fmt_t(b)}"
 
 
 def recurring_slot_primary_label(slot: Slot, campaign, display_tz: str) -> str:

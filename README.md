@@ -22,21 +22,41 @@ public read-only link, and one private link per player.
 - **JSON export** (admin URL): full snapshot of the campaign — roster, slots,
   availability, and opt-outs. Secrets are never included.
 - **iCalendar**: every campaign has a single shared feed at
-  `…/c/{public_id}/calendar-consensus.ics`. It lists upcoming windows where
-  everyone is available, plus near-consensus ones (one player missing)
-  whose summaries are prefixed with `[missing: <name>]` so they're easy to
-  spot in a calendar. Opt-outs are honoured. The link is surfaced on the
-  admin, public, and per-player pages — there is no per-player feed.
-- The campaign home page shows two answers prominently:
-  - **Next session: everyone** — earliest window where every player said yes.
-  - **Next session: all but one** — earliest window with at most one holdout
-    (with the holdout's name, so the organizer can nudge them).
+  `…/c/{public_id}/calendar-consensus.ics`. It lists the upcoming windows
+  that qualify under the campaign's **scheduling policy** (see below);
+  near-consensus windows (one player missing) are prefixed with
+  `[missing: <name>]` so they're easy to spot in a calendar. Opt-outs are
+  honoured. The link is surfaced on the admin, public, and per-player
+  pages — there is no per-player feed.
+- The campaign home page shows the next two qualifying sessions as
+  prominent cards: solid emerald when full consensus, dashed amber for a
+  near-consensus window (the holdout's name is shown so the organizer can
+  nudge them). Both cards are doubled up with a black-and-white
+  adventuring-party silhouette — the near-consensus card fades one party
+  member out — so the difference reads at a glance for color-blind
+  viewers too.
 - A campaign can mark **any number of players as mandatory attendees**
   (e.g. the GM, or co-GMs). When set, *all* mandatory attendees must be
-  available for any window to count toward consensus on the public page.
+  available for any window to count toward consensus on the public page
+  and the ICS feed, regardless of policy.
 
 A response of "no answer yet" is treated as **not available** for those
 calculations, so the organizer never over-promises.
+
+### Scheduling policy
+
+The campaign's **scheduling policy** decides which upcoming windows count
+as a real session — it drives both the two summary cards on the public
+page and the consensus calendar feed (so subscribers can rely on it as
+the actual play schedule). Mandatory-attendee rules apply on top of every
+policy. Pick one in admin → Settings:
+
+| Policy | What it surfaces |
+| --- | --- |
+| **Strict — everyone every time** | Only windows where every player is available. The "near-consensus" card disappears. |
+| **Allow one missing — never two in a row** *(default)* | Windows with at most one holdout, but never two short-handed sessions back-to-back. |
+| **Allow one missing — but rotate who** | Windows with at most one holdout, and the same player can't be the holdout in two consecutive sessions. |
+| **Allow one missing — always** | Windows with at most one holdout, no further constraint. |
 
 ### Display timezone (player + public pages)
 
@@ -91,7 +111,8 @@ SQLite on `/data`, and **GitHub Actions** deploy on push to `main`.
 uv run pytest
 ```
 
-The suite covers consensus math (including per-occurrence opt-outs),
+The suite covers consensus math (including per-occurrence opt-outs and
+each scheduling policy's window-selection + sequence guardrails),
 recurring-slot expansion across a DST boundary, iCal output, admin JSON
 export auth, and the capability URL boundaries.
 
@@ -110,7 +131,7 @@ export auth, and the capability URL boundaries.
 | [app/templates_setup.py](app/templates_setup.py) | Single Jinja environment + custom filters, plus the timezone choice list. |
 | [app/view_timezone.py](app/view_timezone.py) | Per-viewer display-timezone cookie helpers. |
 | [app/services/slots.py](app/services/slots.py) | Expands recurring + ad-hoc slots into concrete occurrences. |
-| [app/services/consensus.py](app/services/consensus.py) | Finds the earliest occurrence with at most N missing players (honoring mandatory attendees). |
+| [app/services/consensus.py](app/services/consensus.py) | Finds upcoming qualifying windows under the campaign's scheduling policy (honoring mandatory attendees and per-occurrence opt-outs). |
 | [app/services/availability.py](app/services/availability.py) | Reads/writes the availability rows. |
 | [app/services/opt_outs.py](app/services/opt_outs.py) | Per-date opt-outs on top of standing "yes" answers. |
 | [app/services/occurrence_match.py](app/services/occurrence_match.py) | Validates a client-submitted instant against a slot's expansion. |
