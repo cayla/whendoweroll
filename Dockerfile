@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM ghcr.io/astral-sh/uv:0.11.9 AS uv
+FROM ghcr.io/astral-sh/uv:0.11.11 AS uv
 
 # Test image: pytest + dev deps (CI and `docker compose --profile test run test`).
 FROM python:3.14-slim-trixie AS test
