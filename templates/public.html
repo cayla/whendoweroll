@@ -12,7 +12,7 @@
   <h1 class="heading text-3xl text-red-800">{{ campaign.name }}</h1>
   <p class="text-sm">
     {{ players|length }} player{% if players|length != 1 %}s{% endif %} &middot;
-    {{ slots|length }} slot{% if slots|length != 1 %}s{% endif %} &middot;
+    {{ slots|length }} time{% if slots|length != 1 %}s{% endif %} &middot;
     Rolling {{ campaign.horizon_weeks }}-week horizon
   </p>
   <p class="mt-1 text-xs text-stone-500">
@@ -81,7 +81,7 @@
       <h2 class="heading text-lg text-stone-700">No upcoming consensus</h2>
       <p class="mt-2 text-stone-500 italic">
         {% if has_mandatory %}
-          There are no options in the next {{ campaign.horizon_weeks }} weeks where every mandatory attendee plus all but one of the rest are available.
+          There are no options in the next {{ campaign.horizon_weeks }} weeks that match the consensus criteria.
         {% else %}
           There are no options in the next {{ campaign.horizon_weeks }} weeks where everyone (or all but one) can meet.
         {% endif %}
@@ -120,7 +120,7 @@
     </tbody>
   </table>
   {% else %}
-    <p class="mt-2 text-stone-500 italic">No time slots have been added yet.</p>
+    <p class="mt-2 text-stone-500 italic">No times have been added yet.</p>
   {% endif %}
 </section>
 
