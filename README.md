@@ -21,6 +21,10 @@ public read-only link, and one private link per player.
   away until you opt in again.
 - **JSON export** (admin URL): full snapshot of the campaign — roster, slots,
   availability, and opt-outs. Secrets are never included.
+- **JSON import** (home page): upload a previously exported file and the app
+  materializes it into a brand-new campaign with a fresh admin link and
+  fresh per-player links. Useful as a backup-and-restore path or for
+  duplicating an existing campaign template.
 - **iCalendar**: every campaign has a single shared feed at
   `…/c/{public_id}/calendar-consensus.ics`. It lists the upcoming windows
   that qualify under the campaign's **scheduling policy** (see below);
@@ -138,6 +142,7 @@ export auth, and the capability URL boundaries.
 | [app/services/timeutil.py](app/services/timeutil.py) | UTC normalization for occurrence keys (DB round-trips). |
 | [app/services/ical.py](app/services/ical.py) | Minimal RFC 5545 calendar file builder. |
 | [app/services/campaign_export.py](app/services/campaign_export.py) | JSON backup payload (no secrets). |
+| [app/services/campaign_import.py](app/services/campaign_import.py) | Restore an export into a brand-new campaign. |
 | [app/services/campaign_delete.py](app/services/campaign_delete.py) | Cascade delete a campaign and all its dependent rows. |
 | [app/routes/](app/routes) | Index, public, admin, player, and super-admin route modules. |
 | [templates/](templates) | Jinja templates (Tailwind via CDN, htmx for partial updates). |

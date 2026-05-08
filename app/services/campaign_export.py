@@ -41,13 +41,14 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
         ]
 
     return {
-        "export_version": 2,
+        "export_version": 3,
         "exported_at": _iso(datetime.now(UTC)),
         "campaign": {
             "public_id": campaign.public_id,
             "name": campaign.name,
             "timezone": campaign.timezone,
             "horizon_weeks": campaign.horizon_weeks,
+            "consensus_policy": campaign.consensus_policy.value,
             "created_at": _iso(campaign.created_at),
         },
         "players": [
@@ -75,7 +76,7 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
         "availability": availability_rows,
         "occurrence_opt_outs": opt_out_rows,
         "_note": (
-            "Admin and player URL tokens are never included. Restore by importing "
-            "into a fresh campaign (manual) or keep this file as backup."
+            "Admin and player URL tokens are never included. Re-import this file "
+            "from the home page to restore into a fresh campaign with new links."
         ),
     }
