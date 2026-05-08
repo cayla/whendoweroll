@@ -19,6 +19,22 @@
 
    The volume name `whendoweroll_data` must match `[[mounts]]` → `source` in `fly.toml`.
 
+   The image runs as a non-root user (`appuser`, UID **1000**). The build-time
+   `chown` on `/data` is masked the moment Fly mounts the volume, so on the
+   first deploy after creating (or recreating) a volume you need to set its
+   ownership once from inside a running Machine:
+
+   ```bash
+   fly ssh console
+   chown -R 1000:1000 /data
+   chmod u+rwX /data
+   exit
+   fly machine restart
+   ```
+
+   After that the volume keeps the right ownership across deploys because the
+   UID is pinned in the Dockerfile.
+
    **About Fly’s “create two or more volumes” warning** — Volumes are [pinned to one physical host](https://fly.io/docs/volumes/overview/). If that host has a bad day, a single volume can be unavailable until Fly recovers or you restore from backup. Fly therefore nudges you toward **two volumes** so you can run **two Machines** in the same region and stay up if one host dies.
 
    For **this app + SQLite**, one volume is the normal choice: SQLite expects a **single writable file** anyway, so a second volume does **not** give you automatic HA (you’d need a replicated database or external store, not two independent SQLite files). Treat the warning as “know the tradeoff”: fine for a personal scheduler; if you need strong uptime guarantees, plan **Postgres** (e.g. Fly Postgres) or accept operational risk on SQLite.
