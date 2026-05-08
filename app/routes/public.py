@@ -28,9 +28,7 @@ def public_home(
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     campaign = get_campaign_or_404(session, public_id)
-    players = session.exec(
-        select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)
-    ).all()
+    players = session.exec(select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)).all()
     slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
 
     display_tz = effective_display_timezone(request, campaign.timezone)
@@ -41,12 +39,8 @@ def public_home(
     player_ids = [p.id for p in players if p.id is not None]
     opt_outs = load_opt_out_set(session, player_ids)
 
-    everyone = find_next_meet(
-        occurrences, players, availability, max_missing=0, opt_outs=opt_outs
-    )
-    almost = find_next_meet(
-        occurrences, players, availability, max_missing=1, opt_outs=opt_outs
-    )
+    everyone = find_next_meet(occurrences, players, availability, max_missing=0, opt_outs=opt_outs)
+    almost = find_next_meet(occurrences, players, availability, max_missing=1, opt_outs=opt_outs)
 
     occurrence_rows = [
         {
@@ -90,6 +84,6 @@ def set_public_display_timezone(
     try:
         resp = RedirectResponse(url=f"/c/{public_id}", status_code=303)
         set_viewer_timezone_on_response(resp, timezone)
-    except (ValueError, ZoneInfoNotFoundError):
+    except ValueError, ZoneInfoNotFoundError:
         raise HTTPException(status_code=400, detail="Unknown timezone") from None
     return resp

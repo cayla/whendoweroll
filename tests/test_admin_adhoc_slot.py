@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import re
 from datetime import date
+from zoneinfo import ZoneInfo
 
 from sqlmodel import Session, select
-from zoneinfo import ZoneInfo
 
 from app.display_time import ensure_utc
 from app.models import Slot, SlotKind

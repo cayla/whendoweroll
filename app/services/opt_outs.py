@@ -7,8 +7,8 @@ answer for every other Friday.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Iterable
+from collections.abc import Iterable
+from datetime import datetime
 
 from sqlmodel import Session, select
 
@@ -23,10 +23,7 @@ def load_opt_out_set(session: Session, player_ids: Iterable[int]) -> set[tuple[i
     rows = session.exec(
         select(OccurrenceOptOut).where(OccurrenceOptOut.player_id.in_(ids))  # type: ignore[attr-defined]
     ).all()
-    return {
-        (row.player_id, row.slot_id, normalize_occurrence_start(row.starts_at_utc))
-        for row in rows
-    }
+    return {(row.player_id, row.slot_id, normalize_occurrence_start(row.starts_at_utc)) for row in rows}
 
 
 def add_opt_out(session: Session, *, player_id: int, slot_id: int, starts_at_utc: datetime) -> None:

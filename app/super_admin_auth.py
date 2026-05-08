@@ -80,5 +80,5 @@ def verify_session_token(token: str | None) -> bool:
     try:
         _SERIALIZER.loads(token, max_age=SESSION_MAX_AGE_SECONDS)
         return True
-    except (BadSignature, SignatureExpired):
+    except BadSignature, SignatureExpired:
         return False

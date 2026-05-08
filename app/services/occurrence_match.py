@@ -22,9 +22,7 @@ def resolve_occurrence(slot: Slot, campaign: Campaign, occurrence_start: str) ->
         return None
     tz = ZoneInfo(campaign.timezone)
     target = normalize_occurrence_start(parsed)
-    for occ in upcoming_occurrences_for_slot(
-        slot, tz=tz, horizon_weeks=campaign.horizon_weeks
-    ):
+    for occ in upcoming_occurrences_for_slot(slot, tz=tz, horizon_weeks=campaign.horizon_weeks):
         if normalize_occurrence_start(occ.starts_at_utc) == target:
             return occ
     return None

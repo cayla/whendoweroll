@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from app.services.ical import build_ics
 
@@ -14,7 +14,7 @@ def test_build_ics_contains_calendar_wrappers():
 
 
 def test_build_ics_single_event():
-    start = datetime(2026, 5, 29, 22, 0, tzinfo=timezone.utc)
+    start = datetime(2026, 5, 29, 22, 0, tzinfo=UTC)
     end = start + timedelta(hours=3)
     body = build_ics([("uid-test@whendoweroll.com", start, end, "Game night")])
     assert b"BEGIN:VEVENT" in body

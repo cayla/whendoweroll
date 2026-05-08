@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
@@ -55,7 +55,7 @@ def test_migration_adhoc_from_utc_bounds():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    start = datetime(2026, 6, 1, 18, 0, tzinfo=timezone.utc)
+    start = datetime(2026, 6, 1, 18, 0, tzinfo=UTC)
     end = start + timedelta(hours=2, minutes=30)
     with eng.begin() as conn:
         conn.execute(

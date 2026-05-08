@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from app.models import AvailabilityStatus, Player
 from app.services.consensus import find_next_meet, list_consensus_occurrences
@@ -10,7 +10,7 @@ from app.services.slots import Occurrence
 
 
 def _occ(sid: int, hours: int) -> Occurrence:
-    start = datetime.now(timezone.utc) + timedelta(hours=hours)
+    start = datetime.now(UTC) + timedelta(hours=hours)
     return Occurrence(
         slot_id=sid,
         label="slot",

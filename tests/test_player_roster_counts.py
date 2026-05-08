@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.models import AvailabilityStatus, Player
 from app.services.availability import roster_can_make_occurrence
@@ -14,7 +14,7 @@ def test_roster_can_make_skips_opt_outs():
     a = Player(id=1, campaign_id=1, display_name="A", token_hash="ta", sort_order=0)
     b = Player(id=2, campaign_id=1, display_name="B", token_hash="tb", sort_order=1)
     av = {(1, 5): AvailabilityStatus.yes, (2, 5): AvailabilityStatus.yes}
-    start = datetime(2030, 6, 7, 22, 0, tzinfo=timezone.utc)
+    start = datetime(2030, 6, 7, 22, 0, tzinfo=UTC)
     key = normalize_occurrence_start(start)
     opt = {(1, 5, key)}
     can, n = roster_can_make_occurrence(av, [a, b], opt, slot_id=5, starts_at_utc=start)

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Iterable
+from collections.abc import Iterable
+from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 
@@ -71,7 +71,7 @@ def set_availability(
         return None
     if existing:
         existing.status = status
-        existing.updated_at = datetime.now(timezone.utc)
+        existing.updated_at = datetime.now(UTC)
         session.add(existing)
     else:
         session.add(
