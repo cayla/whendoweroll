@@ -4,6 +4,60 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import UTC, datetime, timedelta
+
+from sqlmodel import Session, select
+
+from app.models import Availability, AvailabilityStatus, Campaign, Player, Slot, SlotKind
+
+
+def _create_campaign_with_players(client, names: list[str], horizon_weeks: int = 12):
+    """POST a new campaign and return ``(public_id, admin_secret, response_text)``."""
+    r = client.post(
+        "/",
+        data={
+            "name": "ICS",
+            "timezone": "UTC",
+            "player_names": "\n".join(names),
+            "horizon_weeks": str(horizon_weeks),
+        },
+    )
+    assert r.status_code == 200
+    m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
+    assert m
+    return m.group(1), m.group(2), r.text
+
+
+def _seed_adhoc_slot_with_availability(
+    engine,
+    *,
+    public_id: str,
+    days_ahead: int,
+    statuses: dict[str, AvailabilityStatus],
+) -> None:
+    """Add an ad-hoc slot ``days_ahead`` from now and stamp each named player's
+    response. Players not in ``statuses`` are left unset (= missing).
+    """
+    start = datetime.now(UTC) + timedelta(days=days_ahead)
+    end = start + timedelta(hours=3)
+    with Session(engine) as s:
+        campaign = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
+        slot = Slot(
+            campaign_id=campaign.id,
+            kind=SlotKind.adhoc,
+            label=f"Day +{days_ahead}",
+            duration_hours=3.0,
+            starts_at_utc=start,
+            ends_at_utc=end,
+        )
+        s.add(slot)
+        s.commit()
+        s.refresh(slot)
+        players = s.exec(select(Player).where(Player.campaign_id == campaign.id)).all()
+        by_name = {p.display_name: p for p in players}
+        for name, status in statuses.items():
+            s.add(Availability(player_id=by_name[name].id, slot_id=slot.id, status=status))
+        s.commit()
 
 
 def test_export_json_requires_admin_secret(client):
@@ -30,21 +84,97 @@ def test_export_json_requires_admin_secret(client):
     assert bad.status_code == 404
 
 
-def test_consensus_ics_requires_admin_secret(client):
-    r = client.post(
-        "/",
-        data={
-            "name": "ICS Test",
-            "timezone": "UTC",
-            "player_names": "",
-            "horizon_weeks": "2",
-        },
-    )
-    assert r.status_code == 200
-    m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
-    assert m
-    public_id, secret = m.groups()
-    ok = client.get(f"/c/{public_id}/admin/{secret}/calendar-consensus.ics")
+def test_consensus_ics_is_public_no_secret_required(client):
+    public_id, _secret, _ = _create_campaign_with_players(client, [])
+    ok = client.get(f"/c/{public_id}/calendar-consensus.ics")
     assert ok.status_code == 200
     assert ok.headers["content-type"].startswith("text/calendar")
     assert b"VCALENDAR" in ok.content
+
+
+def test_consensus_ics_admin_path_removed(client):
+    """The old admin-secret URL is gone — only the public path serves the feed."""
+    public_id, secret, _ = _create_campaign_with_players(client, [])
+    r = client.get(f"/c/{public_id}/admin/{secret}/calendar-consensus.ics")
+    assert r.status_code == 404
+
+
+def test_consensus_ics_unknown_campaign_returns_404(client):
+    r = client.get("/c/deadbeef/calendar-consensus.ics")
+    assert r.status_code == 404
+
+
+def test_consensus_ics_marks_near_consensus_with_missing_prefix(client, engine):
+    public_id, _secret, _ = _create_campaign_with_players(client, ["Alice", "Bob"])
+    _seed_adhoc_slot_with_availability(
+        engine,
+        public_id=public_id,
+        days_ahead=3,
+        statuses={"Alice": AvailabilityStatus.yes, "Bob": AvailabilityStatus.no},
+    )
+    r = client.get(f"/c/{public_id}/calendar-consensus.ics")
+    assert r.status_code == 200
+    body = r.content.decode("utf-8")
+    summary = next(line for line in body.splitlines() if line.startswith("SUMMARY:"))
+    assert summary.startswith("SUMMARY:[missing: Bob]")
+    assert "everyone available" not in summary
+
+
+def test_consensus_ics_full_consensus_has_no_missing_prefix(client, engine):
+    public_id, _secret, _ = _create_campaign_with_players(client, ["Alice", "Bob"])
+    _seed_adhoc_slot_with_availability(
+        engine,
+        public_id=public_id,
+        days_ahead=5,
+        statuses={"Alice": AvailabilityStatus.yes, "Bob": AvailabilityStatus.yes},
+    )
+    r = client.get(f"/c/{public_id}/calendar-consensus.ics")
+    assert r.status_code == 200
+    body = r.content.decode("utf-8")
+    summary = next(line for line in body.splitlines() if line.startswith("SUMMARY:"))
+    assert "[missing:" not in summary
+    assert "everyone available" in summary
+
+
+def test_consensus_ics_skips_occurrences_with_too_many_missing(client, engine):
+    """Two missing players exceeds the all-but-one bound — the slot stays out of the feed."""
+    public_id, _secret, _ = _create_campaign_with_players(client, ["Alice", "Bob", "Carol"])
+    _seed_adhoc_slot_with_availability(
+        engine,
+        public_id=public_id,
+        days_ahead=4,
+        statuses={"Alice": AvailabilityStatus.yes},
+    )
+    r = client.get(f"/c/{public_id}/calendar-consensus.ics")
+    assert r.status_code == 200
+    body = r.content.decode("utf-8")
+    assert "BEGIN:VEVENT" not in body
+
+
+def test_consensus_ics_link_appears_on_admin_public_and_player_pages(client):
+    public_id, secret, page_html = _create_campaign_with_players(client, ["Alice"])
+    expected_link = f"/c/{public_id}/calendar-consensus.ics"
+
+    admin = client.get(f"/c/{public_id}/admin/{secret}")
+    assert admin.status_code == 200
+    assert expected_link in admin.text
+
+    public = client.get(f"/c/{public_id}")
+    assert public.status_code == 200
+    assert expected_link in public.text
+
+    m = re.search(rf"/c/{public_id}/p/([\w\-]+)", page_html)
+    assert m, "expected a player URL on the created-campaign page"
+    token = m.group(1)
+    player_page = client.get(f"/c/{public_id}/p/{token}")
+    assert player_page.status_code == 200
+    assert expected_link in player_page.text
+
+
+def test_player_calendar_ics_route_removed(client):
+    public_id, _secret, page_html = _create_campaign_with_players(client, ["Alice"])
+    m = re.search(rf"/c/{public_id}/p/([\w\-]+)", page_html)
+    assert m
+    token = m.group(1)
+    r = client.get(f"/c/{public_id}/p/{token}/calendar.ics")
+    assert r.status_code == 404

@@ -1,4 +1,4 @@
-"""Pure helpers for the per-player template + iCal feed.
+"""Pure helpers for the per-player template.
 
 Lives outside ``app/routes`` so the same roster math can be unit-tested
 without HTTP and reused from other views if needed.
@@ -24,7 +24,7 @@ from app.services.availability import (
     roster_can_make_occurrence,
 )
 from app.services.opt_outs import load_opt_out_set
-from app.services.slots import expand_all, upcoming_occurrences_for_slot
+from app.services.slots import upcoming_occurrences_for_slot
 from app.services.timeutil import normalize_occurrence_start
 
 # Show "exception" rows up to half a year out at most so the table stays
@@ -150,34 +150,3 @@ def unified_recurring_opt_out_rows(
     return rows
 
 
-def player_calendar_events(
-    campaign: Campaign,
-    player: Player,
-    slots: list[Slot],
-    session: Session,
-) -> list[tuple[str, datetime, datetime, str]]:
-    """``(uid, dtstart, dtend, summary)`` tuples for this player's `.ics` feed."""
-    pid = player.id
-    if pid is None:
-        return []
-    tz = ZoneInfo(campaign.timezone)
-    occurrences = expand_all(slots, tz=tz, horizon_weeks=campaign.horizon_weeks)
-    availability = load_availability_map(session, [player])
-    opt_outs = load_opt_out_set(session, [pid])
-    events: list[tuple[str, datetime, datetime, str]] = []
-    for occ in occurrences:
-        if availability.get((pid, occ.slot_id)) is not AvailabilityStatus.yes:
-            continue
-        key = (pid, occ.slot_id, normalize_occurrence_start(occ.starts_at_utc))
-        if key in opt_outs:
-            continue
-        uid = f"{campaign.public_id}-p{pid}-s{occ.slot_id}-{int(occ.starts_at_utc.timestamp())}@whendoweroll.com"
-        events.append(
-            (
-                uid,
-                occ.starts_at_utc,
-                occ.ends_at_utc,
-                f"{campaign.name} — {occ.label} ({player.display_name} available)",
-            )
-        )
-    return events

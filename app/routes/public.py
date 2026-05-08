@@ -2,17 +2,24 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlmodel import Session, select
 
 from app.db import get_session
 from app.deps import get_campaign_or_404
 from app.models import Player, Slot
 from app.services.availability import load_availability_map
-from app.services.consensus import count_yes_for_occurrence, find_next_meet, player_lookup
+from app.services.consensus import (
+    count_yes_for_occurrence,
+    find_next_meet,
+    list_consensus_occurrences,
+    player_lookup,
+)
+from app.services.ical import build_ics
 from app.services.opt_outs import load_opt_out_set
 from app.services.slots import expand_all
 from app.templates_setup import COMMON_TIMEZONES, templates
@@ -87,3 +94,44 @@ def set_public_display_timezone(
     except ValueError, ZoneInfoNotFoundError:
         raise HTTPException(status_code=400, detail="Unknown timezone") from None
     return resp
+
+
+@router.get("/c/{public_id}/calendar-consensus.ics")
+def calendar_consensus_ics(
+    public_id: str,
+    session: Session = Depends(get_session),
+) -> Response:
+    """Single per-campaign feed: full-consensus windows plus near-consensus
+    (one missing) windows whose summaries are prefixed with ``[missing: …]``.
+
+    Public-tier (gated only by the unguessable ``public_id``) so the same URL
+    can be shared with the whole roster — there is no per-player feed.
+    """
+    campaign = get_campaign_or_404(session, public_id)
+    players = session.exec(select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)).all()
+    slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
+    tz = ZoneInfo(campaign.timezone)
+    occurrences = expand_all(slots, tz=tz, horizon_weeks=campaign.horizon_weeks)
+    availability = load_availability_map(session, players)
+    player_ids = [p.id for p in players if p.id is not None]
+    opt_outs = load_opt_out_set(session, player_ids)
+    results = list_consensus_occurrences(
+        occurrences, players, availability, max_missing=1, opt_outs=opt_outs, limit=50
+    )
+    name_by_id = {p.id: p.display_name for p in players if p.id is not None}
+    events: list[tuple[str, datetime, datetime, str]] = []
+    for res in results:
+        occ = res.occurrence
+        uid = f"{campaign.public_id}-s{occ.slot_id}-{int(occ.starts_at_utc.timestamp())}@whendoweroll.com"
+        if res.missing_player_ids:
+            missing_names = ", ".join(name_by_id.get(pid, "?") for pid in res.missing_player_ids)
+            summary = f"[missing: {missing_names}] {campaign.name} — {occ.label}"
+        else:
+            summary = f"{campaign.name} — everyone available ({occ.label})"
+        events.append((uid, occ.starts_at_utc, occ.ends_at_utc, summary))
+    body = build_ics(events)
+    return Response(
+        content=body,
+        media_type="text/calendar; charset=utf-8",
+        headers={"Content-Disposition": 'inline; filename="calendar-consensus.ics"'},
+    )

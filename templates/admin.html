@@ -189,15 +189,15 @@
 <section class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm mb-6">
   <h2 class="heading text-lg mb-2">Exports &amp; calendar feeds</h2>
   <p class="text-sm text-stone-600 mb-3">
-    JSON is a full backup of slots, roster, availability, and per-date opt-outs (no secret URLs).
-    The consensus <code class="text-xs bg-stone-100 px-1 rounded">.ics</code> lists upcoming windows where <em>everyone</em> is available, honouring opt-outs.
+    JSON is a full backup of slots, roster, availability, and per-date opt-outs (admin-only).
+    The consensus <code class="text-xs bg-stone-100 px-1 rounded">.ics</code> lives at the public URL and lists upcoming windows where everyone is available, plus near-consensus ones (one player missing) prefixed with <code class="text-xs bg-stone-100 px-1 rounded">[missing: …]</code>. Share this single feed with the group &mdash; the same link is on every player's page too.
   </p>
   <div class="flex flex-wrap gap-3">
     <a href="{{ admin_url }}/export.json" download
        class="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50">
       Download JSON
     </a>
-    <a href="{{ admin_url }}/calendar-consensus.ics"
+    <a href="{{ public_url }}/calendar-consensus.ics"
        class="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50">
       Consensus calendar (.ics)
     </a>
