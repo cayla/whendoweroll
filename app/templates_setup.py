@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo, available_timezones
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
 
 from fastapi.templating import Jinja2Templates
 
@@ -17,15 +17,45 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
 def _format_local(value: datetime, tz_name: str) -> str:
+    """Render a UTC instant in ``tz_name`` without a timezone suffix.
+
+    The viewer's zone is shown once at the top of the page (see the modal in
+    ``fragments/viewer_tz_modal.html``); repeating ``EDT`` on every row was
+    just noise.
+    """
     if value.tzinfo is None:
         value = value.replace(tzinfo=UTC)
     local = value.astimezone(ZoneInfo(tz_name))
-    return local.strftime("%a %b ") + str(local.day) + local.strftime(" %Y, %-I:%M %p %Z")
+    return local.strftime("%a %b ") + str(local.day) + local.strftime(" %Y, %-I:%M %p")
+
+
+def _tz_abbrev(tz_name: str) -> str:
+    """Current short timezone abbreviation (``EDT``/``EST``/...) for ``tz_name``.
+
+    Falls back to the IANA name if the zone has no short name (some tzdata
+    entries are nameless, in which case the abbreviation chip is just hidden).
+    """
+    try:
+        z = ZoneInfo(tz_name)
+    except ZoneInfoNotFoundError, ValueError:
+        return ""
+    return datetime.now(tz=z).strftime("%Z") or ""
+
+
+def _pretty_tz(tz_name: str) -> str:
+    """Display-only IANA name with underscores swapped for spaces.
+
+    Forms still post the raw IANA name (e.g. ``America/New_York``); this is
+    purely for human-readable rendering in chrome and labels.
+    """
+    return tz_name.replace("_", " ") if tz_name else tz_name
 
 
 templates.env.filters["local_time"] = _format_local
 templates.env.filters["local_window"] = format_local_window
 templates.env.filters["recurring_slot_viewer"] = recurring_slot_primary_label
+templates.env.filters["tz_abbrev"] = _tz_abbrev
+templates.env.filters["pretty_tz"] = _pretty_tz
 
 
 # Cached for the timezone <select> on the create form.

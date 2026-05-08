@@ -9,7 +9,9 @@
 
 {% block content %}
 <header class="mb-6">
-  <h1 class="heading text-3xl text-red-800">{{ campaign.name }}</h1>
+  <h1 class="heading text-3xl">
+    <a href="/c/{{ campaign.public_id }}" class="text-red-800 hover:text-red-900 underline decoration-red-200 underline-offset-4 hover:decoration-red-500">{{ campaign.name }}</a>
+  </h1>
   <p class="text-sm text-stone-600">
     Hi <span class="font-medium">{{ player.display_name }}</span>. Mark which slots you're free for.
     Changes save instantly.

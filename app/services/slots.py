@@ -27,12 +27,23 @@ from app.models import Slot, SlotKind
 
 @dataclass(frozen=True)
 class Occurrence:
-    """A single concrete window. ``slot_id`` ties back to availability rows."""
+    """A single concrete window. ``slot_id`` ties back to availability rows.
+
+    ``label`` is always populated (falling back to a generated description
+    when the operator didn't set one) so callers like the ICS feed always
+    have something to display. ``user_label`` is the *operator-supplied*
+    label only — templates use it to show free-text annotations
+    ("Friday game night", "session 12") without echoing the auto label.
+    ``kind`` mirrors the parent slot so views can badge one-offs vs the
+    weekly recurrence without a second lookup.
+    """
 
     slot_id: int
     label: str
     starts_at_utc: datetime
     ends_at_utc: datetime
+    kind: SlotKind = SlotKind.recurring
+    user_label: str | None = None
 
     @property
     def is_in_future(self) -> bool:
@@ -88,6 +99,8 @@ def expand_recurring(
                     label=slot.label or _default_label(slot, starts_local),
                     starts_at_utc=occ_start,
                     ends_at_utc=occ_end,
+                    kind=SlotKind.recurring,
+                    user_label=slot.label,
                 )
         cursor_local = cursor_local + timedelta(days=1)
 
@@ -110,6 +123,8 @@ def expand_adhoc(slot: Slot) -> Iterable[Occurrence]:
         label=slot.label or "One-off session",
         starts_at_utc=_ensure_utc(slot.starts_at_utc),
         ends_at_utc=_ensure_utc(slot.ends_at_utc),
+        kind=SlotKind.adhoc,
+        user_label=slot.label,
     )
 
 

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ campaign.name }} &middot; admin{% endblock %}
-{% block subtitle %}admin &middot; {{ campaign.timezone }}{% endblock %}
+{% block subtitle %}admin &middot; {{ campaign.timezone|pretty_tz }}{% endblock %}
 
 {% block content %}
 <header class="mb-6 flex items-baseline justify-between flex-wrap gap-2">
@@ -24,7 +24,7 @@
       <span class="text-sm font-medium text-stone-700">Timezone</span>
       <select name="timezone" class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
         {% for tz in timezones %}
-          <option value="{{ tz }}" {% if tz == campaign.timezone %}selected{% endif %}>{{ tz }}</option>
+          <option value="{{ tz }}" {% if tz == campaign.timezone %}selected{% endif %}>{{ tz|pretty_tz }}</option>
         {% endfor %}
       </select>
     </label>
@@ -35,21 +35,24 @@
     </label>
     <label class="block md:col-span-3">
       <span class="text-sm font-medium text-stone-700">Scheduling policy</span>
-      <select name="consensus_policy"
+      <select id="consensus-policy-select" name="consensus_policy"
               class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
         {% for value, label, _hint in consensus_policy_choices %}
           <option value="{{ value }}" {% if value == campaign.consensus_policy %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
+      {#- All hints are rendered; JS toggles which one is visible based on
+          the current select value. That way the helper text reflects the
+          *pending* (unsaved) policy choice instead of the persisted one. -#}
       <p class="mt-1 text-xs text-stone-500">
         {% for value, _label, hint in consensus_policy_choices %}
-          {% if value == campaign.consensus_policy %}{{ hint }}{% endif %}
+          <span data-policy-hint="{{ value }}"{% if value != campaign.consensus_policy %} hidden{% endif %}>{{ hint }}</span>
         {% endfor %}
         Drives both the public summary cards and the consensus calendar feed &mdash; mandatory attendees still apply on top.
       </p>
     </label>
     <div class="md:col-span-3">
-      <button class="rounded-md bg-red-800 px-3 py-1.5 text-white text-sm hover:bg-red-900">Save settings</button>
+      <button class="rounded-md bg-stone-800 px-3 py-1.5 text-white text-sm hover:bg-stone-900">Save settings</button>
     </div>
   </form>
 </section>
@@ -73,7 +76,7 @@
               hx-post="{{ admin_url }}/players/{{ player.id }}/delete"
               hx-target="closest li" hx-swap="outerHTML"
               hx-confirm="Delete {{ player.display_name }} and their availability?">
-          <button class="text-xs rounded border border-red-300 text-red-700 px-2 py-1 hover:bg-red-50">
+          <button class="text-xs rounded border border-stone-300 text-stone-700 px-2 py-1 hover:bg-stone-100">
             Delete
           </button>
         </form>
@@ -93,7 +96,7 @@
       <input name="display_name" required placeholder="Display name"
              class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
     </label>
-    <button class="rounded-md bg-red-800 px-3 py-1.5 text-white text-sm hover:bg-red-900">Add</button>
+    <button class="rounded-md bg-stone-800 px-3 py-1.5 text-white text-sm hover:bg-stone-900">Add</button>
   </form>
 
   <div id="new-player-info" class="mt-4"></div>
@@ -141,7 +144,7 @@
         {% if slot.label %}<span class="text-stone-500 ml-2">&mdash; {{ slot.label }}</span>{% endif %}
       </span>
       <form method="post" action="{{ admin_url }}/slots/{{ slot.id }}/delete">
-        <button class="text-xs rounded border border-red-300 text-red-700 px-2 py-1 hover:bg-red-50"
+        <button class="text-xs rounded border border-stone-300 text-stone-700 px-2 py-1 hover:bg-stone-100"
                 onclick="return confirm('Delete this slot and all its availability?')">
           Delete
         </button>
@@ -162,7 +165,7 @@
           {% for value, name in weekdays %}<option value="{{ value }}">{{ name }}</option>{% endfor %}
         </select>
       </label>
-      <label class="block text-sm mt-2">Start ({{ campaign.timezone }})
+      <label class="block text-sm mt-2">Start ({{ campaign.timezone|pretty_tz }})
         <input type="time" name="start_local" required class="mt-1 w-full rounded-md border-stone-300">
       </label>
       <label class="block text-sm mt-2">Session duration (hours)
@@ -172,7 +175,7 @@
       <label class="block mt-2 text-sm">Label (optional)
         <input name="label" placeholder="Friday game night" class="mt-1 w-full rounded-md border-stone-300">
       </label>
-      <button class="mt-3 rounded-md bg-red-800 px-3 py-1.5 text-white text-sm hover:bg-red-900">
+      <button class="mt-3 rounded-md bg-stone-800 px-3 py-1.5 text-white text-sm hover:bg-stone-900">
         Add recurring slot
       </button>
     </form>
@@ -180,7 +183,7 @@
     <form method="post" action="{{ admin_url }}/slots" class="border border-stone-200 rounded-md p-4">
       <h3 class="font-medium mb-3">One-off session</h3>
       <input type="hidden" name="kind" value="adhoc">
-      <p class="text-xs text-stone-500 mb-2">Date and start time are in <strong>{{ campaign.timezone }}</strong>. Duration may run past midnight (e.g. start 10:00 PM + 4 h → 2:00 AM next day).</p>
+      <p class="text-xs text-stone-500 mb-2">Date and start time are in <strong>{{ campaign.timezone|pretty_tz }}</strong>. Duration may run past midnight (e.g. start 10:00 PM + 4 h → 2:00 AM next day).</p>
       <label class="block text-sm">Date
         <input type="date" name="adhoc_date" required class="mt-1 w-full rounded-md border-stone-300">
       </label>
@@ -194,7 +197,7 @@
       <label class="block mt-2 text-sm">Label (optional)
         <input name="label" placeholder="May 30 one-shot" class="mt-1 w-full rounded-md border-stone-300">
       </label>
-      <button class="mt-3 rounded-md bg-red-800 px-3 py-1.5 text-white text-sm hover:bg-red-900">
+      <button class="mt-3 rounded-md bg-stone-800 px-3 py-1.5 text-white text-sm hover:bg-stone-900">
         Add one-off slot
       </button>
     </form>
@@ -226,7 +229,7 @@
   </p>
   <form method="post" action="{{ admin_url }}/delete">
     <button type="submit"
-            class="rounded-md border border-red-700 bg-white px-3 py-1.5 text-sm text-red-800 hover:bg-red-50"
+            class="rounded-md bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800"
             onclick="return confirm('Delete this entire campaign and all of its data? This cannot be undone.')">
       Delete campaign…
     </button>
@@ -236,4 +239,18 @@
 <section class="text-xs text-stone-500">
   <p>Bookmark this admin URL &mdash; anyone with it can edit the campaign.</p>
 </section>
+<script>
+(function () {
+  var sel = document.getElementById("consensus-policy-select");
+  if (!sel) return;
+  var hints = document.querySelectorAll("[data-policy-hint]");
+  if (!hints.length) return;
+  sel.addEventListener("change", function () {
+    var v = sel.value;
+    hints.forEach(function (h) {
+      h.hidden = h.getAttribute("data-policy-hint") !== v;
+    });
+  });
+})();
+</script>
 {% endblock %}
