@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 
@@ -13,8 +13,8 @@ def _iso(dt: datetime | None) -> str | None:
     if dt is None:
         return None
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc).isoformat()
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC).isoformat()
 
 
 def build_export_payload(session: Session, campaign: Campaign) -> dict:
@@ -24,25 +24,25 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
 
     availability_rows: list[dict] = []
     if pids:
-        for row in session.exec(select(Availability).where(Availability.player_id.in_(pids))).all():  # type: ignore[attr-defined]
-            availability_rows.append(
-                {"player_id": row.player_id, "slot_id": row.slot_id, "status": row.status.value}
-            )
+        availability_rows = [
+            {"player_id": row.player_id, "slot_id": row.slot_id, "status": row.status.value}
+            for row in session.exec(select(Availability).where(Availability.player_id.in_(pids))).all()  # type: ignore[attr-defined]
+        ]
 
     opt_out_rows: list[dict] = []
     if pids:
-        for row in session.exec(select(OccurrenceOptOut).where(OccurrenceOptOut.player_id.in_(pids))).all():  # type: ignore[attr-defined]
-            opt_out_rows.append(
-                {
-                    "player_id": row.player_id,
-                    "slot_id": row.slot_id,
-                    "starts_at_utc": _iso(row.starts_at_utc),
-                }
-            )
+        opt_out_rows = [
+            {
+                "player_id": row.player_id,
+                "slot_id": row.slot_id,
+                "starts_at_utc": _iso(row.starts_at_utc),
+            }
+            for row in session.exec(select(OccurrenceOptOut).where(OccurrenceOptOut.player_id.in_(pids))).all()  # type: ignore[attr-defined]
+        ]
 
     return {
         "export_version": 2,
-        "exported_at": _iso(datetime.now(timezone.utc)),
+        "exported_at": _iso(datetime.now(UTC)),
         "campaign": {
             "public_id": campaign.public_id,
             "name": campaign.name,
@@ -74,5 +74,8 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
         ],
         "availability": availability_rows,
         "occurrence_opt_outs": opt_out_rows,
-        "_note": "Admin and player URL tokens are never included. Restore by importing into a fresh campaign (manual) or keep this file as backup.",
+        "_note": (
+            "Admin and player URL tokens are never included. Restore by importing "
+            "into a fresh campaign (manual) or keep this file as backup."
+        ),
     }

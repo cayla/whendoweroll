@@ -52,9 +52,7 @@ def test_migration_copies_is_dm_into_is_mandatory_then_drops_is_dm():
     migrate_sqlite_player_is_mandatory(eng)
     with eng.connect() as conn:
         cols = [r[1] for r in conn.execute(text("PRAGMA table_info(player)")).fetchall()]
-        rows = conn.execute(
-            text("SELECT id, is_mandatory FROM player ORDER BY id")
-        ).fetchall()
+        rows = conn.execute(text("SELECT id, is_mandatory FROM player ORDER BY id")).fetchall()
     assert "is_mandatory" in cols
     assert "is_dm" not in cols  # SQLite >= 3.35 supports DROP COLUMN
     assert [(r[0], r[1]) for r in rows] == [(1, 1), (2, 0)]

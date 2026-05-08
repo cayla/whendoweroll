@@ -17,5 +17,84 @@ dev = [
     "httpx",
 ]
 
+[tool.ruff]
+line-length = 119
+
+[tool.ruff.format]
+quote-style = "preserve"
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # flake8-datetimez (timezone correctness — important for a scheduler)
+    "DTZ",
+    # ruff-specific (catches stale noqa, unused vars, etc.)
+    "RUF",
+    # perflint
+    "PERF",
+    # flake8-pytest-style
+    "PT",
+    # flake8-unused-arguments
+    "ARG",
+    # flake8-comprehensions
+    "C4",
+    # flake8-pie
+    "PIE",
+    # flake8-use-pathlib
+    "PTH",
+    # flake8-return
+    "RET",
+    # flake8-tidy-imports
+    "TID",
+    # flake8-logging
+    "LOG",
+    # flake8-logging-format
+    "G",
+    # flake8-async
+    "ASYNC",
+    # flake8-import-conventions
+    "ICN",
+    # pep8-naming
+    "N",
+    # flake8-self (private member access)
+    "SLF",
+    # flake8-print (no stray prints)
+    "T20",
+    # flake8-no-pep420 (implicit namespace packages)
+    "INP",
+    # eradicate (commented-out code)
+    "ERA",
+]
+ignore = [
+    # En dashes in app/display_time.py are intentional typography for time ranges.
+    "RUF001",
+    "RUF002",
+]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency-injection markers are intended to be called in argument
+# defaults; treat them as immutable so B008 doesn't flag every route handler.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Form",
+    "fastapi.File",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.Security",
+]
 [tool.uv]
 package = false

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from app.models import Slot, SlotKind
@@ -11,11 +11,16 @@ from app.services.slots import expand_all, expand_recurring
 
 def test_recurring_friday_yields_only_fridays():
     slot = Slot(
-        id=1, campaign_id=1, kind=SlotKind.recurring,
-        weekday=4, start_local="18:00", duration_hours=3.0, label="Friday",
+        id=1,
+        campaign_id=1,
+        kind=SlotKind.recurring,
+        weekday=4,
+        start_local="18:00",
+        duration_hours=3.0,
+        label="Friday",
     )
     tz = ZoneInfo("America/New_York")
-    start = datetime(2026, 5, 1, tzinfo=tz).astimezone(timezone.utc)
+    start = datetime(2026, 5, 1, tzinfo=tz).astimezone(UTC)
     end = start + timedelta(weeks=4)
     occs = list(expand_recurring(slot, tz=tz, start=start, end=end))
     assert len(occs) == 4
@@ -33,17 +38,22 @@ def test_dst_spring_forward_keeps_local_wall_time():
     who said 'yes' to Sunday evenings.
     """
     slot = Slot(
-        id=1, campaign_id=1, kind=SlotKind.recurring,
-        weekday=6, start_local="19:00", duration_hours=3.0,
+        id=1,
+        campaign_id=1,
+        kind=SlotKind.recurring,
+        weekday=6,
+        start_local="19:00",
+        duration_hours=3.0,
     )
     tz = ZoneInfo("America/New_York")
-    start = datetime(2026, 3, 1, tzinfo=tz).astimezone(timezone.utc)
-    end = datetime(2026, 3, 31, tzinfo=tz).astimezone(timezone.utc)
+    start = datetime(2026, 3, 1, tzinfo=tz).astimezone(UTC)
+    end = datetime(2026, 3, 31, tzinfo=tz).astimezone(UTC)
     occs = list(expand_recurring(slot, tz=tz, start=start, end=end))
 
     pre_dst = [o for o in occs if o.starts_at_utc.astimezone(tz).day == 1]
     post_dst = [o for o in occs if o.starts_at_utc.astimezone(tz).day == 15]
-    assert pre_dst and post_dst
+    assert pre_dst
+    assert post_dst
 
     pre = pre_dst[0].starts_at_utc.astimezone(tz)
     post = post_dst[0].starts_at_utc.astimezone(tz)
@@ -53,9 +63,11 @@ def test_dst_spring_forward_keeps_local_wall_time():
 
 
 def test_adhoc_slot_expanded_to_single_occurrence():
-    future = datetime.now(timezone.utc) + timedelta(days=10)
+    future = datetime.now(UTC) + timedelta(days=10)
     slot = Slot(
-        id=2, campaign_id=1, kind=SlotKind.adhoc,
+        id=2,
+        campaign_id=1,
+        kind=SlotKind.adhoc,
         starts_at_utc=future,
         ends_at_utc=future + timedelta(hours=4),
         duration_hours=4.0,
@@ -68,9 +80,11 @@ def test_adhoc_slot_expanded_to_single_occurrence():
 
 
 def test_past_adhoc_dropped_from_horizon():
-    past = datetime.now(timezone.utc) - timedelta(days=2)
+    past = datetime.now(UTC) - timedelta(days=2)
     slot = Slot(
-        id=3, campaign_id=1, kind=SlotKind.adhoc,
+        id=3,
+        campaign_id=1,
+        kind=SlotKind.adhoc,
         starts_at_utc=past,
         ends_at_utc=past + timedelta(hours=2),
         duration_hours=2.0,
@@ -80,13 +94,25 @@ def test_past_adhoc_dropped_from_horizon():
 
 def test_occurrences_sorted_chronologically():
     tz = ZoneInfo("UTC")
-    in_5_days = datetime.now(timezone.utc) + timedelta(days=5)
-    in_2_days = datetime.now(timezone.utc) + timedelta(days=2)
+    in_5_days = datetime.now(UTC) + timedelta(days=5)
+    in_2_days = datetime.now(UTC) + timedelta(days=2)
     slots = [
-        Slot(id=1, campaign_id=1, kind=SlotKind.adhoc,
-             starts_at_utc=in_5_days, ends_at_utc=in_5_days + timedelta(hours=1), duration_hours=1.0),
-        Slot(id=2, campaign_id=1, kind=SlotKind.adhoc,
-             starts_at_utc=in_2_days, ends_at_utc=in_2_days + timedelta(hours=1), duration_hours=1.0),
+        Slot(
+            id=1,
+            campaign_id=1,
+            kind=SlotKind.adhoc,
+            starts_at_utc=in_5_days,
+            ends_at_utc=in_5_days + timedelta(hours=1),
+            duration_hours=1.0,
+        ),
+        Slot(
+            id=2,
+            campaign_id=1,
+            kind=SlotKind.adhoc,
+            starts_at_utc=in_2_days,
+            ends_at_utc=in_2_days + timedelta(hours=1),
+            duration_hours=1.0,
+        ),
     ]
     occs = expand_all(slots, tz=tz, horizon_weeks=4)
     assert [o.slot_id for o in occs] == [2, 1]

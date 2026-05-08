@@ -10,9 +10,9 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 from app import db as db_module
+from app import models  # noqa: F401  (registers models on metadata)
 from app.db import get_session
 from app.main import app
-from app import models  # noqa: F401  (registers models on metadata)
 
 
 @pytest.fixture

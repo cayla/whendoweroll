@@ -16,9 +16,10 @@ alternative is dropping the session, and the visible effect is rare.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone, time as time_t
-from typing import Iterable
+from datetime import UTC, datetime, timedelta
+from datetime import time as time_t
 from zoneinfo import ZoneInfo
 
 from app.models import Slot, SlotKind
@@ -35,14 +36,12 @@ class Occurrence:
 
     @property
     def is_in_future(self) -> bool:
-        return self.starts_at_utc > datetime.now(timezone.utc)
-
-
-_HHMM_FMT = "%H:%M"
+        return self.starts_at_utc > datetime.now(UTC)
 
 
 def _parse_hhmm(value: str) -> time_t:
-    return datetime.strptime(value, _HHMM_FMT).time()
+    h_s, _, m_s = value.partition(":")
+    return time_t(int(h_s), int(m_s))
 
 
 def _localize(local_dt: datetime, tz: ZoneInfo) -> datetime:
@@ -53,7 +52,7 @@ def _localize(local_dt: datetime, tz: ZoneInfo) -> datetime:
     where the local time doesn't exist, zoneinfo returns the post-transition
     offset. See module docstring for the rationale.
     """
-    return local_dt.replace(tzinfo=tz).astimezone(timezone.utc)
+    return local_dt.replace(tzinfo=tz).astimezone(UTC)
 
 
 def expand_recurring(
@@ -117,8 +116,8 @@ def expand_adhoc(slot: Slot) -> Iterable[Occurrence]:
 def _ensure_utc(value: datetime) -> datetime:
     # SQLite drops tzinfo on read; we know we wrote UTC so re-attach it.
     if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 def upcoming_occurrences_for_slot(
@@ -129,16 +128,12 @@ def upcoming_occurrences_for_slot(
     now: datetime | None = None,
 ) -> list[Occurrence]:
     """Concrete future windows for a single slot within the campaign horizon."""
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     end = now + timedelta(weeks=horizon_weeks)
     if slot.kind is SlotKind.recurring:
         return list(expand_recurring(slot, tz=tz, start=now, end=end))
     if slot.kind is SlotKind.adhoc:
-        out: list[Occurrence] = []
-        for occ in expand_adhoc(slot):
-            if occ.ends_at_utc > now and occ.starts_at_utc < end:
-                out.append(occ)
-        return out
+        return [occ for occ in expand_adhoc(slot) if occ.ends_at_utc > now and occ.starts_at_utc < end]
     return []
 
 
@@ -149,15 +144,13 @@ def expand_all(
     horizon_weeks: int,
     now: datetime | None = None,
 ) -> list[Occurrence]:
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     end = now + timedelta(weeks=horizon_weeks)
     out: list[Occurrence] = []
     for slot in slots:
         if slot.kind is SlotKind.recurring:
             out.extend(expand_recurring(slot, tz=tz, start=now, end=end))
         else:
-            for occ in expand_adhoc(slot):
-                if occ.ends_at_utc > now and occ.starts_at_utc < end:
-                    out.append(occ)
+            out.extend(occ for occ in expand_adhoc(slot) if occ.ends_at_utc > now and occ.starts_at_utc < end)
     out.sort(key=lambda o: o.starts_at_utc)
     return out

@@ -64,9 +64,7 @@ def player_home(
         can_make_pairs: dict[int, tuple[int, int]] = {}
     else:
         all_players, full_map, opt_outs = roster_availability_context(session, cid)
-        can_make_pairs = slot_can_make_pairs(
-            slots, campaign, full_map, all_players, opt_outs
-        )
+        can_make_pairs = slot_can_make_pairs(slots, campaign, full_map, all_players, opt_outs)
     unified_rows = unified_recurring_opt_out_rows(
         campaign,
         player,
@@ -108,7 +106,7 @@ def set_player_display_timezone(
     try:
         resp = RedirectResponse(url=f"/c/{public_id}/p/{token}", status_code=303)
         set_viewer_timezone_on_response(resp, timezone)
-    except (ValueError, ZoneInfoNotFoundError):
+    except ValueError, ZoneInfoNotFoundError:
         raise HTTPException(status_code=400, detail="Unknown timezone") from None
     return resp
 

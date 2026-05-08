@@ -2,28 +2,22 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def _ics_escape(text: str) -> str:
-    return (
-        text.replace("\\", "\\\\")
-        .replace(";", "\\;")
-        .replace(",", "\\,")
-        .replace("\r", "")
-        .replace("\n", "\\n")
-    )
+    return text.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\r", "").replace("\n", "\\n")
 
 
 def _ics_dt(dt: datetime) -> str:
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
 
 
 def build_ics(events: list[tuple[str, datetime, datetime, str]]) -> bytes:
     """Each tuple is ``(uid, dtstart, dtend, summary)``."""
-    stamp = _ics_dt(datetime.now(timezone.utc))
+    stamp = _ics_dt(datetime.now(UTC))
     lines: list[str] = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",

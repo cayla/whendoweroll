@@ -19,30 +19,29 @@ Time conventions:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Optional
+from datetime import UTC, datetime
+from enum import StrEnum
 
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
-class SlotKind(str, Enum):
+class SlotKind(StrEnum):
     recurring = "recurring"
     adhoc = "adhoc"
 
 
-class AvailabilityStatus(str, Enum):
+class AvailabilityStatus(StrEnum):
     yes = "yes"
     no = "no"
 
 
 class Campaign(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     public_id: str = Field(index=True, unique=True)
     name: str
     timezone: str  # IANA, e.g. "America/New_York"
@@ -52,7 +51,7 @@ class Campaign(SQLModel, table=True):
 
 
 class Player(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     campaign_id: int = Field(foreign_key="campaign.id", index=True)
     display_name: str
     token_hash: str = Field(index=True, unique=True)
@@ -70,23 +69,23 @@ class Player(SQLModel, table=True):
 
 
 class Slot(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     campaign_id: int = Field(foreign_key="campaign.id", index=True)
     kind: SlotKind
-    label: Optional[str] = None
+    label: str | None = None
 
-    weekday: Optional[int] = None  # 0=Mon..6=Sun, recurring only
-    start_local: Optional[str] = None  # "HH:MM", recurring only
-    duration_hours: Optional[float] = None  # recurring + adhoc; fractional OK
+    weekday: int | None = None  # 0=Mon..6=Sun, recurring only
+    start_local: str | None = None  # "HH:MM", recurring only
+    duration_hours: float | None = None  # recurring + adhoc; fractional OK
 
-    starts_at_utc: Optional[datetime] = None  # adhoc only
-    ends_at_utc: Optional[datetime] = None  # adhoc only
+    starts_at_utc: datetime | None = None  # adhoc only
+    ends_at_utc: datetime | None = None  # adhoc only
 
     created_at: datetime = Field(default_factory=_utcnow)
 
 
 class Availability(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     player_id: int = Field(foreign_key="player.id", index=True)
     slot_id: int = Field(foreign_key="slot.id", index=True)
     status: AvailabilityStatus
@@ -97,11 +96,9 @@ class OccurrenceOptOut(SQLModel, table=True):
     """One row = player opts out of this single concrete occurrence (same slot_id + start)."""
 
     __tablename__ = "occurrence_opt_out"
-    __table_args__ = (
-        UniqueConstraint("player_id", "slot_id", "starts_at_utc", name="uq_opt_out_player_slot_start"),
-    )
+    __table_args__ = (UniqueConstraint("player_id", "slot_id", "starts_at_utc", name="uq_opt_out_player_slot_start"),)
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     player_id: int = Field(foreign_key="player.id", index=True)
     slot_id: int = Field(foreign_key="slot.id", index=True)
     starts_at_utc: datetime  # UTC instant when this occurrence begins

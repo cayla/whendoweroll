@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo, available_timezones
 
@@ -18,7 +18,7 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 def _format_local(value: datetime, tz_name: str) -> str:
     if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
+        value = value.replace(tzinfo=UTC)
     local = value.astimezone(ZoneInfo(tz_name))
     return local.strftime("%a %b ") + str(local.day) + local.strftime(" %Y, %-I:%M %p %Z")
 
@@ -30,9 +30,5 @@ templates.env.filters["recurring_slot_viewer"] = recurring_slot_primary_label
 
 # Cached for the timezone <select> on the create form.
 COMMON_TIMEZONES: list[str] = sorted(
-    [
-        tz
-        for tz in available_timezones()
-        if "/" in tz and not tz.startswith(("Etc/", "SystemV/", "US/", "Canada/"))
-    ]
+    [tz for tz in available_timezones() if "/" in tz and not tz.startswith(("Etc/", "SystemV/", "US/", "Canada/"))]
 )

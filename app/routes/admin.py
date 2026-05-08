@@ -13,13 +13,13 @@ from app.db import get_session
 from app.deps import require_admin
 from app.models import Availability, Player, Slot, SlotKind
 from app.security import hash_token, new_token
+from app.services.availability import load_availability_map
 from app.services.campaign_delete import delete_campaign_cascade
 from app.services.campaign_export import build_export_payload
 from app.services.consensus import list_consensus_occurrences
 from app.services.ical import build_ics
 from app.services.opt_outs import delete_for_player, delete_for_slot, load_opt_out_set
 from app.services.slots import expand_all
-from app.services.availability import load_availability_map
 from app.templates_setup import COMMON_TIMEZONES, templates
 
 router = APIRouter(prefix="/c/{public_id}/admin/{secret}")
@@ -38,7 +38,9 @@ def _parse_session_duration_hours(raw: str | None) -> float:
     if h < _MIN_SESSION_HOURS or h > _MAX_SESSION_HOURS:
         raise HTTPException(
             status_code=400,
-            detail=f"Duration must be between {_MIN_SESSION_HOURS * 60:.0f} minutes and {_MAX_SESSION_HOURS:.0f} hours",
+            detail=(
+                f"Duration must be between {_MIN_SESSION_HOURS * 60:.0f} minutes and {_MAX_SESSION_HOURS:.0f} hours"
+            ),
         )
     return h
 
@@ -55,9 +57,7 @@ def admin_home(
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     campaign = require_admin(session, public_id, secret)
-    players = session.exec(
-        select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)
-    ).all()
+    players = session.exec(select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)).all()
     slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
     base_url = str(request.base_url).rstrip("/")
     return templates.TemplateResponse(
@@ -72,8 +72,13 @@ def admin_home(
             "secret": secret,
             "timezones": COMMON_TIMEZONES,
             "weekdays": [
-                (0, "Mon"), (1, "Tue"), (2, "Wed"), (3, "Thu"),
-                (4, "Fri"), (5, "Sat"), (6, "Sun"),
+                (0, "Mon"),
+                (1, "Tue"),
+                (2, "Wed"),
+                (3, "Thu"),
+                (4, "Fri"),
+                (5, "Sat"),
+                (6, "Sun"),
             ],
         },
     )
@@ -117,9 +122,7 @@ def set_campaign_mandatory_attendees(
     means no mandatory attendees.
     """
     campaign = require_admin(session, public_id, secret)
-    players = session.exec(
-        select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)
-    ).all()
+    players = session.exec(select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)).all()
     target_ids: set[int] = set()
     for raw in mandatory_player_ids:
         s = (raw or "").strip()
@@ -151,9 +154,7 @@ def add_player(
     display_name = display_name.strip()
     if not display_name:
         raise HTTPException(status_code=400, detail="Display name required")
-    existing_count = session.exec(
-        select(Player).where(Player.campaign_id == campaign.id)
-    ).all()
+    existing_count = session.exec(select(Player).where(Player.campaign_id == campaign.id)).all()
     token = new_token()
     player = Player(
         campaign_id=campaign.id,  # type: ignore[arg-type]
@@ -218,9 +219,7 @@ def delete_player(
     player = session.get(Player, player_id)
     if player is None or player.campaign_id != campaign.id:
         raise HTTPException(status_code=404, detail="Player not found")
-    avails = session.exec(
-        select(Availability).where(Availability.player_id == player.id)
-    ).all()
+    avails = session.exec(select(Availability).where(Availability.player_id == player.id)).all()
     for a in avails:
         session.delete(a)
     delete_for_player(session, player_id)
@@ -301,9 +300,7 @@ def delete_slot(
     slot = session.get(Slot, slot_id)
     if slot is None or slot.campaign_id != campaign.id:
         raise HTTPException(status_code=404, detail="Slot not found")
-    avails = session.exec(
-        select(Availability).where(Availability.slot_id == slot.id)
-    ).all()
+    avails = session.exec(select(Availability).where(Availability.slot_id == slot.id)).all()
     for a in avails:
         session.delete(a)
     delete_for_slot(session, slot_id)
@@ -341,9 +338,7 @@ def calendar_consensus_ics(
     session: Session = Depends(get_session),
 ) -> Response:
     campaign = require_admin(session, public_id, secret)
-    players = session.exec(
-        select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)
-    ).all()
+    players = session.exec(select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)).all()
     slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
     tz = ZoneInfo(campaign.timezone)
     occurrences = expand_all(slots, tz=tz, horizon_weeks=campaign.horizon_weeks)

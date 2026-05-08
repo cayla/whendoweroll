@@ -1,5 +1,6 @@
 """Capability-URL auth boundaries: bad secrets are 404, players can't
-mutate other players' availability."""
+mutate other players' availability.
+"""
 
 from __future__ import annotations
 
@@ -46,7 +47,8 @@ def test_unknown_campaign_returns_404(client):
 def test_player_token_cannot_write_to_someone_elses_slot(client, engine):
     """A player's URL is scoped to *their own* row server-side; passing a
     different player's id doesn't matter because the route resolves player
-    from the token, not from a body parameter."""
+    from the token, not from a body parameter.
+    """
     public_id, secret, tokens = _create_campaign(client)
     r = client.post(
         f"/c/{public_id}/admin/{secret}/slots",
@@ -61,6 +63,7 @@ def test_player_token_cannot_write_to_someone_elses_slot(client, engine):
     assert r.status_code == 200
 
     from sqlmodel import Session
+
     with Session(engine) as s:
         rows = s.exec(select(Availability)).all()
     assert len(rows) == 1
@@ -68,6 +71,6 @@ def test_player_token_cannot_write_to_someone_elses_slot(client, engine):
 
 
 def test_player_route_404_when_token_belongs_to_different_campaign(client):
-    a_public, _, a_tokens = _create_campaign(client)
+    _, _, a_tokens = _create_campaign(client)
     b_public, _, _ = _create_campaign(client)
     assert client.get(f"/c/{b_public}/p/{a_tokens[0]}").status_code == 404

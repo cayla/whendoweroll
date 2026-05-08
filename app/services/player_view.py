@@ -45,9 +45,7 @@ def roster_availability_context(
 ]:
     """Load roster + full availability map + opt-outs for one campaign."""
     all_players = session.exec(
-        select(Player)
-        .where(Player.campaign_id == campaign_id)
-        .order_by(Player.sort_order)
+        select(Player).where(Player.campaign_id == campaign_id).order_by(Player.sort_order)
     ).all()
     full_map = load_availability_map(session, all_players)
     player_ids = [p.id for p in all_players if p.id is not None]
@@ -55,9 +53,7 @@ def roster_availability_context(
     return all_players, full_map, opt_outs
 
 
-def primary_occurrence_start_for_counts(
-    slot: Slot, campaign: Campaign
-) -> datetime | None:
+def primary_occurrence_start_for_counts(slot: Slot, campaign: Campaign) -> datetime | None:
     """UTC start used for roster counts on the main slot table.
 
     Matches the start the primary "Slot" cell label points at: the next
@@ -93,9 +89,7 @@ def slot_can_make_pairs(
         start = primary_occurrence_start_for_counts(slot, campaign)
         if start is None:
             continue
-        out[sid] = roster_can_make_occurrence(
-            full_map, all_players, opt_outs, slot_id=sid, starts_at_utc=start
-        )
+        out[sid] = roster_can_make_occurrence(full_map, all_players, opt_outs, slot_id=sid, starts_at_utc=start)
     return out
 
 
@@ -120,12 +114,8 @@ def unified_recurring_opt_out_rows(
         return []
 
     iso_keys: set[tuple[int, str]] = set()
-    for row in session.exec(
-        select(OccurrenceOptOut).where(OccurrenceOptOut.player_id == pid)
-    ).all():
-        iso_keys.add(
-            (row.slot_id, normalize_occurrence_start(row.starts_at_utc).isoformat())
-        )
+    for row in session.exec(select(OccurrenceOptOut).where(OccurrenceOptOut.player_id == pid)).all():
+        iso_keys.add((row.slot_id, normalize_occurrence_start(row.starts_at_utc).isoformat()))
 
     horizon = min(campaign.horizon_weeks, _EXCEPTION_HORIZON_WEEKS_CAP)
     rows: list[dict] = []
@@ -137,9 +127,7 @@ def unified_recurring_opt_out_rows(
         sid = slot.id
         if sid is None:
             continue
-        for o in upcoming_occurrences_for_slot(
-            slot, tz=campaign_tz, horizon_weeks=horizon
-        ):
+        for o in upcoming_occurrences_for_slot(slot, tz=campaign_tz, horizon_weeks=horizon):
             can_make, roster_n = roster_can_make_occurrence(
                 full_availability,
                 all_players,
@@ -183,10 +171,7 @@ def player_calendar_events(
         key = (pid, occ.slot_id, normalize_occurrence_start(occ.starts_at_utc))
         if key in opt_outs:
             continue
-        uid = (
-            f"{campaign.public_id}-p{pid}-s{occ.slot_id}"
-            f"-{int(occ.starts_at_utc.timestamp())}@whendoweroll.com"
-        )
+        uid = f"{campaign.public_id}-p{pid}-s{occ.slot_id}-{int(occ.starts_at_utc.timestamp())}@whendoweroll.com"
         events.append(
             (
                 uid,

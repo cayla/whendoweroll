@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from zoneinfo import ZoneInfoNotFoundError, ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -99,8 +99,6 @@ def create_campaign(
             "campaign": campaign,
             "admin_url": f"{base_url}/c/{campaign.public_id}/admin/{admin_secret}",
             "public_url": f"{base_url}/c/{campaign.public_id}",
-            "players_with_urls": [
-                (p, f"{base_url}/c/{campaign.public_id}/p/{tok}") for p, tok in created_players
-            ],
+            "players_with_urls": [(p, f"{base_url}/c/{campaign.public_id}/p/{tok}") for p, tok in created_players],
         },
     )

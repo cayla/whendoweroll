@@ -7,10 +7,10 @@ changes how we *render* instants for players and public viewers.
 from __future__ import annotations
 
 from urllib.parse import unquote
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import Request
 from fastapi.responses import Response
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 COOKIE_NAME = "whendoweroll_viewer_tz"
 COOKIE_MAX_AGE_SECONDS = 400 * 24 * 3600

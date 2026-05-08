@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from app.models import AvailabilityStatus, Player
 from app.services.consensus import find_next_meet
@@ -11,7 +11,7 @@ from app.services.timeutil import normalize_occurrence_start
 
 
 def _occ(slot_id: int, hours_from_now: int) -> Occurrence:
-    start = datetime.now(timezone.utc) + timedelta(hours=hours_from_now)
+    start = datetime.now(UTC) + timedelta(hours=hours_from_now)
     return Occurrence(
         slot_id=slot_id,
         label=f"slot {slot_id}",
@@ -71,7 +71,8 @@ def test_all_but_one_picks_earliest_window_with_one_holdout():
 
 def test_recurring_slot_id_shared_across_occurrences():
     """Each Friday window shares the same slot_id, so a single 'yes' counts
-    for every future Friday. This is the 'indefinite choices' policy."""
+    for every future Friday. This is the 'indefinite choices' policy.
+    """
     occs = [_occ(7, 24), _occ(7, 24 * 8), _occ(7, 24 * 15)]  # three Fridays
     players = [_player(1, "A")]
     availability = {(1, 7): AvailabilityStatus.yes}
@@ -81,8 +82,8 @@ def test_recurring_slot_id_shared_across_occurrences():
 
 
 def test_opt_out_skips_player_for_that_occurrence_only():
-    t0 = datetime.now(timezone.utc) + timedelta(hours=24)
-    t1 = datetime.now(timezone.utc) + timedelta(hours=48)
+    t0 = datetime.now(UTC) + timedelta(hours=24)
+    t1 = datetime.now(UTC) + timedelta(hours=48)
     occs = [
         Occurrence(1, "a", t0, t0 + timedelta(hours=3)),
         Occurrence(1, "a", t1, t1 + timedelta(hours=3)),
@@ -95,9 +96,7 @@ def test_opt_out_skips_player_for_that_occurrence_only():
     opt = {(1, 1, normalize_occurrence_start(t0))}
     result = find_next_meet(occs, players, availability, max_missing=0, opt_outs=opt)
     assert result is not None
-    assert normalize_occurrence_start(result.occurrence.starts_at_utc) == normalize_occurrence_start(
-        t1
-    )
+    assert normalize_occurrence_start(result.occurrence.starts_at_utc) == normalize_occurrence_start(t1)
 
 
 def test_returns_none_when_nothing_qualifies():

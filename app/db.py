@@ -7,9 +7,10 @@ if this ever needs multiple workers, swap the URL for Postgres.
 
 from __future__ import annotations
 
+import contextlib
 import os
 from collections.abc import Iterator
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import text
 from sqlmodel import Session, SQLModel, create_engine
@@ -34,14 +35,19 @@ _MIN_FALLBACK_H = 1.0 / 60.0
 
 
 def _hours_between_local_hhmm(start_hhmm: str, end_hhmm: str) -> float:
-    s = datetime.strptime(start_hhmm.strip()[:5], "%H:%M")
-    e = datetime.strptime(end_hhmm.strip()[:5], "%H:%M")
-    ds = timedelta(hours=s.hour, minutes=s.minute)
-    de = timedelta(hours=e.hour, minutes=e.minute)
+    sh, sm = _split_hhmm(start_hhmm)
+    eh, em = _split_hhmm(end_hhmm)
+    ds = timedelta(hours=sh, minutes=sm)
+    de = timedelta(hours=eh, minutes=em)
     diff_h = (de - ds).total_seconds() / 3600.0
     if diff_h <= 0:
         diff_h += 24.0
     return diff_h
+
+
+def _split_hhmm(hhmm: str) -> tuple[int, int]:
+    h_s, _, m_s = hhmm.strip()[:5].partition(":")
+    return int(h_s), int(m_s)
 
 
 def _utc_dt(value: object) -> datetime | None:
@@ -49,14 +55,14 @@ def _utc_dt(value: object) -> datetime | None:
         return None
     if isinstance(value, datetime):
         if value.tzinfo is None:
-            return value.replace(tzinfo=timezone.utc)
-        return value.astimezone(timezone.utc)
+            return value.replace(tzinfo=UTC)
+        return value.astimezone(UTC)
     if isinstance(value, str):
         v = value.replace("Z", "+00:00")
         dt = datetime.fromisoformat(v)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return dt.astimezone(timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
+        return dt.astimezone(UTC)
     return None
 
 
@@ -87,7 +93,7 @@ def migrate_sqlite_slot_schema(eng) -> None:
                 dh = _hours_between_local_hhmm(row["start_local"], row["end_local"])
             elif kind == "adhoc":
                 su, eu = _utc_dt(row.get("starts_at_utc")), _utc_dt(row.get("ends_at_utc"))
-                if su and eu:
+                if su and eu:  # noqa: SIM108 — explicit if/else reads clearer than the long ternary here
                     dh = max((eu - su).total_seconds() / 3600.0, _MIN_FALLBACK_H)
                 else:
                     dh = _DEFAULT_DURATION_H
@@ -114,18 +120,14 @@ def migrate_sqlite_player_is_mandatory(eng) -> None:
             return
         names = {row[1] for row in info}
         if "is_mandatory" not in names:
-            conn.execute(
-                text("ALTER TABLE player ADD COLUMN is_mandatory INTEGER NOT NULL DEFAULT 0")
-            )
+            conn.execute(text("ALTER TABLE player ADD COLUMN is_mandatory INTEGER NOT NULL DEFAULT 0"))
             if "is_dm" in names:
                 conn.execute(text("UPDATE player SET is_mandatory = is_dm"))
         if "is_dm" in names:
-            try:
+            # SQLite < 3.35 can't drop columns; leave the legacy column in
+            # place. is_mandatory is the source of truth from now on.
+            with contextlib.suppress(Exception):
                 conn.execute(text("ALTER TABLE player DROP COLUMN is_dm"))
-            except Exception:
-                # SQLite < 3.35 can't drop columns; leave the legacy column in
-                # place. is_mandatory is the source of truth from now on.
-                pass
 
 
 def init_db() -> None:

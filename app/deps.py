@@ -32,9 +32,7 @@ def require_admin(session: Session, public_id: str, secret: str) -> Campaign:
 def require_player(session: Session, public_id: str, token: str) -> tuple[Campaign, Player]:
     campaign = get_campaign_or_404(session, public_id)
     player = session.exec(
-        select(Player).where(
-            Player.campaign_id == campaign.id, Player.token_hash == hash_token(token)
-        )
+        select(Player).where(Player.campaign_id == campaign.id, Player.token_hash == hash_token(token))
     ).first()
     if player is None:
         raise HTTPException(status_code=404, detail="Campaign not found")
