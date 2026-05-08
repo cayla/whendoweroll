@@ -71,6 +71,6 @@ def test_player_token_cannot_write_to_someone_elses_slot(client, engine):
 
 
 def test_player_route_404_when_token_belongs_to_different_campaign(client):
-    a_public, _, a_tokens = _create_campaign(client)
+    _, _, a_tokens = _create_campaign(client)
     b_public, _, _ = _create_campaign(client)
     assert client.get(f"/c/{b_public}/p/{a_tokens[0]}").status_code == 404

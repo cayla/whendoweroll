@@ -39,8 +39,7 @@ def _parse_session_duration_hours(raw: str | None) -> float:
         raise HTTPException(
             status_code=400,
             detail=(
-                f"Duration must be between {_MIN_SESSION_HOURS * 60:.0f} minutes "
-                f"and {_MAX_SESSION_HOURS:.0f} hours"
+                f"Duration must be between {_MIN_SESSION_HOURS * 60:.0f} minutes and {_MAX_SESSION_HOURS:.0f} hours"
             ),
         )
     return h

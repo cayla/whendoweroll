@@ -52,7 +52,8 @@ def test_dst_spring_forward_keeps_local_wall_time():
 
     pre_dst = [o for o in occs if o.starts_at_utc.astimezone(tz).day == 1]
     post_dst = [o for o in occs if o.starts_at_utc.astimezone(tz).day == 15]
-    assert pre_dst and post_dst
+    assert pre_dst
+    assert post_dst
 
     pre = pre_dst[0].starts_at_utc.astimezone(tz)
     post = post_dst[0].starts_at_utc.astimezone(tz)

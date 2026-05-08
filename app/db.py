@@ -35,14 +35,19 @@ _MIN_FALLBACK_H = 1.0 / 60.0
 
 
 def _hours_between_local_hhmm(start_hhmm: str, end_hhmm: str) -> float:
-    s = datetime.strptime(start_hhmm.strip()[:5], "%H:%M")
-    e = datetime.strptime(end_hhmm.strip()[:5], "%H:%M")
-    ds = timedelta(hours=s.hour, minutes=s.minute)
-    de = timedelta(hours=e.hour, minutes=e.minute)
+    sh, sm = _split_hhmm(start_hhmm)
+    eh, em = _split_hhmm(end_hhmm)
+    ds = timedelta(hours=sh, minutes=sm)
+    de = timedelta(hours=eh, minutes=em)
     diff_h = (de - ds).total_seconds() / 3600.0
     if diff_h <= 0:
         diff_h += 24.0
     return diff_h
+
+
+def _split_hhmm(hhmm: str) -> tuple[int, int]:
+    h_s, _, m_s = hhmm.strip()[:5].partition(":")
+    return int(h_s), int(m_s)
 
 
 def _utc_dt(value: object) -> datetime | None:

@@ -39,11 +39,9 @@ class Occurrence:
         return self.starts_at_utc > datetime.now(UTC)
 
 
-_HHMM_FMT = "%H:%M"
-
-
 def _parse_hhmm(value: str) -> time_t:
-    return datetime.strptime(value, _HHMM_FMT).time()
+    h_s, _, m_s = value.partition(":")
+    return time_t(int(h_s), int(m_s))
 
 
 def _localize(local_dt: datetime, tz: ZoneInfo) -> datetime:
@@ -135,11 +133,7 @@ def upcoming_occurrences_for_slot(
     if slot.kind is SlotKind.recurring:
         return list(expand_recurring(slot, tz=tz, start=now, end=end))
     if slot.kind is SlotKind.adhoc:
-        out: list[Occurrence] = []
-        for occ in expand_adhoc(slot):
-            if occ.ends_at_utc > now and occ.starts_at_utc < end:
-                out.append(occ)
-        return out
+        return [occ for occ in expand_adhoc(slot) if occ.ends_at_utc > now and occ.starts_at_utc < end]
     return []
 
 
@@ -157,8 +151,6 @@ def expand_all(
         if slot.kind is SlotKind.recurring:
             out.extend(expand_recurring(slot, tz=tz, start=now, end=end))
         else:
-            for occ in expand_adhoc(slot):
-                if occ.ends_at_utc > now and occ.starts_at_utc < end:
-                    out.append(occ)
+            out.extend(occ for occ in expand_adhoc(slot) if occ.ends_at_utc > now and occ.starts_at_utc < end)
     out.sort(key=lambda o: o.starts_at_utc)
     return out

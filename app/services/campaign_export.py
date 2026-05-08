@@ -24,19 +24,21 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
 
     availability_rows: list[dict] = []
     if pids:
-        for row in session.exec(select(Availability).where(Availability.player_id.in_(pids))).all():  # type: ignore[attr-defined]
-            availability_rows.append({"player_id": row.player_id, "slot_id": row.slot_id, "status": row.status.value})
+        availability_rows = [
+            {"player_id": row.player_id, "slot_id": row.slot_id, "status": row.status.value}
+            for row in session.exec(select(Availability).where(Availability.player_id.in_(pids))).all()  # type: ignore[attr-defined]
+        ]
 
     opt_out_rows: list[dict] = []
     if pids:
-        for row in session.exec(select(OccurrenceOptOut).where(OccurrenceOptOut.player_id.in_(pids))).all():  # type: ignore[attr-defined]
-            opt_out_rows.append(
-                {
-                    "player_id": row.player_id,
-                    "slot_id": row.slot_id,
-                    "starts_at_utc": _iso(row.starts_at_utc),
-                }
-            )
+        opt_out_rows = [
+            {
+                "player_id": row.player_id,
+                "slot_id": row.slot_id,
+                "starts_at_utc": _iso(row.starts_at_utc),
+            }
+            for row in session.exec(select(OccurrenceOptOut).where(OccurrenceOptOut.player_id.in_(pids))).all()  # type: ignore[attr-defined]
+        ]
 
     return {
         "export_version": 2,

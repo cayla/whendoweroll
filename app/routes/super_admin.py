@@ -77,7 +77,7 @@ def super_admin_login(
 
 
 @router.post("/logout", response_class=RedirectResponse)
-def super_admin_logout(request: Request) -> RedirectResponse:
+def super_admin_logout() -> RedirectResponse:
     out = RedirectResponse(url="/internal/super-admin", status_code=303)
     out.delete_cookie(SESSION_COOKIE_NAME, path="/")
     return out
