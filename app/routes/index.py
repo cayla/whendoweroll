@@ -15,7 +15,7 @@ from app.models import Campaign, Player
 from app.security import hash_token, new_token
 from app.services.campaign_import import CampaignImportError, import_campaign
 from app.settings import new_campaigns_disabled
-from app.templates_setup import COMMON_TIMEZONES, templates
+from app.templates_setup import templates, timezone_select_options
 
 router = APIRouter()
 
@@ -28,7 +28,7 @@ def landing(request: Request) -> HTMLResponse:
         request,
         "index.html",
         {
-            "timezones": COMMON_TIMEZONES,
+            "timezone_options": timezone_select_options(),
             "default_tz": "America/New_York",
             "new_campaigns_disabled": new_campaigns_disabled(),
         },
@@ -49,7 +49,7 @@ def create_campaign(
             request,
             "index.html",
             {
-                "timezones": COMMON_TIMEZONES,
+                "timezone_options": timezone_select_options(),
                 "default_tz": "America/New_York",
                 "new_campaigns_disabled": True,
             },
@@ -75,8 +75,7 @@ def create_campaign(
         horizon_weeks=horizon_weeks,
     )
     session.add(campaign)
-    session.commit()
-    session.refresh(campaign)
+    session.flush()
 
     raw_lines = [line.strip() for line in player_names.splitlines()]
     raw_names = [line for line in raw_lines if line]
@@ -91,9 +90,11 @@ def create_campaign(
             sort_order=sort_order,
         )
         session.add(player)
-        session.commit()
-        session.refresh(player)
         created_players.append((player, token))
+
+    session.flush()
+    session.commit()
+    session.refresh(campaign)
 
     base_url = str(request.base_url).rstrip("/")
     return templates.TemplateResponse(
@@ -127,7 +128,7 @@ async def import_campaign_route(
             request,
             "index.html",
             {
-                "timezones": COMMON_TIMEZONES,
+                "timezone_options": timezone_select_options(),
                 "default_tz": "America/New_York",
                 "new_campaigns_disabled": True,
             },

@@ -250,21 +250,23 @@ def import_campaign(session: Session, payload: Any) -> tuple[Campaign, str, list
             slot_id_map[spec["old_id"]] = slot.id  # type: ignore[assignment]
 
     for row in availability:
-        try:
-            new_player_id = player_id_map[row["player_id"]]
-            new_slot_id = slot_id_map[row["slot_id"]]
-        except KeyError as exc:
-            kind = "player" if exc.args[0] == row["player_id"] else "slot"
-            raise CampaignImportError(f"availability references unknown {kind} id") from exc
+        old_pid, old_sid = row["player_id"], row["slot_id"]
+        if old_pid not in player_id_map:
+            raise CampaignImportError("availability references unknown player id")
+        if old_sid not in slot_id_map:
+            raise CampaignImportError("availability references unknown slot id")
+        new_player_id = player_id_map[old_pid]
+        new_slot_id = slot_id_map[old_sid]
         session.add(Availability(player_id=new_player_id, slot_id=new_slot_id, status=row["status"]))
 
     for row in opt_outs:
-        try:
-            new_player_id = player_id_map[row["player_id"]]
-            new_slot_id = slot_id_map[row["slot_id"]]
-        except KeyError as exc:
-            kind = "player" if exc.args[0] == row["player_id"] else "slot"
-            raise CampaignImportError(f"occurrence_opt_outs references unknown {kind} id") from exc
+        old_pid, old_sid = row["player_id"], row["slot_id"]
+        if old_pid not in player_id_map:
+            raise CampaignImportError("occurrence_opt_outs references unknown player id")
+        if old_sid not in slot_id_map:
+            raise CampaignImportError("occurrence_opt_outs references unknown slot id")
+        new_player_id = player_id_map[old_pid]
+        new_slot_id = slot_id_map[old_sid]
         session.add(
             OccurrenceOptOut(
                 player_id=new_player_id,

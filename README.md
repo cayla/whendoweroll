@@ -81,6 +81,12 @@ uv run uvicorn app.main:app --reload
 
 Then open <http://127.0.0.1:8000> and create a campaign.
 
+To skip the by-hand setup on a fresh dev DB,
+[`test-campaign-export.json`](test-campaign-export.json) is a checked-in
+backup with a few players and recurring slots. Upload it via the **Restore
+a backup** form on the home page and you'll land on a created-campaign
+page with a fresh admin link and per-player links.
+
 ## Docker (ECS / Fargate-friendly)
 
 The image runs **uvicorn** as a non-root user and stores SQLite at

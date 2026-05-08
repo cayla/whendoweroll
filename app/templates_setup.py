@@ -62,3 +62,12 @@ templates.env.filters["pretty_tz"] = _pretty_tz
 COMMON_TIMEZONES: list[str] = sorted(
     [tz for tz in available_timezones() if "/" in tz and not tz.startswith(("Etc/", "SystemV/", "US/", "Canada/"))]
 )
+
+
+def timezone_select_options() -> list[tuple[str, str]]:
+    """(IANA value, display label) pairs for HTML ``<select>`` options.
+
+    Labels use ``_pretty_tz`` so underscores become spaces while ``value``
+    stays the real zone name for form posts and ``ZoneInfo``.
+    """
+    return [(tz, _pretty_tz(tz)) for tz in COMMON_TIMEZONES]
