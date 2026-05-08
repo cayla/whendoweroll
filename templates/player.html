@@ -13,8 +13,10 @@
     <a href="/c/{{ campaign.public_id }}" class="text-red-800 hover:text-red-900 underline decoration-red-200 underline-offset-4 hover:decoration-red-500">{{ campaign.name }}</a>
   </h1>
   <p class="text-sm text-stone-600">
-    Hi <span class="font-medium">{{ player.display_name }}</span>. Mark which slots you're free for.
-    Changes save instantly.
+    Hi <span class="font-medium">{{ player.display_name }}</span>,
+  </p>
+  <p class="mt-2 text-sm text-stone-600">
+    Use this page to indicate which gaming sessions you can attend. When you say yes to recurring options, a new table will appear giving you the opportunity to opt out of specific occurrences. Give it a try now. Changes display and save instantly!
   </p>
   <p class="mt-1 text-xs text-stone-500">
     Public campaign view: <a class="underline hover:text-red-800" href="/c/{{ campaign.public_id }}">/c/{{ campaign.public_id }}</a>
@@ -24,15 +26,12 @@
 </header>
 
 {% if not slots %}
-<p class="text-stone-500 italic">No time slots have been added yet.</p>
+<p class="text-stone-500 italic">No times have been added yet.</p>
 {% else %}
 <div class="bg-white border border-stone-300 rounded-lg shadow-sm overflow-hidden">
-  <p class="px-4 py-2 text-xs text-stone-600 border-b border-stone-100 bg-stone-50/90">
-    Select the recurring times you can generally attend. You will be able to ad-hoc opt-out of specific dates.
-  </p>
   <table class="w-full text-sm">
     <thead class="text-left bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
-      <tr><th class="px-4 py-2">Slot</th><th class="py-2">Status</th></tr>
+      <tr><th class="px-4 py-2">Time</th><th class="py-2">Status</th></tr>
     </thead>
     <tbody>
       {% for slot in slots %}

@@ -73,7 +73,7 @@
             <td class="px-4 py-2 text-stone-600">{{ c.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
             <td class="px-4 py-3 text-right align-middle">
               <form method="post" action="/internal/super-admin/campaigns/{{ c.public_id }}/delete" class="inline"
-                    onsubmit="return confirm('Delete this campaign and all players, slots, and availability? This cannot be undone.');">
+                    onsubmit="return confirm('Delete this campaign and all players, times, and availability? This cannot be undone.');">
                 <button type="submit"
                         class="rounded-md bg-red-700 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-red-800">
                   Delete
