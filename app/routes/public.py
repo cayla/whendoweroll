@@ -15,7 +15,7 @@ from app.models import Player, Slot
 from app.services.availability import load_availability_map
 from app.services.consensus import (
     count_yes_for_occurrence,
-    find_next_meet,
+    find_next_two_meets,
     list_consensus_occurrences,
     player_lookup,
 )
@@ -46,8 +46,7 @@ def public_home(
     player_ids = [p.id for p in players if p.id is not None]
     opt_outs = load_opt_out_set(session, player_ids)
 
-    everyone = find_next_meet(occurrences, players, availability, max_missing=0, opt_outs=opt_outs)
-    almost = find_next_meet(occurrences, players, availability, max_missing=1, opt_outs=opt_outs)
+    upcoming_meets = find_next_two_meets(occurrences, players, availability, opt_outs=opt_outs)
 
     occurrence_rows = [
         {
@@ -69,8 +68,7 @@ def public_home(
             "players": players,
             "slots": slots,
             "display_tz": display_tz,
-            "everyone": everyone,
-            "almost": almost,
+            "upcoming_meets": upcoming_meets,
             "occurrence_rows": occurrence_rows,
             "player_lookup": player_lookup_map,
             "total_players": len(players),

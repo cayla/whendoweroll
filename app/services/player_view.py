@@ -148,5 +148,3 @@ def unified_recurring_opt_out_rows(
             )
     rows.sort(key=lambda r: r["occ"].starts_at_utc)
     return rows
-
-
