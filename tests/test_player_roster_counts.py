@@ -27,7 +27,7 @@ def test_player_slot_row_shows_can_make_pair(client):
         data={
             "name": "Counts",
             "timezone": "America/New_York",
-            "player_names": "Tav\nKarlach",
+            "player_names": "Alice\nBob",
             "horizon_weeks": "4",
         },
     )
@@ -68,7 +68,7 @@ def _three_player_campaign_with_slot(client) -> tuple[str, str, list[str]]:
         data={
             "name": "Trio",
             "timezone": "America/New_York",
-            "player_names": "A\nB\nC",
+            "player_names": "Alice\nBob\nCayla",
             "horizon_weeks": "4",
         },
     )

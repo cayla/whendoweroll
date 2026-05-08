@@ -18,7 +18,7 @@
   <form method="post" action="/" class="mt-8 space-y-5 bg-white border border-stone-300 rounded-lg p-6 shadow-sm">
     <div>
       <label class="block text-sm font-medium text-stone-700">Campaign name</label>
-      <input name="name" required maxlength="80" placeholder="The Lost Mines"
+      <input name="name" required maxlength="80" placeholder="Trouble with the Gazebo"
              class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
     </div>
 
@@ -26,8 +26,8 @@
       <label class="block text-sm font-medium text-stone-700">Timezone</label>
       <select name="timezone" required
               class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
-        {% for tz in timezones %}
-          <option value="{{ tz }}" {% if tz == default_tz %}selected{% endif %}>{{ tz }}</option>
+        {% for value, label in timezone_options %}
+          <option value="{{ value }}" {% if value == default_tz %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
       <p class="mt-1 text-xs text-stone-500">Used to interpret weekly recurring times.</p>
@@ -35,7 +35,7 @@
 
     <div>
       <label class="block text-sm font-medium text-stone-700">Players (one name per line)</label>
-      <textarea name="player_names" rows="5" placeholder="Tav&#10;Karlach&#10;Astarion"
+      <textarea name="player_names" rows="5" placeholder="Alice&#10;Bob&#10;Cayla"
                 class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700 font-mono text-sm"></textarea>
       <p class="mt-1 text-xs text-stone-500">Optional &mdash; you can add more later.</p>
     </div>

@@ -8,7 +8,7 @@ import logging
 import os
 import secrets
 
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -80,5 +80,6 @@ def verify_session_token(token: str | None) -> bool:
     try:
         _SERIALIZER.loads(token, max_age=SESSION_MAX_AGE_SECONDS)
         return True
-    except BadSignature, SignatureExpired:
+    except BadSignature:
+        # SignatureExpired is a BadSignature subclass, so it's already handled.
         return False

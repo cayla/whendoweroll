@@ -17,7 +17,7 @@ def _create_campaign(client) -> tuple[str, str, list[str]]:
         data={
             "name": "Test",
             "timezone": "America/New_York",
-            "player_names": "Tav\nKarlach\nAstarion",
+            "player_names": "Alice\nBob\nCayla",
             "horizon_weeks": "4",
         },
     )

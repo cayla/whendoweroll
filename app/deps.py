@@ -12,7 +12,7 @@ from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.models import Campaign, Player
-from app.security import hash_token
+from app.security import hash_token, tokens_match
 
 
 def get_campaign_or_404(session: Session, public_id: str) -> Campaign:
@@ -24,7 +24,7 @@ def get_campaign_or_404(session: Session, public_id: str) -> Campaign:
 
 def require_admin(session: Session, public_id: str, secret: str) -> Campaign:
     campaign = get_campaign_or_404(session, public_id)
-    if campaign.admin_secret_hash != hash_token(secret):
+    if not tokens_match(secret, campaign.admin_secret_hash):
         raise HTTPException(status_code=404, detail="Campaign not found")
     return campaign
 
