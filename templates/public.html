@@ -16,54 +16,55 @@
     {{ campaign.horizon_weeks }}-week horizon
     &middot; times shown in your chosen zone (top right).
   </p>
+  <p class="mt-1 text-xs text-stone-500">
+    <a class="underline hover:text-red-800" href="/c/{{ campaign.public_id }}/calendar-consensus.ics">Subscribe to consensus calendar (.ics)</a>
+  </p>
 </header>
 
 <section class="grid gap-4 md:grid-cols-2 mb-8">
-  <div class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm">
-    <h2 class="heading text-lg text-emerald-800">Next time everyone can meet</h2>
-    {% if everyone %}
-      <p class="mt-2 text-2xl font-semibold">
-        {{ everyone.occurrence.starts_at_utc|local_time(display_tz) }}
-      </p>
-      <p class="text-sm text-stone-500">
-        until {{ everyone.occurrence.ends_at_utc|local_time(display_tz) }}
-      </p>
-    {% else %}
-      <p class="mt-2 text-stone-500 italic">
-        There are no options in the next {{ campaign.horizon_weeks }} weeks where everyone is available.
-      </p>
-    {% endif %}
-  </div>
-
-  <div class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm">
-    <h2 class="heading text-lg text-amber-700">Next time all but one can meet</h2>
-    {% if almost %}
-      <p class="mt-2 text-2xl font-semibold">
-        {{ almost.occurrence.starts_at_utc|local_time(display_tz) }}
-      </p>
-      <p class="text-sm text-stone-500">
-        until {{ almost.occurrence.ends_at_utc|local_time(display_tz) }}
-      </p>
-      {% if almost.missing_player_ids %}
-        <p class="mt-2 text-xs text-stone-500">
-          Missing:
-          {% for pid in almost.missing_player_ids %}
-            <span class="inline-block rounded bg-stone-100 px-1.5 py-0.5 ml-1 first:ml-0">
-              {{ player_lookup[pid].display_name }}
-            </span>
-          {% endfor %}
+  {% if upcoming_meets %}
+    {% for meet in upcoming_meets %}
+      {% set is_full = meet.missing_count == 0 %}
+      <div class="bg-white border {% if is_full %}border-emerald-200{% else %}border-amber-200{% endif %} rounded-lg p-5 shadow-sm">
+        <h2 class="heading text-lg {% if is_full %}text-emerald-800{% else %}text-amber-700{% endif %}">
+          {% if loop.first %}
+            {% if is_full %}Next time everyone can meet{% else %}Next time we could meet{% endif %}
+          {% else %}
+            {% if is_full %}Then everyone can meet{% else %}Then we could meet{% endif %}
+          {% endif %}
+        </h2>
+        <p class="mt-2 text-2xl font-semibold">
+          {{ meet.occurrence.starts_at_utc|local_time(display_tz) }}
         </p>
-      {% endif %}
-    {% else %}
+        <p class="text-sm text-stone-500">
+          until {{ meet.occurrence.ends_at_utc|local_time(display_tz) }}
+        </p>
+        {% if is_full %}
+          <p class="mt-2 text-xs text-emerald-700">Everyone is available.</p>
+        {% else %}
+          <p class="mt-2 text-xs text-stone-500">
+            Missing:
+            {% for pid in meet.missing_player_ids %}
+              <span class="inline-block rounded bg-amber-50 text-amber-900 px-1.5 py-0.5 ml-1 first:ml-0">
+                {{ player_lookup[pid].display_name }}
+              </span>
+            {% endfor %}
+          </p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm md:col-span-2">
+      <h2 class="heading text-lg text-stone-700">No upcoming consensus</h2>
       <p class="mt-2 text-stone-500 italic">
         {% if has_mandatory %}
           There are no options in the next {{ campaign.horizon_weeks }} weeks where every mandatory attendee plus all but one of the rest are available.
         {% else %}
-          There are no options in the next {{ campaign.horizon_weeks }} weeks where all but one player is available.
+          There are no options in the next {{ campaign.horizon_weeks }} weeks where everyone (or all but one) can meet.
         {% endif %}
       </p>
-    {% endif %}
-  </div>
+    </div>
+  {% endif %}
 </section>
 
 <section class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm">

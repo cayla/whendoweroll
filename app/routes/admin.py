@@ -6,20 +6,16 @@ from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlmodel import Session, select
 
 from app.db import get_session
 from app.deps import require_admin
 from app.models import Availability, Player, Slot, SlotKind
 from app.security import hash_token, new_token
-from app.services.availability import load_availability_map
 from app.services.campaign_delete import delete_campaign_cascade
 from app.services.campaign_export import build_export_payload
-from app.services.consensus import list_consensus_occurrences
-from app.services.ical import build_ics
-from app.services.opt_outs import delete_for_player, delete_for_slot, load_opt_out_set
-from app.services.slots import expand_all
+from app.services.opt_outs import delete_for_player, delete_for_slot
 from app.templates_setup import COMMON_TIMEZONES, templates
 
 router = APIRouter(prefix="/c/{public_id}/admin/{secret}")
@@ -329,40 +325,3 @@ def export_json(
 ) -> JSONResponse:
     campaign = require_admin(session, public_id, secret)
     return JSONResponse(build_export_payload(session, campaign))
-
-
-@router.get("/calendar-consensus.ics")
-def calendar_consensus_ics(
-    public_id: str,
-    secret: str,
-    session: Session = Depends(get_session),
-) -> Response:
-    campaign = require_admin(session, public_id, secret)
-    players = session.exec(select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)).all()
-    slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
-    tz = ZoneInfo(campaign.timezone)
-    occurrences = expand_all(slots, tz=tz, horizon_weeks=campaign.horizon_weeks)
-    availability = load_availability_map(session, players)
-    player_ids = [p.id for p in players if p.id is not None]
-    opt_outs = load_opt_out_set(session, player_ids)
-    results = list_consensus_occurrences(
-        occurrences, players, availability, max_missing=0, opt_outs=opt_outs, limit=50
-    )
-    events: list[tuple[str, datetime, datetime, str]] = []
-    for res in results:
-        occ = res.occurrence
-        uid = f"{campaign.public_id}-s{occ.slot_id}-{int(occ.starts_at_utc.timestamp())}@whendoweroll.com"
-        events.append(
-            (
-                uid,
-                occ.starts_at_utc,
-                occ.ends_at_utc,
-                f"{campaign.name} — everyone available ({occ.label})",
-            )
-        )
-    body = build_ics(events)
-    return Response(
-        content=body,
-        media_type="text/calendar; charset=utf-8",
-        headers={"Content-Disposition": 'inline; filename="calendar-consensus.ics"'},
-    )

@@ -1,3 +1,4 @@
+---
 services:
   # Run: docker compose --profile test run --build --rm test
   # (--build avoids a stale tag if this image name was previously used for another stage.)

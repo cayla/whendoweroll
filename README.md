@@ -21,9 +21,12 @@ public read-only link, and one private link per player.
   away until you opt in again.
 - **JSON export** (admin URL): full snapshot of the campaign — roster, slots,
   availability, and opt-outs. Secrets are never included.
-- **iCalendar**: each player has `…/p/{token}/calendar.ics` with their own
-  free windows; the admin page links to `calendar-consensus.ics` (everyone
-  available, respecting opt-outs).
+- **iCalendar**: every campaign has a single shared feed at
+  `…/c/{public_id}/calendar-consensus.ics`. It lists upcoming windows where
+  everyone is available, plus near-consensus ones (one player missing)
+  whose summaries are prefixed with `[missing: <name>]` so they're easy to
+  spot in a calendar. Opt-outs are honoured. The link is surfaced on the
+  admin, public, and per-player pages — there is no per-player feed.
 - The campaign home page shows two answers prominently:
   - **Next session: everyone** — earliest window where every player said yes.
   - **Next session: all but one** — earliest window with at most one holdout

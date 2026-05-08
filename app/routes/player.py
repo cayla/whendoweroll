@@ -1,4 +1,4 @@
-"""Per-player availability editor + personal iCal feed."""
+"""Per-player availability editor."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session, select
 
 from app.db import get_session
@@ -17,7 +17,6 @@ from app.services.availability import (
     roster_can_make_occurrence,
     set_availability,
 )
-from app.services.ical import build_ics
 from app.services.occurrence_match import resolve_occurrence
 from app.services.opt_outs import (
     add_opt_out,
@@ -26,7 +25,6 @@ from app.services.opt_outs import (
 )
 from app.services.player_view import (
     has_recurring_slot,
-    player_calendar_events,
     primary_occurrence_start_for_counts,
     roster_availability_context,
     slot_can_make_pairs,
@@ -75,7 +73,6 @@ def player_home(
         full_availability=full_map,
         opt_outs=opt_outs,
     )
-    base_url = str(request.base_url).rstrip("/")
     return templates.TemplateResponse(
         request,
         "player.html",
@@ -87,7 +84,6 @@ def player_home(
             "token": token,
             "unified_rows": unified_rows,
             "has_recurring": has_recurring_slot(slots),
-            "calendar_url": f"{base_url}/c/{campaign.public_id}/p/{token}/calendar.ics",
             "display_tz": display_tz,
             "timezones": COMMON_TIMEZONES,
             "slot_can_make_pairs": can_make_pairs,
@@ -109,23 +105,6 @@ def set_player_display_timezone(
     except ValueError, ZoneInfoNotFoundError:
         raise HTTPException(status_code=400, detail="Unknown timezone") from None
     return resp
-
-
-@router.get("/calendar.ics")
-def player_calendar_ics(
-    public_id: str,
-    token: str,
-    session: Session = Depends(get_session),
-) -> Response:
-    campaign, player = require_player(session, public_id, token)
-    slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
-    events = player_calendar_events(campaign, player, slots, session)
-    body = build_ics(events)
-    return Response(
-        content=body,
-        media_type="text/calendar; charset=utf-8",
-        headers={"Content-Disposition": 'inline; filename="my-availability.ics"'},
-    )
 
 
 @router.post("/availability/{slot_id}", response_class=HTMLResponse)

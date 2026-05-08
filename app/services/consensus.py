@@ -120,6 +120,42 @@ def list_consensus_occurrences(
     return out
 
 
+def find_next_two_meets(
+    occurrences: Sequence[Occurrence],
+    players: Sequence[Player],
+    availability: Mapping[tuple[int, int], AvailabilityStatus],
+    *,
+    opt_outs: set[tuple[int, int, datetime]] | None = None,
+) -> list[ConsensusResult]:
+    """Up to two upcoming windows for the public landing cards.
+
+    Walks the chronological list of qualifying occurrences (full consensus or
+    one missing, mandatory rules respected) and returns the next one. The
+    second slot in the returned list is the next qualifying window after that
+    *unless* both the first and second would be near-consensus (one missing) —
+    in that case we skip past the near-consensus runner-up to the next
+    full-consensus window. The intent: at least one of the two cards shown to
+    the group is always a "everyone is in" window when one exists in the
+    horizon, so the page never shows two near-consensus rows back-to-back.
+    """
+    candidates = list_consensus_occurrences(
+        occurrences, players, availability, max_missing=1, opt_outs=opt_outs, limit=50
+    )
+    if not candidates:
+        return []
+    first = candidates[0]
+    out: list[ConsensusResult] = [first]
+    if first.missing_count == 0:
+        if len(candidates) > 1:
+            out.append(candidates[1])
+    else:
+        for c in candidates[1:]:
+            if c.missing_count == 0:
+                out.append(c)
+                break
+    return out
+
+
 def player_lookup(players: Sequence[Player]) -> dict[int, Player]:
     return {p.id: p for p in players if p.id is not None}
 
