@@ -11,6 +11,9 @@ services:
     working_dir: /app
     volumes:
       - .:/app
+      # Anonymous volume shields the image's Linux .venv from the host bind
+      # mount above (host .venv is macOS-built and unusable in the container).
+      - /app/.venv
     command: ["pytest"]
 
   web:
