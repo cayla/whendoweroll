@@ -67,4 +67,4 @@ Pushes to **`main`** run `.github/workflows/ci.yml`: build the **test** Docker s
 ## Notes
 
 - **Single Machine + volume**: SQLite is fine for a small single-tenant workload; scale-out would need a different datastore.
-- **Cold starts**: With `min_machines_running = 0`, the first request after idle may wake a Machine; set `min_machines_running = 1` in `fly.toml` if you want it always warm (extra cost).
+- **Cold starts**: This repo's `fly.toml` ships with `min_machines_running = 1` so the Machine stays warm. Drop it to `0` if you'd rather pay nothing while idle and accept a wake-up delay on the first request.

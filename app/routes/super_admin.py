@@ -76,14 +76,14 @@ def super_admin_login(
     return out
 
 
-@router.post("/logout", response_class=HTMLResponse)
+@router.post("/logout", response_class=RedirectResponse)
 def super_admin_logout(request: Request) -> RedirectResponse:
     out = RedirectResponse(url="/internal/super-admin", status_code=303)
     out.delete_cookie(SESSION_COOKIE_NAME, path="/")
     return out
 
 
-@router.post("/campaigns/{public_id}/delete", response_class=HTMLResponse)
+@router.post("/campaigns/{public_id}/delete", response_class=RedirectResponse)
 def super_admin_delete_campaign(
     public_id: str,
     request: Request,
@@ -99,7 +99,7 @@ def super_admin_delete_campaign(
     return RedirectResponse(url="/internal/super-admin", status_code=303)
 
 
-@router.post("/new-campaigns-override", response_class=HTMLResponse)
+@router.post("/new-campaigns-override", response_class=RedirectResponse)
 def super_admin_set_new_campaigns_override(
     request: Request,
     mode: str = Form(...),

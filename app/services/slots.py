@@ -6,10 +6,12 @@ group could meet at. Recurring slots fan out into many occurrences across the
 horizon; ad-hoc slots become a single occurrence in their own right.
 
 DST policy: we anchor recurring slots to local *wall time* in the campaign's
-IANA timezone. zoneinfo handles fold/gap transitions; on a "spring forward"
-day the local 02:30 doesn't exist, so we skip that occurrence and emit a
-warning slot the surrounding weeks (kept simple: the weekday-loop just steps
-forward and we drop ambiguous results).
+IANA timezone, so a Sunday 19:00 slot stays at 19:00 local on both sides of a
+DST transition (its UTC offset shifts by an hour). For the rare slot that
+lands inside a "spring forward" gap (e.g. America/New_York 02:30 on the
+second Sunday of March doesn't exist), zoneinfo silently chooses the
+post-transition offset (``fold=0``); we accept that here because the
+alternative is dropping the session, and the visible effect is rare.
 """
 
 from __future__ import annotations
@@ -46,11 +48,10 @@ def _parse_hhmm(value: str) -> time_t:
 def _localize(local_dt: datetime, tz: ZoneInfo) -> datetime:
     """Attach the timezone and return the equivalent UTC instant.
 
-    ``fold=0`` resolves DST ambiguity by picking the earlier offset, matching
-    most calendar UIs. Times that simply don't exist (spring-forward gap)
-    produce a result whose UTC offset is shifted; we accept that here because
-    the alternative is silently dropping the session, and the visual error is
-    rare and obvious.
+    Uses Python's default ``fold=0``: for the "fall back" repeat hour this
+    picks the earlier (pre-transition) offset; for the "spring forward" gap
+    where the local time doesn't exist, zoneinfo returns the post-transition
+    offset. See module docstring for the rationale.
     """
     return local_dt.replace(tzinfo=tz).astimezone(timezone.utc)
 
@@ -160,9 +161,3 @@ def expand_all(
                     out.append(occ)
     out.sort(key=lambda o: o.starts_at_utc)
     return out
-
-
-def format_local(dt: datetime, tz: ZoneInfo) -> str:
-    """Human-friendly local-time label, e.g. ``Fri May 8 2026, 6:00 PM EDT``."""
-    local = dt.astimezone(tz)
-    return local.strftime("%a %b ") + str(local.day) + local.strftime(" %Y, %-I:%M %p %Z")

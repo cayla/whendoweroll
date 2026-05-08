@@ -57,7 +57,8 @@ def public_home(
     ]
 
     player_lookup_map = player_lookup(players)
-    has_dm = any(bool(p.is_dm) for p in players)
+    mandatory_attendees = [p for p in players if p.is_mandatory]
+    has_mandatory = bool(mandatory_attendees)
 
     return templates.TemplateResponse(
         request,
@@ -72,13 +73,14 @@ def public_home(
             "occurrence_rows": occurrence_rows,
             "player_lookup": player_lookup_map,
             "total_players": len(players),
-            "has_dm": has_dm,
+            "has_mandatory": has_mandatory,
+            "mandatory_attendees": mandatory_attendees,
             "timezones": COMMON_TIMEZONES,
         },
     )
 
 
-@router.post("/c/{public_id}/display-timezone", response_class=HTMLResponse)
+@router.post("/c/{public_id}/display-timezone", response_class=RedirectResponse)
 def set_public_display_timezone(
     public_id: str,
     timezone: str = Form(...),

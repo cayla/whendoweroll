@@ -28,6 +28,11 @@ engine = create_engine(
 )
 
 
+# Backfill defaults for legacy slot rows missing duration_hours.
+_DEFAULT_DURATION_H = 3.0
+_MIN_FALLBACK_H = 1.0 / 60.0
+
+
 def _hours_between_local_hhmm(start_hhmm: str, end_hhmm: str) -> float:
     s = datetime.strptime(start_hhmm.strip()[:5], "%H:%M")
     e = datetime.strptime(end_hhmm.strip()[:5], "%H:%M")
@@ -94,19 +99,33 @@ def migrate_sqlite_slot_schema(eng) -> None:
             )
 
 
-_DEFAULT_DURATION_H = 3.0
-_MIN_FALLBACK_H = 1.0 / 60.0
+def migrate_sqlite_player_is_mandatory(eng) -> None:
+    """Ensure SQLite ``player`` has ``is_mandatory``, migrating from legacy ``is_dm``.
 
-
-def migrate_sqlite_player_is_dm(eng) -> None:
-    """Add ``is_dm`` for legacy SQLite ``player`` rows (default false)."""
+    Handles three states:
+      1. fresh DB (``is_mandatory`` already created by ``SQLModel.metadata.create_all``);
+      2. very old DB with neither column → add ``is_mandatory``;
+      3. older DB with ``is_dm`` only → add ``is_mandatory``, copy values across,
+         then drop ``is_dm`` (SQLite >= 3.35).
+    """
     with eng.begin() as conn:
         info = conn.execute(text("PRAGMA table_info(player)")).fetchall()
         if not info:
             return
         names = {row[1] for row in info}
-        if "is_dm" not in names:
-            conn.execute(text("ALTER TABLE player ADD COLUMN is_dm INTEGER NOT NULL DEFAULT 0"))
+        if "is_mandatory" not in names:
+            conn.execute(
+                text("ALTER TABLE player ADD COLUMN is_mandatory INTEGER NOT NULL DEFAULT 0")
+            )
+            if "is_dm" in names:
+                conn.execute(text("UPDATE player SET is_mandatory = is_dm"))
+        if "is_dm" in names:
+            try:
+                conn.execute(text("ALTER TABLE player DROP COLUMN is_dm"))
+            except Exception:
+                # SQLite < 3.35 can't drop columns; leave the legacy column in
+                # place. is_mandatory is the source of truth from now on.
+                pass
 
 
 def init_db() -> None:
@@ -116,7 +135,7 @@ def init_db() -> None:
     SQLModel.metadata.create_all(engine)
     if DATABASE_URL.startswith("sqlite"):
         migrate_sqlite_slot_schema(engine)
-        migrate_sqlite_player_is_dm(engine)
+        migrate_sqlite_player_is_mandatory(engine)
 
 
 def get_session() -> Iterator[Session]:

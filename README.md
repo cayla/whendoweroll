@@ -6,8 +6,8 @@ public read-only link, and one private link per player.
 
 ## What it does
 
-- The campaign creator (typically a mandatory attendee — e.g. the DM) sets up a
-  campaign with a name, timezone, and the player roster.
+- The campaign creator (typically a mandatory attendee — e.g. the GM) sets up
+  a campaign with a name, timezone, and the player roster.
 - They define time slots: any number of recurring weekly windows
   (Friday 18:00–21:00, Sunday 11:00–14:00, …) plus one-off sessions.
 - Each player gets a private URL. Opening it shows every slot with
@@ -28,9 +28,9 @@ public read-only link, and one private link per player.
   - **Next session: everyone** — earliest window where every player said yes.
   - **Next session: all but one** — earliest window with at most one holdout
     (with the holdout's name, so the organizer can nudge them).
-- A campaign can mark **one player as the mandatory attendee (e.g. DM)**.
-  When set, that player must be available for any window to count toward
-  consensus on the public page.
+- A campaign can mark **any number of players as mandatory attendees**
+  (e.g. the GM, or co-GMs). When set, *all* mandatory attendees must be
+  available for any window to count toward consensus on the public page.
 
 A response of "no answer yet" is treated as **not available** for those
 calculations, so the organizer never over-promises.
@@ -97,16 +97,25 @@ export auth, and the capability URL boundaries.
 | File | What it does |
 |------|----|
 | [app/main.py](app/main.py) | FastAPI app + lifespan that creates SQLite tables on boot. |
+| [app/db.py](app/db.py) | Engine, session factory, and small SQLite startup migrations. |
+| [app/settings.py](app/settings.py) | Process-level env settings (e.g. disable new campaigns) + super-admin runtime override. |
 | [app/models.py](app/models.py) | SQLModel tables: campaigns, players, slots, availability, occurrence opt-outs. |
 | [app/security.py](app/security.py) | Token generation + SHA-256 hashing for the capability URLs. |
+| [app/super_admin_auth.py](app/super_admin_auth.py) | Operator challenge password + signed session cookie for `/internal/super-admin`. |
 | [app/deps.py](app/deps.py) | Lookups that resolve a public id + secret/token to a row. |
+| [app/display_time.py](app/display_time.py) | Viewer-local time formatting for player / public templates. |
+| [app/templates_setup.py](app/templates_setup.py) | Single Jinja environment + custom filters, plus the timezone choice list. |
+| [app/view_timezone.py](app/view_timezone.py) | Per-viewer display-timezone cookie helpers. |
 | [app/services/slots.py](app/services/slots.py) | Expands recurring + ad-hoc slots into concrete occurrences. |
-| [app/services/consensus.py](app/services/consensus.py) | Finds the earliest occurrence with at most N missing players. |
+| [app/services/consensus.py](app/services/consensus.py) | Finds the earliest occurrence with at most N missing players (honoring mandatory attendees). |
 | [app/services/availability.py](app/services/availability.py) | Reads/writes the availability rows. |
 | [app/services/opt_outs.py](app/services/opt_outs.py) | Per-date opt-outs on top of standing "yes" answers. |
+| [app/services/occurrence_match.py](app/services/occurrence_match.py) | Validates a client-submitted instant against a slot's expansion. |
+| [app/services/timeutil.py](app/services/timeutil.py) | UTC normalization for occurrence keys (DB round-trips). |
 | [app/services/ical.py](app/services/ical.py) | Minimal RFC 5545 calendar file builder. |
 | [app/services/campaign_export.py](app/services/campaign_export.py) | JSON backup payload (no secrets). |
-| [app/routes/](app/routes) | Index, public, admin, and player route modules. |
+| [app/services/campaign_delete.py](app/services/campaign_delete.py) | Cascade delete a campaign and all its dependent rows. |
+| [app/routes/](app/routes) | Index, public, admin, player, and super-admin route modules. |
 | [templates/](templates) | Jinja templates (Tailwind via CDN, htmx for partial updates). |
 
 ## Security model

@@ -41,7 +41,7 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
             )
 
     return {
-        "export_version": 1,
+        "export_version": 2,
         "exported_at": _iso(datetime.now(timezone.utc)),
         "campaign": {
             "public_id": campaign.public_id,
@@ -55,7 +55,7 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
                 "id": p.id,
                 "display_name": p.display_name,
                 "sort_order": p.sort_order,
-                "is_dm": bool(p.is_dm),
+                "is_mandatory": bool(p.is_mandatory),
             }
             for p in players
         ],
