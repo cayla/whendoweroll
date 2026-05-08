@@ -20,3 +20,13 @@ def test_build_ics_single_event():
     assert b"BEGIN:VEVENT" in body
     assert b"DTSTART:20260529T220000Z" in body
     assert b"SUMMARY:Game night" in body
+
+
+def test_build_ics_emits_refresh_hints_for_subscribed_clients():
+    """Apple Calendar / Outlook / Thunderbird respect these TTL hints when
+    the user hasn't picked a manual refresh interval; ship both the legacy
+    Microsoft form and the RFC 7986 form for maximum coverage.
+    """
+    body = build_ics([]).decode("utf-8")
+    assert "X-PUBLISHED-TTL:PT1H" in body
+    assert "REFRESH-INTERVAL;VALUE=DURATION:PT1H" in body

@@ -33,6 +33,21 @@
       <input name="horizon_weeks" type="number" min="1" max="52" value="{{ campaign.horizon_weeks }}"
              class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
     </label>
+    <label class="block md:col-span-3">
+      <span class="text-sm font-medium text-stone-700">Scheduling policy</span>
+      <select name="consensus_policy"
+              class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
+        {% for value, label, _hint in consensus_policy_choices %}
+          <option value="{{ value }}" {% if value == campaign.consensus_policy %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <p class="mt-1 text-xs text-stone-500">
+        {% for value, _label, hint in consensus_policy_choices %}
+          {% if value == campaign.consensus_policy %}{{ hint }}{% endif %}
+        {% endfor %}
+        Drives both the public summary cards and the consensus calendar feed &mdash; mandatory attendees still apply on top.
+      </p>
+    </label>
     <div class="md:col-span-3">
       <button class="rounded-md bg-red-800 px-3 py-1.5 text-white text-sm hover:bg-red-900">Save settings</button>
     </div>

@@ -130,6 +130,26 @@ def migrate_sqlite_player_is_mandatory(eng) -> None:
                 conn.execute(text("ALTER TABLE player DROP COLUMN is_dm"))
 
 
+def migrate_sqlite_campaign_consensus_policy(eng) -> None:
+    """Add ``consensus_policy`` to legacy ``campaign`` rows.
+
+    Older DBs predate the per-campaign consensus policy. Default everyone
+    to ``no_two_nears`` since that matches the public-page semantics those
+    campaigns were already running with for the two summary cards. The
+    side-effect for existing ICS subscribers is that the feed tightens up
+    (two near-consensus windows no longer appear back-to-back), which is
+    the explicit design intent — the calendar is the authoritative play
+    schedule.
+    """
+    with eng.begin() as conn:
+        info = conn.execute(text("PRAGMA table_info(campaign)")).fetchall()
+        if not info:
+            return
+        names = {row[1] for row in info}
+        if "consensus_policy" not in names:
+            conn.execute(text("ALTER TABLE campaign ADD COLUMN consensus_policy TEXT NOT NULL DEFAULT 'no_two_nears'"))
+
+
 def init_db() -> None:
     # Importing models registers them on SQLModel.metadata before create_all.
     from app import models  # noqa: F401
@@ -138,6 +158,7 @@ def init_db() -> None:
     if DATABASE_URL.startswith("sqlite"):
         migrate_sqlite_slot_schema(engine)
         migrate_sqlite_player_is_mandatory(engine)
+        migrate_sqlite_campaign_consensus_policy(engine)
 
 
 def get_session() -> Iterator[Session]:

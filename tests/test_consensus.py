@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from app.models import AvailabilityStatus, Player
-from app.services.consensus import find_next_meet, find_next_two_meets
+from app.models import AvailabilityStatus, ConsensusPolicy, Player
+from app.services.consensus import find_next_meet, find_next_meets
 from app.services.slots import Occurrence
 from app.services.timeutil import normalize_occurrence_start
 
@@ -110,88 +110,106 @@ def test_returns_none_when_nothing_qualifies():
 
 
 # ---------------------------------------------------------------------------
-# find_next_two_meets: the two-card landing helper. Drives the public page,
-# whose constraint is "never two near-consensus rows in a row".
+# find_next_meets: greedy forward walk that drives both the public summary
+# cards (limit=2) and the consensus ICS feed (large limit). Each policy has
+# its own per-window bound and between-window guardrail.
 # ---------------------------------------------------------------------------
 
 
-def test_next_two_returns_empty_when_nothing_qualifies():
-    occs = [_occ(1, 24)]
-    players = [_player(1, "A"), _player(2, "B"), _player(3, "C")]
-    availability = {(1, 1): AvailabilityStatus.yes}  # 2 missing -> nothing qualifies.
-    assert find_next_two_meets(occs, players, availability) == []
-
-
-def test_next_two_returns_single_when_only_one_qualifies():
-    occs = [_occ(1, 24)]
-    players = [_player(1, "A"), _player(2, "B")]
-    availability = {(1, 1): AvailabilityStatus.yes, (2, 1): AvailabilityStatus.yes}
-    out = find_next_two_meets(occs, players, availability)
-    assert len(out) == 1
-    assert out[0].missing_count == 0
-
-
-def test_next_two_picks_two_full_consensus_in_order():
-    occs = [_occ(7, 24), _occ(7, 24 * 8), _occ(7, 24 * 15)]
-    players = [_player(1, "A"), _player(2, "B")]
-    availability = {(1, 7): AvailabilityStatus.yes, (2, 7): AvailabilityStatus.yes}
-    out = find_next_two_meets(occs, players, availability)
-    assert len(out) == 2
-    assert all(r.missing_count == 0 for r in out)
-    assert out[0].occurrence.starts_at_utc < out[1].occurrence.starts_at_utc
-
-
-def test_next_two_full_then_near_keeps_chronological_pair():
-    """If chronologically the 2nd window is near-consensus, we still show it
-    because the 1st card is the "everyone" anchor — only one near in a row.
-    """
-    occs = [_occ(1, 24), _occ(2, 48)]
-    players = [_player(1, "A"), _player(2, "B"), _player(3, "C")]
-    availability = {
-        # Slot 1: full consensus.
-        (1, 1): AvailabilityStatus.yes,
-        (2, 1): AvailabilityStatus.yes,
-        (3, 1): AvailabilityStatus.yes,
-        # Slot 2: C unset -> near-consensus.
-        (1, 2): AvailabilityStatus.yes,
-        (2, 2): AvailabilityStatus.yes,
-    }
-    out = find_next_two_meets(occs, players, availability)
-    assert len(out) == 2
-    assert out[0].missing_count == 0
-    assert out[1].missing_count == 1
-    assert out[1].missing_player_ids == (3,)
-
-
-def test_next_two_skips_second_near_in_a_row_to_show_full_consensus():
-    """Chronological order: near, near, full. We must not show two nears in a
-    row, so the helper jumps over the 2nd near to the next full consensus.
+def _three_player_chrono_nears_then_full():
+    """Fixture: three windows in chronological order — near (C missing),
+    near (B missing), full consensus. Reused by several policy tests.
     """
     occs = [_occ(1, 24), _occ(2, 48), _occ(3, 72)]
     players = [_player(1, "A"), _player(2, "B"), _player(3, "C")]
     availability = {
-        # Slot 1 (earliest): C missing -> near.
         (1, 1): AvailabilityStatus.yes,
         (2, 1): AvailabilityStatus.yes,
-        # Slot 2: B missing -> near. Would be the chronological #2.
         (1, 2): AvailabilityStatus.yes,
         (3, 2): AvailabilityStatus.yes,
-        # Slot 3: full consensus -> what we expect as the second card.
         (1, 3): AvailabilityStatus.yes,
         (2, 3): AvailabilityStatus.yes,
         (3, 3): AvailabilityStatus.yes,
     }
-    out = find_next_two_meets(occs, players, availability)
-    assert len(out) == 2
-    assert out[0].occurrence.slot_id == 1
+    return occs, players, availability
+
+
+def test_next_meets_returns_empty_when_nothing_qualifies():
+    occs = [_occ(1, 24)]
+    players = [_player(1, "A"), _player(2, "B"), _player(3, "C")]
+    availability = {(1, 1): AvailabilityStatus.yes}  # 2 missing -> over even allow_one bound
+    assert find_next_meets(occs, players, availability, policy=ConsensusPolicy.no_two_nears) == []
+
+
+def test_next_meets_strict_only_returns_full_consensus_windows():
+    occs, players, availability = _three_player_chrono_nears_then_full()
+    out = find_next_meets(occs, players, availability, policy=ConsensusPolicy.strict, limit=5)
+    assert len(out) == 1  # only slot 3 is full consensus
+    assert out[0].occurrence.slot_id == 3
+    assert out[0].missing_count == 0
+
+
+def test_next_meets_allow_one_takes_consecutive_nears_in_order():
+    """No guardrail under allow_one: just walk forward greedily."""
+    occs, players, availability = _three_player_chrono_nears_then_full()
+    out = find_next_meets(occs, players, availability, policy=ConsensusPolicy.allow_one, limit=5)
+    assert [r.occurrence.slot_id for r in out] == [1, 2, 3]
+
+
+def test_next_meets_no_two_nears_skips_second_near_to_next_full():
+    occs, players, availability = _three_player_chrono_nears_then_full()
+    out = find_next_meets(occs, players, availability, policy=ConsensusPolicy.no_two_nears, limit=5)
+    assert [r.occurrence.slot_id for r in out] == [1, 3]
     assert out[0].missing_count == 1
-    assert out[1].occurrence.slot_id == 3
     assert out[1].missing_count == 0
 
 
-def test_next_two_returns_solo_near_when_no_full_consensus_exists():
-    """Group never has a full-yes window? Show the one near-consensus card
-    rather than padding with another near (the rule forbids two nears).
+def test_next_meets_no_repeat_holdout_allows_different_holdout_back_to_back():
+    """Slot 1 has C missing; slot 2 has B missing. Different people, so the
+    no_repeat_holdout policy lets them sit adjacent — only the same holdout
+    twice in a row is forbidden.
+    """
+    occs, players, availability = _three_player_chrono_nears_then_full()
+    out = find_next_meets(occs, players, availability, policy=ConsensusPolicy.no_repeat_holdout, limit=5)
+    assert [r.occurrence.slot_id for r in out] == [1, 2, 3]
+
+
+def test_next_meets_no_repeat_holdout_skips_when_same_person_misses_twice():
+    """If the same player is the holdout in two adjacent qualifying windows,
+    the second is dropped — bridge over to a window with someone else missing
+    or with full consensus.
+    """
+    occs = [_occ(1, 24), _occ(2, 48), _occ(3, 72)]
+    players = [_player(1, "A"), _player(2, "B"), _player(3, "C")]
+    availability = {
+        # Slot 1: C missing.
+        (1, 1): AvailabilityStatus.yes,
+        (2, 1): AvailabilityStatus.yes,
+        # Slot 2: C missing again.
+        (1, 2): AvailabilityStatus.yes,
+        (2, 2): AvailabilityStatus.yes,
+        # Slot 3: full consensus.
+        (1, 3): AvailabilityStatus.yes,
+        (2, 3): AvailabilityStatus.yes,
+        (3, 3): AvailabilityStatus.yes,
+    }
+    out = find_next_meets(occs, players, availability, policy=ConsensusPolicy.no_repeat_holdout, limit=5)
+    assert [r.occurrence.slot_id for r in out] == [1, 3]
+
+
+def test_next_meets_returns_single_when_only_one_window_exists():
+    occs = [_occ(1, 24)]
+    players = [_player(1, "A"), _player(2, "B")]
+    availability = {(1, 1): AvailabilityStatus.yes, (2, 1): AvailabilityStatus.yes}
+    out = find_next_meets(occs, players, availability, policy=ConsensusPolicy.no_two_nears, limit=2)
+    assert len(out) == 1
+    assert out[0].missing_count == 0
+
+
+def test_next_meets_no_two_nears_returns_solo_near_when_no_full_exists():
+    """Pathological campaign: no full-consensus window in the horizon. The
+    no-two-nears rule forbids padding with a second near, so we honestly
+    return just one card.
     """
     occs = [_occ(1, 24), _occ(2, 48)]
     players = [_player(1, "A"), _player(2, "B"), _player(3, "C")]
@@ -201,17 +219,17 @@ def test_next_two_returns_solo_near_when_no_full_consensus_exists():
         (1, 2): AvailabilityStatus.yes,
         (3, 2): AvailabilityStatus.yes,
     }
-    out = find_next_two_meets(occs, players, availability)
+    out = find_next_meets(occs, players, availability, policy=ConsensusPolicy.no_two_nears, limit=2)
     assert len(out) == 1
     assert out[0].missing_count == 1
     assert out[0].occurrence.slot_id == 1
 
 
-def test_next_two_collapses_when_mandatory_blocks_earlier_nears():
-    """Edge case from the wild: mandatory attendee declines early occurrences,
-    so the only qualifying window is the full-consensus one. Both cards used
-    to point at the same date — now we return [full, full] instead of
-    [full, full] duplicated, listing the *next* full consensus as #2.
+def test_next_meets_mandatory_blocks_earlier_nears_so_first_pick_is_full_consensus():
+    """The original wild edge case: alice (mandatory) blocks the first two
+    weekly occurrences, so under any policy the first qualifying window is
+    the third occurrence (full consensus) — and the second card moves on
+    to the *next* occurrence rather than echoing the first.
     """
     occs = [_occ(1, 24), _occ(1, 24 * 8), _occ(1, 24 * 15)]  # weekly recurring slot
     gm = Player(id=1, campaign_id=1, display_name="GM", token_hash="h1", is_mandatory=True)
@@ -220,14 +238,10 @@ def test_next_two_collapses_when_mandatory_blocks_earlier_nears():
         (1, 1): AvailabilityStatus.yes,
         (2, 1): AvailabilityStatus.yes,
     }
-    # GM opts out of the first occurrence specifically.
     opt = {(1, 1, normalize_occurrence_start(occs[0].starts_at_utc))}
-    out = find_next_two_meets(occs, [gm, pl], availability, opt_outs=opt)
+    out = find_next_meets(occs, [gm, pl], availability, policy=ConsensusPolicy.no_two_nears, opt_outs=opt, limit=2)
     assert len(out) == 2
-    assert out[0].missing_count == 0
-    assert out[1].missing_count == 0
-    # The first occurrence is filtered (mandatory missing), so we expect
-    # the next two upcoming occurrences instead.
+    assert all(r.missing_count == 0 for r in out)
     assert normalize_occurrence_start(out[0].occurrence.starts_at_utc) == normalize_occurrence_start(
         occs[1].starts_at_utc
     )

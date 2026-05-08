@@ -40,6 +40,21 @@ class AvailabilityStatus(StrEnum):
     no = "no"
 
 
+class ConsensusPolicy(StrEnum):
+    """Rule for what counts as a "we'd actually play" window.
+
+    Drives both the two cards on the public page and the campaign's ICS
+    feed: the calendar is meant to be tight enough to rely on as the
+    authoritative play schedule. Mandatory-attendee rules apply on top of
+    every policy; a missing mandatory always disqualifies a window.
+    """
+
+    strict = "strict"  # full consensus only (zero missing)
+    allow_one = "allow_one"  # up to 1 missing, no guardrail
+    no_two_nears = "no_two_nears"  # up to 1 missing, but never two near-consensus in a row
+    no_repeat_holdout = "no_repeat_holdout"  # up to 1 missing, never the same person two in a row
+
+
 class Campaign(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     public_id: str = Field(index=True, unique=True)
@@ -47,6 +62,13 @@ class Campaign(SQLModel, table=True):
     timezone: str  # IANA, e.g. "America/New_York"
     admin_secret_hash: str
     horizon_weeks: int = 12
+    consensus_policy: ConsensusPolicy = Field(
+        default=ConsensusPolicy.no_two_nears,
+        description=(
+            "How the public cards and ICS feed decide which upcoming "
+            "windows count as a real session. See ConsensusPolicy."
+        ),
+    )
     created_at: datetime = Field(default_factory=_utcnow)
 
 
