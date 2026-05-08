@@ -15,6 +15,16 @@ def _ics_dt(dt: datetime) -> str:
     return dt.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
 
 
+# Suggested polling cadence for subscribed calendar clients. Apple Calendar,
+# Outlook, and Thunderbird honour these hints when the user hasn't picked
+# a manual refresh interval; Google Calendar ignores them and polls on its
+# own (typically several hours to a day) — there's nothing we can do about
+# that from the server side. ``X-PUBLISHED-TTL`` is the older Microsoft form
+# (still widely respected) and ``REFRESH-INTERVAL`` is the RFC 7986 standard;
+# emit both for maximum client coverage.
+_REFRESH_INTERVAL = "PT1H"
+
+
 def build_ics(events: list[tuple[str, datetime, datetime, str]]) -> bytes:
     """Each tuple is ``(uid, dtstart, dtend, summary)``."""
     stamp = _ics_dt(datetime.now(UTC))
@@ -23,6 +33,8 @@ def build_ics(events: list[tuple[str, datetime, datetime, str]]) -> bytes:
         "VERSION:2.0",
         "PRODID:-//whendoweroll.com//EN",
         "CALSCALE:GREGORIAN",
+        f"X-PUBLISHED-TTL:{_REFRESH_INTERVAL}",
+        f"REFRESH-INTERVAL;VALUE=DURATION:{_REFRESH_INTERVAL}",
     ]
     for uid, start, end, summary in events:
         lines.extend(

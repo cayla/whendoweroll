@@ -11,7 +11,7 @@ from sqlmodel import Session, select
 
 from app.db import get_session
 from app.deps import require_admin
-from app.models import Availability, Player, Slot, SlotKind
+from app.models import Availability, ConsensusPolicy, Player, Slot, SlotKind
 from app.security import hash_token, new_token
 from app.services.campaign_delete import delete_campaign_cascade
 from app.services.campaign_export import build_export_payload
@@ -22,6 +22,32 @@ router = APIRouter(prefix="/c/{public_id}/admin/{secret}")
 
 _MIN_SESSION_HOURS = 1.0 / 60.0
 _MAX_SESSION_HOURS = 48.0
+
+# (value, short label, hint) for the Settings card dropdown. Order is the
+# spectrum from strictest to most permissive so organisers can scan it
+# top-to-bottom.
+_CONSENSUS_POLICY_CHOICES: tuple[tuple[ConsensusPolicy, str, str], ...] = (
+    (
+        ConsensusPolicy.strict,
+        "Strict — everyone every time",
+        "Only schedule a session when every player is available.",
+    ),
+    (
+        ConsensusPolicy.no_two_nears,
+        "Allow one missing — never two in a row",
+        "Schedule with one holdout when needed, but don't run two short-handed sessions back-to-back.",
+    ),
+    (
+        ConsensusPolicy.no_repeat_holdout,
+        "Allow one missing — but rotate who",
+        "Schedule with one holdout, but don't let the same player be the holdout two sessions in a row.",
+    ),
+    (
+        ConsensusPolicy.allow_one,
+        "Allow one missing — always",
+        "Schedule whenever at most one player is missing, no further constraint.",
+    ),
+)
 
 
 def _parse_session_duration_hours(raw: str | None) -> float:
@@ -67,6 +93,7 @@ def admin_home(
             "public_url": f"{base_url}/c/{campaign.public_id}",
             "secret": secret,
             "timezones": COMMON_TIMEZONES,
+            "consensus_policy_choices": _CONSENSUS_POLICY_CHOICES,
             "weekdays": [
                 (0, "Mon"),
                 (1, "Tue"),
@@ -87,6 +114,7 @@ def update_settings(
     name: str = Form(...),
     timezone: str = Form(...),
     horizon_weeks: int = Form(12),
+    consensus_policy: str = Form(...),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     campaign = require_admin(session, public_id, secret)
@@ -97,9 +125,14 @@ def update_settings(
         ZoneInfo(timezone)
     except ZoneInfoNotFoundError as exc:
         raise HTTPException(status_code=400, detail="Unknown timezone") from exc
+    try:
+        policy = ConsensusPolicy(consensus_policy.strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Unknown consensus policy") from exc
     campaign.name = name
     campaign.timezone = timezone
     campaign.horizon_weeks = max(1, min(horizon_weeks, 52))
+    campaign.consensus_policy = policy
     session.add(campaign)
     session.commit()
     return _redirect_to_admin(public_id, secret)

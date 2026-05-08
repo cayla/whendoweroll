@@ -15,8 +15,7 @@ from app.models import Player, Slot
 from app.services.availability import load_availability_map
 from app.services.consensus import (
     count_yes_for_occurrence,
-    find_next_two_meets,
-    list_consensus_occurrences,
+    find_next_meets,
     player_lookup,
 )
 from app.services.ical import build_ics
@@ -46,7 +45,14 @@ def public_home(
     player_ids = [p.id for p in players if p.id is not None]
     opt_outs = load_opt_out_set(session, player_ids)
 
-    upcoming_meets = find_next_two_meets(occurrences, players, availability, opt_outs=opt_outs)
+    upcoming_meets = find_next_meets(
+        occurrences,
+        players,
+        availability,
+        policy=campaign.consensus_policy,
+        opt_outs=opt_outs,
+        limit=2,
+    )
 
     occurrence_rows = [
         {
@@ -113,8 +119,13 @@ def calendar_consensus_ics(
     availability = load_availability_map(session, players)
     player_ids = [p.id for p in players if p.id is not None]
     opt_outs = load_opt_out_set(session, player_ids)
-    results = list_consensus_occurrences(
-        occurrences, players, availability, max_missing=1, opt_outs=opt_outs, limit=50
+    results = find_next_meets(
+        occurrences,
+        players,
+        availability,
+        policy=campaign.consensus_policy,
+        opt_outs=opt_outs,
+        limit=50,
     )
     name_by_id = {p.id: p.display_name for p in players if p.id is not None}
     events: list[tuple[str, datetime, datetime, str]] = []

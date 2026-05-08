@@ -23,7 +23,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
-from app.models import AvailabilityStatus, Player
+from app.models import AvailabilityStatus, ConsensusPolicy, Player
 from app.services.slots import Occurrence
 from app.services.timeutil import normalize_occurrence_start
 
@@ -120,39 +120,74 @@ def list_consensus_occurrences(
     return out
 
 
-def find_next_two_meets(
+def _max_missing_for(policy: ConsensusPolicy) -> int:
+    """How many missing players a single window may have under this policy."""
+    if policy is ConsensusPolicy.strict:
+        return 0
+    return 1
+
+
+def _guardrail_blocks(policy: ConsensusPolicy, prev: ConsensusResult, curr: ConsensusResult) -> bool:
+    """Between-window guardrail: should ``curr`` be skipped given the previously picked ``prev``?
+
+    Both ``prev`` and ``curr`` already satisfy the per-window ``max_missing``
+    bound for the policy. The guardrail is the *sequence* constraint that
+    prevents pathological back-to-back near-consensus emissions.
+    """
+    if policy in (ConsensusPolicy.strict, ConsensusPolicy.allow_one):
+        return False
+    if policy is ConsensusPolicy.no_two_nears:
+        return prev.missing_count > 0 and curr.missing_count > 0
+    if policy is ConsensusPolicy.no_repeat_holdout:
+        # When either side is full consensus there's no holdout to repeat.
+        if not prev.missing_player_ids or not curr.missing_player_ids:
+            return False
+        return set(prev.missing_player_ids) == set(curr.missing_player_ids)
+    return False
+
+
+def find_next_meets(
     occurrences: Sequence[Occurrence],
     players: Sequence[Player],
     availability: Mapping[tuple[int, int], AvailabilityStatus],
     *,
+    policy: ConsensusPolicy,
     opt_outs: set[tuple[int, int, datetime]] | None = None,
+    limit: int = 2,
 ) -> list[ConsensusResult]:
-    """Up to two upcoming windows for the public landing cards.
+    """Greedy forward walk picking up to ``limit`` qualifying upcoming windows.
 
-    Walks the chronological list of qualifying occurrences (full consensus or
-    one missing, mandatory rules respected) and returns the next one. The
-    second slot in the returned list is the next qualifying window after that
-    *unless* both the first and second would be near-consensus (one missing) —
-    in that case we skip past the near-consensus runner-up to the next
-    full-consensus window. The intent: at least one of the two cards shown to
-    the group is always a "everyone is in" window when one exists in the
-    horizon, so the page never shows two near-consensus rows back-to-back.
+    Each picked window satisfies the policy's per-window missing bound, and the
+    sequence as a whole satisfies the policy's between-window guardrail (e.g.
+    no two near-consensus windows in a row). Mandatory-attendee rules apply on
+    top of every policy.
+
+    The walk is deliberately greedy: we always take the soonest qualifying
+    window, then look forward for the soonest next pick that doesn't trip the
+    guardrail relative to it, and so on. This keeps "the next session" as
+    close to today as the rules allow, at the cost of *occasionally* surfacing
+    a slightly later runner-up than a globally optimal sequence might.
+
+    Used by both the public-page summary cards (``limit=2``) and the
+    consensus ``.ics`` feed (large ``limit``); the ICS feed is intentionally
+    tight to match the cards so subscribers can rely on it as the actual
+    play schedule.
     """
     candidates = list_consensus_occurrences(
-        occurrences, players, availability, max_missing=1, opt_outs=opt_outs, limit=50
+        occurrences,
+        players,
+        availability,
+        max_missing=_max_missing_for(policy),
+        opt_outs=opt_outs,
+        limit=max(limit * 4, 200),
     )
-    if not candidates:
-        return []
-    first = candidates[0]
-    out: list[ConsensusResult] = [first]
-    if first.missing_count == 0:
-        if len(candidates) > 1:
-            out.append(candidates[1])
-    else:
-        for c in candidates[1:]:
-            if c.missing_count == 0:
-                out.append(c)
-                break
+    out: list[ConsensusResult] = []
+    for c in candidates:
+        if out and _guardrail_blocks(policy, out[-1], c):
+            continue
+        out.append(c)
+        if len(out) >= limit:
+            break
     return out
 
 
