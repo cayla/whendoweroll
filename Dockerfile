@@ -14,6 +14,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --group dev
 COPY app ./app
 COPY templates ./templates
+COPY static ./static
 COPY tests ./tests
 CMD ["pytest"]
 
@@ -30,6 +31,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
 COPY app ./app
 COPY templates ./templates
+COPY static ./static
 RUN mkdir -p /data && chown -R appuser:appuser /data /app
 USER appuser
 EXPOSE 8000

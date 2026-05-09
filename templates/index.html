@@ -3,82 +3,79 @@
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-  <h1 class="heading text-3xl text-red-800">Roll for initiative</h1>
-  <p class="mt-2 text-stone-600">
+  <h1 class="heading text-3xl text-brand-fg">Roll for initiative</h1>
+  <p class="mt-2 text-muted">
     Spin up a lightweight scheduler for your campaign. No accounts &mdash; you'll
     get one secret admin link plus a private link per player.
   </p>
 
   {% if new_campaigns_disabled %}
-  <div class="mt-8 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+  <div class="mt-8 rounded-md border border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-600/80 dark:bg-amber-950/40 dark:text-amber-100">
     <strong>New campaigns are disabled</strong> on this instance (operator setting).
     Existing campaign links still work.
   </div>
   {% else %}
-  <form method="post" action="/" class="mt-8 space-y-5 bg-white border border-stone-300 rounded-lg p-6 shadow-sm">
+  <form method="post" action="/" class="mt-8 space-y-5 bg-surface border border-line rounded-lg p-6 shadow-sm">
     <div>
-      <label class="block text-sm font-medium text-stone-700">Campaign name</label>
-      <input name="name" required maxlength="80" placeholder="Trouble with the Gazebo"
-             class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
+      <label class="block text-sm font-medium text-ink" for="create-campaign-name">Campaign name</label>
+      <input id="create-campaign-name" name="name" required maxlength="80" placeholder="Trouble with the Gazebo"
+             class="form-field">
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-stone-700">Timezone</label>
-      <select name="timezone" required
-              class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
+      <label class="block text-sm font-medium text-ink" for="create-campaign-timezone">Timezone</label>
+      <select id="create-campaign-timezone" name="timezone" required class="form-field">
         {% for value, label in timezone_options %}
           <option value="{{ value }}" {% if value == default_tz %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
-      <p class="mt-1 text-xs text-stone-500">Used to interpret weekly recurring times.</p>
+      <p class="mt-1 text-sm text-muted">Used to interpret weekly recurring times</p>
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-stone-700">Players (one name per line)</label>
-      <textarea name="player_names" rows="5" placeholder="Alice&#10;Bob&#10;Cayla"
-                class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700 font-mono text-sm"></textarea>
-      <p class="mt-1 text-xs text-stone-500">Optional &mdash; you can add more later.</p>
+      <label class="block text-sm font-medium text-ink" for="create-player-names">Players (one name per line)</label>
+      <textarea id="create-player-names" name="player_names" rows="5" placeholder="Alice&#10;Bob&#10;Cayla"
+                class="form-field font-mono text-sm"></textarea>
+      <p class="mt-1 text-sm text-muted">Optional &mdash; you can add more later</p>
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-stone-700">Scheduling horizon</label>
+      <label class="block text-sm font-medium text-ink" for="create-horizon-weeks">Scheduling horizon</label>
       <div class="mt-1 flex items-center gap-2">
-        <input name="horizon_weeks" type="number" min="1" max="52" value="12"
-               class="w-24 rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
-        <span class="text-sm text-stone-600">weeks of recurring sessions to consider</span>
+        <input id="create-horizon-weeks" name="horizon_weeks" type="number" min="1" max="52" value="12" class="w-24 form-field">
+        <span class="text-sm text-muted">weeks of recurring sessions</span>
       </div>
     </div>
 
     <div class="pt-2">
-      <button type="submit" class="rounded-md bg-stone-800 px-4 py-2 text-white font-medium hover:bg-stone-900 transition">
+      <button type="submit" class="btn px-4 py-2">
         Create campaign
       </button>
     </div>
   </form>
 
-  <div class="mt-6 flex items-center gap-3 text-xs uppercase tracking-wider text-stone-500">
-    <span class="h-px flex-1 bg-stone-300"></span>
+  <div class="mt-6 flex items-center gap-3 text-xs uppercase tracking-wider text-muted">
+    <span class="h-px flex-1 bg-line"></span>
     <span>or restore a backup</span>
-    <span class="h-px flex-1 bg-stone-300"></span>
+    <span class="h-px flex-1 bg-line"></span>
   </div>
 
   <form method="post" action="/import" enctype="multipart/form-data"
-        class="mt-4 space-y-4 bg-white border border-stone-300 rounded-lg p-6 shadow-sm">
+        class="mt-4 space-y-4 bg-surface border border-line rounded-lg p-6 shadow-sm">
     <div>
       <h2 class="heading text-lg">Import from JSON</h2>
-      <p class="mt-1 text-sm text-stone-600">
-        Upload an <code class="text-xs bg-stone-100 px-1 rounded">export.json</code> from a previous
-        admin page. You'll get a brand-new admin link and brand-new player links &mdash;
-        the originals aren't stored in the backup, so they can't be reused.
+      <p class="mt-1 text-sm text-muted">
+        Upload an <code class="text-xs bg-[color:var(--color-code-bg)] px-1 rounded">export.json</code> from a previous
+        admin page. You'll get a new admin link and new player links. The originals aren't stored in the backup, so they can't be reused.
       </p>
     </div>
     <div>
-      <label class="block text-sm font-medium text-stone-700">Backup file</label>
-      <input type="file" name="backup" accept="application/json,.json" required
-             class="mt-1 w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-stone-800 file:px-3 file:py-1.5 file:text-white hover:file:bg-stone-900">
+      <label class="block text-sm font-medium text-ink" for="import-backup-file">Backup file</label>
+      <input id="import-backup-file" type="file" name="backup" accept="application/json,.json" required
+             class="mt-1 w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-btn-primary file:px-3 file:py-1.5 file:text-on-btn hover:file:bg-btn-primary-hover">
     </div>
     <div>
-      <button type="submit" class="rounded-md border border-stone-800 px-4 py-2 text-stone-900 font-medium hover:bg-stone-100 transition">
+      <button type="submit" class="btn-secondary px-4 py-2 font-medium">
         Restore campaign
       </button>
     </div>

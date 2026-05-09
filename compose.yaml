@@ -17,17 +17,33 @@ services:
       - /app/.venv
     command: ["pytest"]
 
+  # Local dev: live code from the repo + --reload. DB stays on the named volume at /data
+  # (bind mount is only /app, so it does not shadow whendoweroll_data).
   web:
     build:
       context: .
       dockerfile: Dockerfile
       target: production
+    working_dir: /app
+    command:
+      [
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+      ]
     ports:
       - "8000:8000"
     environment:
       WHENDOWEROLL_DB_URL: sqlite:////data/whendoweroll.sqlite3
       # WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS: "1"  # set to block POST / (new campaigns only)
     volumes:
+      - .:/app
+      # Keep the image's Linux .venv; host bind mount would replace it with an unusable tree.
+      - /app/.venv
       - whendoweroll_data:/data
 
 volumes:

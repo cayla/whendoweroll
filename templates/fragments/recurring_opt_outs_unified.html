@@ -1,18 +1,18 @@
-<div id="opt-outs-unified" class="mt-4 rounded-md border border-stone-200 p-3 bg-stone-50">
+<div id="opt-outs-unified" class="mt-4 rounded-md border border-line p-3 bg-elevated">
   <table class="w-full text-xs">
     <thead>
-      <tr class="text-left text-stone-500 uppercase tracking-wide">
+      <tr class="text-left text-muted uppercase tracking-wide">
         <th class="py-1">When</th>
         <th class="text-right">Conflict</th>
       </tr>
     </thead>
     <tbody>
       {% for row in unified_rows %}
-      <tr class="border-t border-stone-200">
+      <tr class="border-t border-line">
         <td class="py-1.5 pr-2">
-          <div class="whitespace-nowrap">{{ row.occ.starts_at_utc|local_time(display_tz) }}</div>
-          {% if row.slot.label %}<div class="text-stone-500 mt-0.5 normal-case tracking-normal">{{ row.slot.label }}</div>{% endif %}
-          <div class="text-stone-500 mt-0.5 normal-case tracking-normal">({{ row.can_make }}/{{ row.roster_n }} can make it)</div>
+          <div class="whitespace-nowrap text-ink">{{ row.occ.starts_at_utc|local_time(display_tz) }}</div>
+          {% if row.slot.label %}<div class="text-muted mt-0.5 normal-case tracking-normal">{{ row.slot.label }}</div>{% endif %}
+          <div class="text-muted mt-0.5 normal-case tracking-normal">({{ row.can_make }}/{{ row.roster_n }} can make it)</div>
         </td>
         <td class="py-1.5 text-right">
           <form hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/opt-out"
@@ -22,12 +22,12 @@
             <input type="hidden" name="occurrence_start" value="{{ row.start_iso }}">
             {% if row.busy %}
             <input type="hidden" name="busy" value="0">
-            <button type="submit" class="rounded border border-emerald-300 px-2 py-0.5 text-emerald-800 hover:bg-emerald-50">
+            <button type="submit" class="rounded border border-emerald-400 px-2 py-0.5 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950/40">
               Remove conflict
             </button>
             {% else %}
             <input type="hidden" name="busy" value="1">
-            <button type="submit" class="rounded border border-amber-300 px-2 py-0.5 text-amber-900 hover:bg-amber-50">
+            <button type="submit" class="rounded border border-amber-400 px-2 py-0.5 text-amber-900 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-950/40">
               Can't make it
             </button>
             {% endif %}

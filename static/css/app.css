@@ -1,0 +1,179 @@
+/* Theme tokens + component styles (Tailwind utilities use var(--color-*) via tailwind.config). */
+/* Lets the browser render inputs/selects for the active theme (avoids light text on white fields). */
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+:root {
+  --color-canvas: #faf8f3;
+  --color-surface: #ffffff;
+  --color-elevated: #f3f0ea;
+  --color-line: #e6e1d6;
+  --color-ink: #161917;
+  --color-muted: #4b5563;
+  /* Lighter than muted but ≥4.5:1 vs canvas/surface (gray-500 family). */
+  --color-subtle: #6b7280;
+  --color-brand: #0f8a5f;
+  --color-brand-hover: #12a06f;
+  --color-brand-fg: #0b6b4a;
+  --color-brand-fg-hover: #065f46;
+  --color-ring: #0f8a5f;
+  --color-header-bg: rgba(250, 248, 243, 0.9);
+  --color-backdrop: rgba(22, 25, 23, 0.45);
+  --color-code-bg: #ece8df;
+  /* Filled primary controls: dark enough for WCAG AA vs white label text (≥4.5:1). */
+  --color-btn-primary: #065f46;
+  --color-btn-primary-hover: #064e3b;
+  --color-on-btn-primary: #ffffff;
+}
+.dark {
+  --color-canvas: #070708;
+  --color-surface: #12151a;
+  --color-elevated: #0f1614;
+  --color-line: #243036;
+  --color-ink: #e9eef2;
+  --color-muted: #a7b0ba;
+  --color-subtle: #9ca3af;
+  --color-brand: #12a06f;
+  --color-brand-hover: #3ee0a4;
+  --color-brand-fg: #34d399;
+  --color-brand-fg-hover: #6ee7b7;
+  --color-ring: #12a06f;
+  --color-header-bg: rgba(18, 21, 26, 0.92);
+  --color-backdrop: rgba(4, 6, 8, 0.72);
+  --color-code-bg: #1a2228;
+  /* Same darker fills as light mode — mid emeralds (#059669) fail 4.5:1 vs white. */
+  --color-btn-primary: #065f46;
+  --color-btn-primary-hover: #064e3b;
+  --color-on-btn-primary: #ffffff;
+}
+body { font-family: 'Inter', system-ui, sans-serif; }
+.heading { font-family: 'Cinzel', serif; letter-spacing: 0.02em; }
+.site-logo { font-family: 'Germania One', fantasy; }
+/*
+ * Tailwind CDN does not reliably compile @apply inside <style> blocks,
+ * so component classes use plain CSS + theme variables (same tokens as tailwind.config).
+ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+  background-color: var(--color-btn-primary);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: var(--color-on-btn-primary);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.btn:hover {
+  background-color: var(--color-btn-primary-hover);
+}
+.btn:focus {
+  outline: none;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  transition: background-color 150ms ease;
+}
+.btn-secondary:hover {
+  background-color: var(--color-elevated);
+}
+.btn-secondary:focus {
+  outline: none;
+}
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+.form-field {
+  margin-top: 0.25rem;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--color-line);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+}
+.form-field:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 2px var(--color-canvas), 0 0 0 4px var(--color-ring);
+}
+.form-field::placeholder {
+  color: var(--color-subtle);
+}
+textarea.form-field {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+/* Match control height to selects in grid layouts. */
+input.form-field:not([type="checkbox"]):not([type="radio"]) {
+  min-height: 2.75rem;
+  box-sizing: border-box;
+}
+/*
+ * Native selects ignore padding for the system arrow; strip chrome and draw our own chevron.
+ * Shared by form selects and the header theme control.
+ */
+select.form-field,
+#theme-select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  background-color: var(--color-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem 1rem;
+  box-sizing: border-box;
+}
+html.dark select.form-field,
+html.dark #theme-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+select.form-field {
+  padding: 0.625rem 2.75rem 0.625rem 0.875rem;
+  line-height: 1.25rem;
+  min-height: 2.875rem;
+}
+#theme-select {
+  padding: 0.375rem 2.25rem 0.375rem 0.5rem;
+  line-height: 1rem;
+  font-size: 0.75rem;
+  min-height: 2rem;
+  color: var(--color-ink);
+}
+select.form-field::-ms-expand,
+#theme-select::-ms-expand {
+  display: none;
+}
+/* Chrome autofill otherwise forces light bg + unreadable text in dark mode */
+.form-field:-webkit-autofill,
+.form-field:-webkit-autofill:hover,
+.form-field:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-ink);
+  caret-color: var(--color-ink);
+  box-shadow: 0 0 0 1000px var(--color-surface) inset;
+  transition: background-color 99999s ease-out 0s;
+}

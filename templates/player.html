@@ -10,27 +10,27 @@
 {% block content %}
 <header class="mb-6">
   <h1 class="heading text-3xl">
-    <a href="/c/{{ campaign.public_id }}" class="text-red-800 hover:text-red-900 underline decoration-red-200 underline-offset-4 hover:decoration-red-500">{{ campaign.name }}</a>
+    <a href="/c/{{ campaign.public_id }}" class="text-brand-fg hover:text-brand-fg-hover underline decoration-muted underline-offset-4 hover:decoration-brand-fg-hover">{{ campaign.name }}</a>
   </h1>
-  <p class="text-sm text-stone-600">
-    Hi <span class="font-medium">{{ player.display_name }}</span>,
+  <p class="text-sm text-muted">
+    Hi <span class="font-medium text-ink">{{ player.display_name }}</span>,
   </p>
-  <p class="mt-2 text-sm text-stone-600">
+  <p class="mt-2 text-sm text-muted">
     Use this page to indicate which gaming sessions you can attend. When you say yes to recurring options, a new table will appear giving you the opportunity to opt out of specific occurrences. Give it a try now. Changes display and save instantly!
   </p>
-  <p class="mt-1 text-xs text-stone-500">
-    Public campaign view: <a class="underline hover:text-red-800" href="/c/{{ campaign.public_id }}">/c/{{ campaign.public_id }}</a>
+  <p class="mt-1 text-xs text-muted">
+    Public campaign view: <a class="underline text-brand-fg hover:text-brand-fg-hover" href="/c/{{ campaign.public_id }}">/c/{{ campaign.public_id }}</a>
     &middot;
-    <a class="underline hover:text-red-800" href="/c/{{ campaign.public_id }}/calendar-consensus.ics">Subscribe to consensus calendar (.ics)</a>
+    <a class="underline text-brand-fg hover:text-brand-fg-hover" href="/c/{{ campaign.public_id }}/calendar-consensus.ics">Subscribe to consensus calendar (.ics)</a>
   </p>
 </header>
 
 {% if not slots %}
-<p class="text-stone-500 italic">No times have been added yet.</p>
+<p class="text-muted italic">No times have been added yet.</p>
 {% else %}
-<div class="bg-white border border-stone-300 rounded-lg shadow-sm overflow-hidden">
+<div class="bg-surface border border-line rounded-lg shadow-sm overflow-hidden">
   <table class="w-full text-sm">
-    <thead class="text-left bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
+    <thead class="text-left bg-elevated text-xs uppercase tracking-wide text-muted">
       <tr><th class="px-4 py-2">Time</th><th class="py-2">Status</th></tr>
     </thead>
     <tbody>
@@ -52,7 +52,7 @@
 {% endif %}
 {% endif %}
 
-<section class="mt-6 text-xs text-stone-500">
+<section class="mt-6 text-xs text-muted">
   <p>This link is your edit credential &mdash; treat it like a password and don't share publicly.</p>
 </section>
 <script>
