@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Page not found · When Do We Roll{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/not-found.css') }}">
+{% endblock %}
+{% block main_class %}max-w-3xl mx-auto px-4 py-10 md:py-14{% endblock %}
+{% block content %}
+<section class="page-404 text-center" aria-labelledby="page-404-heading">
+  <div class="page-404-stage mx-auto max-w-lg">
+    <div class="page-404-oval" aria-hidden="true">
+      <div class="page-404-sky"></div>
+      <div class="page-404-cloud page-404-cloud--a"></div>
+      <div class="page-404-cloud page-404-cloud--b"></div>
+      <div class="page-404-cloud page-404-cloud--c"></div>
+      <div class="page-404-mountains" aria-hidden="true">
+        <svg class="page-404-mountains-svg" viewBox="0 0 320 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Back ridge (cooler / farther) -->
+          <path
+            class="page-404-mountains-back"
+            d="M0 120 L0 82 L32 70 L58 74 L90 66 L120 74 L148 78 L160 82 L172 78 L200 70 L230 64 L258 68 L286 64 L320 72 L320 120 Z"
+          />
+          <path
+            class="page-404-mountains-front"
+            d="M0 120 L0 94 L36 64 L62 78 L92 50 L118 64 L140 58 L156 68 L160 72 L164 68 L188 52 L214 26 L242 52 L268 34 L296 48 L310 44 L320 46 L320 120 Z"
+          />
+        </svg>
+      </div>
+      {# Birds match tdoughty CodePen bGGZWqg: body + nested wings, two flocks #}
+      <div class="page-404-birds" aria-hidden="true">
+        <div class="page-404-birds-front">
+          <div class="page-404-bird page-404-bird--1">
+            <div class="page-404-bird-body"></div>
+            <div class="page-404-bird-wing1">
+              <div class="page-404-bird-wing2">
+                <div class="page-404-bird-wing3"></div>
+              </div>
+            </div>
+          </div>
+          <div class="page-404-bird page-404-bird--2">
+            <div class="page-404-bird-body"></div>
+            <div class="page-404-bird-wing1">
+              <div class="page-404-bird-wing2">
+                <div class="page-404-bird-wing3"></div>
+              </div>
+            </div>
+          </div>
+          <div class="page-404-bird page-404-bird--3">
+            <div class="page-404-bird-body"></div>
+            <div class="page-404-bird-wing1">
+              <div class="page-404-bird-wing2">
+                <div class="page-404-bird-wing3"></div>
+              </div>
+            </div>
+          </div>
+          <div class="page-404-bird page-404-bird--4">
+            <div class="page-404-bird-body"></div>
+            <div class="page-404-bird-wing1">
+              <div class="page-404-bird-wing2">
+                <div class="page-404-bird-wing3"></div>
+              </div>
+            </div>
+          </div>
+          <div class="page-404-bird page-404-bird--5">
+            <div class="page-404-bird-body"></div>
+            <div class="page-404-bird-wing1">
+              <div class="page-404-bird-wing2">
+                <div class="page-404-bird-wing3"></div>
+              </div>
+            </div>
+          </div>
+          <div class="page-404-bird page-404-bird--6">
+            <div class="page-404-bird-body"></div>
+            <div class="page-404-bird-wing1">
+              <div class="page-404-bird-wing2">
+                <div class="page-404-bird-wing3"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="page-404-birds-back">
+          <div class="page-404-bird page-404-bird--1">
+            <div class="page-404-bird-body"></div>
+            <div class="page-404-bird-wing1">
+              <div class="page-404-bird-wing2">
+                <div class="page-404-bird-wing3"></div>
+              </div>
+            </div>
+          </div>
+          <div class="page-404-bird page-404-bird--2">
+            <div class="page-404-bird-body"></div>
+            <div class="page-404-bird-wing1">
+              <div class="page-404-bird-wing2">
+                <div class="page-404-bird-wing3"></div>
+              </div>
+            </div>
+          </div>
+          <div class="page-404-bird page-404-bird--3">
+            <div class="page-404-bird-body"></div>
+            <div class="page-404-bird-wing1">
+              <div class="page-404-bird-wing2">
+                <div class="page-404-bird-wing3"></div>
+              </div>
+            </div>
+          </div>
+          <div class="page-404-bird page-404-bird--4">
+            <div class="page-404-bird-body"></div>
+            <div class="page-404-bird-wing1">
+              <div class="page-404-bird-wing2">
+                <div class="page-404-bird-wing3"></div>
+              </div>
+            </div>
+          </div>
+          <div class="page-404-bird page-404-bird--5">
+            <div class="page-404-bird-body"></div>
+            <div class="page-404-bird-wing1">
+              <div class="page-404-bird-wing2">
+                <div class="page-404-bird-wing3"></div>
+              </div>
+            </div>
+          </div>
+          <div class="page-404-bird page-404-bird--6">
+            <div class="page-404-bird-body"></div>
+            <div class="page-404-bird-wing1">
+              <div class="page-404-bird-wing2">
+                <div class="page-404-bird-wing3"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="page-404-spire">
+        <div class="page-404-spire-roof-cluster">
+          <div class="page-404-spire-roof"></div>
+          <div class="page-404-spire-flag" aria-hidden="true">
+            <span class="page-404-spire-flag-pole"></span>
+          </div>
+        </div>
+        <div class="page-404-spire-battlements" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="page-404-spire-shaft">
+          <span class="page-404-spire-window"></span>
+          <span class="page-404-spire-window"></span>
+        </div>
+        <div class="page-404-spire-base"></div>
+      </div>
+    </div>
+  </div>
+  <h1 id="page-404-heading" class="heading text-2xl md:text-3xl text-ink mt-8 mb-3">
+    Nothing here — wrong URL?
+  </h1>
+  <p class="text-muted max-w-md mx-auto leading-relaxed mb-6">
+    This page doesn&apos;t exist (404). If you followed an old link, the campaign may have moved or the URL may have been copied wrong.
+  </p>
+  <a href="/" class="btn px-5 py-2.5 font-medium">Back to the homepage</a>
+</section>
+{% endblock %}

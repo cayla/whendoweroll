@@ -639,8 +639,8 @@ html.dark .home-feature-card:hover .home-feature-card-icon {
 }
 
 .home-feature-dice {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
   object-fit: contain;
   opacity: 0.88;
 }
