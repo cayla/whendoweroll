@@ -16,10 +16,10 @@
         <button type="button" id="home-open-create" class="home-hero-btn home-hero-btn-secondary px-5 py-2.5 text-base font-medium">
           Create campaign
         </button>
-        {% endif %}
         <button type="button" id="home-open-restore" class="home-hero-btn home-hero-btn-secondary px-5 py-2.5 text-base font-medium">
           Restore campaign
         </button>
+        {% endif %}
       </div>
     </div>
   </section>
@@ -124,6 +124,7 @@
   </dialog>
   {% endif %}
 
+  {% if not new_campaigns_disabled %}
   <dialog id="home-dialog-restore" class="home-dialog" aria-labelledby="home-dialog-restore-title">
     <div class="home-dialog-header">
       <h2 id="home-dialog-restore-title" class="heading text-lg text-ink m-0">Restore campaign</h2>
@@ -150,6 +151,7 @@
       </div>
     </form>
   </dialog>
+  {% endif %}
 </div>
 {% endblock %}
 

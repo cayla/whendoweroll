@@ -9,7 +9,7 @@ _new_campaigns_override: bool | None = None
 
 
 def new_campaigns_disabled() -> bool:
-    """When true, ``POST /`` is rejected and the home form is read-only."""
+    """When true, ``POST /`` and ``POST /import`` are rejected; home create/restore UI is hidden."""
     if _new_campaigns_override is not None:
         return _new_campaigns_override
     v = os.environ.get("WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS", "").strip().lower()
