@@ -1,0 +1,493 @@
+/*
+ * 404 hero: “watch tower”-style scene (Prismic #35) — oval viewport,
+ * drifting birds, mountains, castle spire. Uses theme tokens from app.css.
+ */
+
+.page-404-stage {
+  filter: drop-shadow(0 12px 24px rgb(0 0 0 / 0.08));
+}
+
+html.dark .page-404-stage {
+  filter: drop-shadow(0 16px 28px rgb(0 0 0 / 0.45));
+}
+
+.page-404-oval {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  max-height: min(72vw, 22rem);
+  margin-inline: auto;
+  overflow: hidden;
+  /* Smooth ellipse — wider than tall inside the square box */
+  clip-path: ellipse(49% 42% at 50% 50%);
+  background: var(--color-canvas);
+}
+
+.page-404-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    185deg,
+    color-mix(in srgb, var(--color-brand) 18%, var(--color-canvas)) 0%,
+    var(--color-canvas) 42%,
+    color-mix(in srgb, var(--color-muted) 12%, var(--color-canvas)) 100%
+  );
+}
+
+html.dark .page-404-sky {
+  background: linear-gradient(
+    185deg,
+    color-mix(in srgb, var(--color-brand) 22%, var(--color-surface)) 0%,
+    var(--color-surface) 45%,
+    color-mix(in srgb, var(--color-ink) 8%, var(--color-surface)) 100%
+  );
+}
+
+.page-404-cloud {
+  position: absolute;
+  z-index: 1;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+  opacity: 0.75;
+  filter: blur(0.5px);
+  animation: page-404-cloud-drift linear infinite;
+}
+
+.page-404-cloud--a {
+  width: 38%;
+  height: 14%;
+  top: 12%;
+  left: -15%;
+  animation-duration: 48s;
+}
+
+.page-404-cloud--b {
+  width: 28%;
+  height: 10%;
+  top: 22%;
+  left: -20%;
+  opacity: 0.55;
+  animation-duration: 62s;
+  animation-delay: -18s;
+}
+
+.page-404-cloud--c {
+  width: 22%;
+  height: 8%;
+  top: 8%;
+  left: -10%;
+  opacity: 0.5;
+  animation-duration: 76s;
+  animation-delay: -40s;
+}
+
+@keyframes page-404-cloud-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(420%);
+  }
+}
+
+/*
+ * Birds: ported from tdoughty’s “Watch Tower Pure CSS Animation” (CodePen bGGZWqg) —
+ * clip-path body + nested wing divs + rotateX flap; two flocks (front / back).
+ */
+.page-404-birds {
+  position: absolute;
+  top: 14%;
+  left: 0;
+  right: 0;
+  height: 38%;
+  z-index: 5;
+  perspective: 280px;
+  color: #000;
+  pointer-events: none;
+}
+
+.page-404-birds-front,
+.page-404-birds-back {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+}
+
+/* Near flock (CodePen .birds.front): enters lower-right, flies up-left */
+.page-404-birds-front {
+  z-index: 2;
+  top: 52%;
+  left: 78%;
+  animation: page-404-fly-front 4s linear infinite;
+  animation-delay: 0.5s;
+}
+
+/* Far flock (CodePen .birds.back): mirrored, smaller path */
+.page-404-birds-back {
+  z-index: 1;
+  top: 8%;
+  left: -12%;
+  opacity: 0.82;
+  animation: page-404-fly-back 4s linear infinite;
+  animation-delay: 0.5s;
+}
+
+.page-404-bird {
+  position: absolute;
+  transform: scale(0.15);
+  transform-origin: 0 0;
+  transform-style: preserve-3d;
+}
+
+/* Scatter inside 70×70 flock box — positions from CodePen .b1–.b6 */
+.page-404-bird--1 {
+  top: -30%;
+  left: 0;
+}
+
+.page-404-bird--2 {
+  top: -20%;
+  left: -15%;
+}
+
+.page-404-bird--3 {
+  top: 0;
+  left: 10%;
+}
+
+.page-404-bird--4 {
+  top: 15%;
+  left: 20%;
+}
+
+.page-404-bird--5 {
+  top: 30%;
+  left: -5%;
+}
+
+.page-404-bird--6 {
+  top: 45%;
+  left: 5%;
+}
+
+.page-404-bird-body {
+  clip-path: polygon(0 100%, 20% 20%, 40% 0, 100% 100%, 20% 80%);
+  background: currentColor;
+  width: 150px;
+  height: 40px;
+}
+
+.page-404-bird-wing1 {
+  position: relative;
+  left: 40px;
+  top: -20px;
+  width: 40px;
+  height: 50px;
+  background: currentColor;
+  transform: skew(10deg);
+  transform-origin: 0 0;
+  animation: page-404-wing-flap 0.5s ease-in-out infinite alternate;
+}
+
+.page-404-bird-wing2 {
+  position: absolute;
+  bottom: -25px;
+  left: 13px;
+  transform: rotate(-5deg);
+}
+
+.page-404-bird-wing3 {
+  width: 40px;
+  height: 30px;
+  background: currentColor;
+  transform: skew(40deg);
+}
+
+.page-404-birds-front .page-404-bird:nth-child(1) .page-404-bird-wing1 {
+  animation-duration: 0.42s;
+}
+
+.page-404-birds-front .page-404-bird:nth-child(3) .page-404-bird-wing1 {
+  animation-duration: 0.55s;
+}
+
+.page-404-birds-front .page-404-bird:nth-child(5) .page-404-bird-wing1 {
+  animation-duration: 0.48s;
+}
+
+.page-404-birds-back .page-404-bird:nth-child(2) .page-404-bird-wing1 {
+  animation-duration: 0.56s;
+}
+
+.page-404-birds-back .page-404-bird:nth-child(4) .page-404-bird-wing1 {
+  animation-duration: 0.44s;
+}
+
+.page-404-birds-back .page-404-bird:nth-child(6) .page-404-bird-wing1 {
+  animation-duration: 0.52s;
+}
+
+@keyframes page-404-wing-flap {
+  0% {
+    transform: skew(10deg) rotateX(50deg);
+  }
+
+  100% {
+    transform: skew(15deg) rotateX(120deg);
+  }
+}
+
+/*
+ * Flight distances use % of the flock box (70×70): matches CodePen ~-600px / ~-150px
+ * on a ~100px-sized group (-850% × 70 ≈ -595px; -215% × 70 ≈ -150px).
+ */
+@keyframes page-404-fly-front {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(15deg);
+  }
+
+  100% {
+    transform: translate3d(-850%, -215%, 0) rotate(15deg);
+  }
+}
+
+@keyframes page-404-fly-back {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.65) scaleX(-1) rotate(-15deg);
+  }
+
+  100% {
+    transform: translate3d(780%, -95%, 0) scale(0.65) scaleX(-1) rotate(15deg);
+  }
+}
+
+/* Mountains sit behind the birds */
+.page-404-mountains {
+  position: absolute;
+  top: 22%;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.page-404-mountains-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.page-404-mountains-back {
+  fill: color-mix(in srgb, var(--color-brand) 28%, var(--color-ink));
+  opacity: 0.55;
+}
+
+.page-404-mountains-front {
+  fill: color-mix(in srgb, var(--color-muted) 22%, var(--color-ink));
+  opacity: 0.94;
+}
+
+html.dark .page-404-mountains-back {
+  fill: color-mix(in srgb, var(--color-brand) 18%, #020617);
+  opacity: 0.5;
+}
+
+html.dark .page-404-mountains-front {
+  fill: color-mix(in srgb, var(--color-muted) 25%, var(--color-surface));
+  opacity: 0.9;
+}
+
+.page-404-spire {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  transform: translateX(-50%);
+  width: 56%;
+  height: 58%;
+}
+
+.page-404-spire-roof-cluster {
+  position: relative;
+  width: 52%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.page-404-spire-roof {
+  width: 100%;
+  aspect-ratio: 1 / 0.55;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--color-brand) 55%, var(--color-ink)) 0%,
+    color-mix(in srgb, var(--color-brand) 25%, var(--color-ink)) 100%
+  );
+}
+
+.page-404-spire-flag {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.page-404-spire-flag-pole {
+  position: relative;
+  display: block;
+  width: 3px;
+  height: clamp(0.62rem, 2.85vw, 0.98rem);
+  margin-bottom: -1px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, #4a3d26, #6b5838);
+  box-shadow: 0 0 1px rgb(0 0 0 / 0.28);
+}
+
+.page-404-spire-flag-pole::after {
+  content: "";
+  position: absolute;
+  left: 100%;
+  top: 0;
+  width: clamp(0.72rem, 3.5vw, 1.08rem);
+  height: clamp(0.38rem, 1.85vw, 0.55rem);
+  background: linear-gradient(
+    118deg,
+    #f0d56a 0%,
+    #d4af37 38%,
+    #b8941e 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.42),
+    inset 0 -1px 0 rgb(0 0 0 / 0.12);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transform-origin: 0 50%;
+  animation: page-404-flag-wave 2.6s ease-in-out infinite;
+}
+
+html.dark .page-404-spire-flag-pole {
+  background: linear-gradient(90deg, #2d2618, #453622);
+}
+
+html.dark .page-404-spire-flag-pole::after {
+  background: linear-gradient(
+    118deg,
+    #fff2b3 0%,
+    #e8c547 42%,
+    #b8941e 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.28),
+    inset 0 -1px 0 rgb(0 0 0 / 0.35);
+}
+
+@keyframes page-404-flag-wave {
+  0%,
+  100% {
+    transform: rotate(-4deg) skewY(-2deg);
+  }
+
+  50% {
+    transform: rotate(5deg) skewY(2deg);
+  }
+}
+
+.page-404-spire-battlements {
+  display: flex;
+  justify-content: center;
+  gap: 0.2rem;
+  width: 46%;
+  margin-top: -2px;
+  z-index: 1;
+}
+
+.page-404-spire-battlements span {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 0.35rem;
+  border-radius: 1px 1px 0 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-line) 55%, var(--color-ink)) 0%,
+    color-mix(in srgb, var(--color-ink) 40%, var(--color-line)) 100%
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-surface) 15%, transparent);
+}
+
+.page-404-spire-shaft {
+  position: relative;
+  width: 38%;
+  margin-top: -1px;
+  flex: 1 1 0;
+  min-height: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-line) 75%, var(--color-ink)) 0%,
+    color-mix(in srgb, var(--color-surface) 30%, var(--color-ink)) 45% 55%,
+    color-mix(in srgb, var(--color-line) 75%, var(--color-ink)) 100%
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-ink) 15%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  padding-block: 8%;
+  gap: 0.35rem;
+}
+
+.page-404-spire-window {
+  display: block;
+  width: 22%;
+  aspect-ratio: 1;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--color-brand) 35%, var(--color-ink));
+  box-shadow: inset 0 0 6px rgb(0 0 0 / 0.35);
+}
+
+html.dark .page-404-spire-window {
+  background: color-mix(in srgb, var(--color-brand-fg) 25%, #020617);
+  box-shadow: inset 0 0 8px rgb(0 0 0 / 0.65);
+}
+
+.page-404-spire-base {
+  width: 100%;
+  height: 11%;
+  margin-top: -1px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-line) 90%, var(--color-ink)) 0%,
+    color-mix(in srgb, var(--color-ink) 55%, var(--color-line)) 100%
+  );
+  box-shadow: inset 0 2px 0 color-mix(in srgb, var(--color-surface) 20%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-404-cloud,
+  .page-404-birds-front,
+  .page-404-birds-back,
+  .page-404-bird-wing1,
+  .page-404-spire-flag-pole::after {
+    animation: none !important;
+  }
+
+  .page-404-birds-front {
+    transform: translate3d(-280%, -72%, 0) rotate(15deg);
+  }
+
+  .page-404-birds-back {
+    transform: translate3d(320%, -48%, 0) scale(0.65) scaleX(-1) rotate(10deg);
+  }
+
+  .page-404-bird-wing1 {
+    transform: skew(12deg) rotateX(85deg);
+  }
+}

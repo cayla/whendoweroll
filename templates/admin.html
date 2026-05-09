@@ -5,38 +5,37 @@
 {% block content %}
 <header class="mb-6 flex items-baseline justify-between flex-wrap gap-2">
   <div>
-    <h1 class="heading text-3xl text-red-800">{{ campaign.name }} <span class="text-stone-400 text-base font-sans">/ admin</span></h1>
-    <p class="text-sm text-stone-500">
-      Public link: <a class="underline hover:text-red-800" href="{{ public_url }}" target="_blank">{{ public_url }}</a>
+    <h1 class="heading text-3xl text-brand-fg">{{ campaign.name }} <span class="text-subtle text-base font-sans">/ admin</span></h1>
+    <p class="text-sm text-muted">
+      Public link: <a class="underline text-brand-fg hover:text-brand-fg-hover" href="{{ public_url }}" target="_blank">{{ public_url }}</a>
     </p>
   </div>
 </header>
 
-<section class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm mb-6">
+<section class="bg-surface border border-line rounded-lg p-5 shadow-sm mb-6">
   <h2 class="heading text-lg mb-3">Settings</h2>
   <form method="post" action="{{ admin_url }}/settings" class="grid gap-4 md:grid-cols-3">
-    <label class="block">
-      <span class="text-sm font-medium text-stone-700">Name</span>
-      <input name="name" value="{{ campaign.name }}" required
-             class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
-    </label>
-    <label class="block">
-      <span class="text-sm font-medium text-stone-700">Timezone</span>
-      <select name="timezone" class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
+    <div>
+      <label class="block text-sm font-medium text-ink" for="admin-settings-name">Name</label>
+      <input id="admin-settings-name" name="name" value="{{ campaign.name }}" required class="form-field">
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-ink" for="admin-settings-timezone">Timezone</label>
+      <select id="admin-settings-timezone" name="timezone" class="form-field">
         {% for tz in timezones %}
           <option value="{{ tz }}" {% if tz == campaign.timezone %}selected{% endif %}>{{ tz|pretty_tz }}</option>
         {% endfor %}
       </select>
-    </label>
-    <label class="block">
-      <span class="text-sm font-medium text-stone-700">Horizon (weeks)</span>
-      <input name="horizon_weeks" type="number" min="1" max="52" value="{{ campaign.horizon_weeks }}"
-             class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
-    </label>
-    <label class="block md:col-span-3">
-      <span class="text-sm font-medium text-stone-700">Scheduling policy</span>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-ink" for="admin-settings-horizon">Horizon (weeks)</label>
+      <input id="admin-settings-horizon" name="horizon_weeks" type="number" min="1" max="52" value="{{ campaign.horizon_weeks }}"
+             class="form-field">
+    </div>
+    <div class="md:col-span-3">
+      <label class="block text-sm font-medium text-ink" for="consensus-policy-select">Scheduling policy</label>
       <select id="consensus-policy-select" name="consensus_policy"
-              class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
+              class="form-field">
         {% for value, label, _hint in consensus_policy_choices %}
           <option value="{{ value }}" {% if value == campaign.consensus_policy %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
@@ -44,23 +43,23 @@
       {#- All hints are rendered; JS toggles which one is visible based on
           the current select value. That way the helper text reflects the
           *pending* (unsaved) policy choice instead of the persisted one. -#}
-      <p class="mt-1 text-xs text-stone-500">
+      <p class="mt-1 text-xs text-muted">
         {% for value, _label, hint in consensus_policy_choices %}
           <span data-policy-hint="{{ value }}"{% if value != campaign.consensus_policy %} hidden{% endif %}>{{ hint }}</span>
         {% endfor %}
-        Drives both the public summary cards and the consensus calendar feed &mdash; mandatory attendees still apply on top.
+        Drives both the public summary cards and the consensus calendar feed. Mandatory attendees still apply on top.
       </p>
-    </label>
+    </div>
     <div class="md:col-span-3">
-      <button class="rounded-md bg-stone-800 px-3 py-1.5 text-white text-sm hover:bg-stone-900">Save settings</button>
+      <button class="btn px-3 py-1.5 text-sm">Save settings</button>
     </div>
   </form>
 </section>
 
-<section class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm mb-6">
+<section class="bg-surface border border-line rounded-lg p-5 shadow-sm mb-6">
   <h2 class="heading text-lg mb-3">Players</h2>
 
-  <ul id="player-list" class="divide-y divide-stone-200">
+  <ul id="player-list" class="divide-y divide-line">
     {% for player in players %}
     <li class="py-2 flex items-center justify-between gap-3">
       <span class="font-medium">{{ player.display_name }}</span>
@@ -68,7 +67,7 @@
         <form method="post" action="{{ admin_url }}/players/{{ player.id }}/regenerate"
               hx-post="{{ admin_url }}/players/{{ player.id }}/regenerate"
               hx-target="#new-player-info" hx-swap="innerHTML">
-          <button class="text-xs rounded border border-stone-300 px-2 py-1 hover:bg-stone-50">
+          <button class="text-xs rounded border border-line px-2 py-1 hover:bg-elevated text-ink">
             Regenerate link
           </button>
         </form>
@@ -76,14 +75,14 @@
               hx-post="{{ admin_url }}/players/{{ player.id }}/delete"
               hx-target="closest li" hx-swap="outerHTML"
               hx-confirm="Delete {{ player.display_name }} and their availability?">
-          <button class="text-xs rounded border border-stone-300 text-stone-700 px-2 py-1 hover:bg-stone-100">
+          <button class="text-xs rounded border border-line text-muted px-2 py-1 hover:bg-elevated">
             Delete
           </button>
         </form>
       </span>
     </li>
     {% else %}
-    <li class="py-2 text-stone-500 italic text-sm">No players yet.</li>
+    <li class="py-2 text-muted italic text-sm">No players yet.</li>
     {% endfor %}
   </ul>
 
@@ -91,60 +90,61 @@
         hx-post="{{ admin_url }}/players"
         hx-target="#new-player-info" hx-swap="innerHTML"
         hx-on::after-request="this.reset()">
-    <label class="flex-1">
-      <span class="text-sm font-medium text-stone-700">Add player</span>
-      <input name="display_name" required placeholder="Display name"
-             class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
-    </label>
-    <button class="rounded-md bg-stone-800 px-3 py-1.5 text-white text-sm hover:bg-stone-900">Add</button>
+    <div class="flex-1">
+      <label class="block text-sm font-medium text-ink" for="admin-add-player-display-name">Add player</label>
+      <input id="admin-add-player-display-name" name="display_name" required placeholder="Display name"
+             class="form-field">
+    </div>
+    <button class="btn px-3 py-1.5 text-sm">Add</button>
   </form>
 
   <div id="new-player-info" class="mt-4"></div>
 
-  <form method="post" action="{{ admin_url }}/mandatory-attendees" class="mt-6 rounded-md border border-stone-200 bg-stone-50 p-4">
-    <h3 class="text-sm font-medium text-stone-800">Mandatory attendees</h3>
-    <p class="text-xs text-stone-500 mt-1">
+  <form method="post" action="{{ admin_url }}/mandatory-attendees" class="mt-6 rounded-md border border-line bg-elevated p-4">
+    <h3 class="text-sm font-medium text-ink">Mandatory attendees</h3>
+    <p class="text-xs text-muted mt-1">
       Mandatory attendees (e.g. the GM, or co-GMs) must <em>all</em> be available for any window to count toward consensus on the public page. Pick zero or more.
     </p>
     {% if players %}
     <div class="mt-3 flex flex-wrap gap-2">
       {% for player in players %}
-        <label class="inline-flex items-center gap-2 rounded-md border border-stone-300 bg-white px-2.5 py-1.5 text-sm">
-          <input type="checkbox" name="mandatory_player_ids" value="{{ player.id }}"
+        <label class="inline-flex items-center gap-2 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm"
+               for="mandatory-player-{{ player.id }}">
+          <input id="mandatory-player-{{ player.id }}" type="checkbox" name="mandatory_player_ids" value="{{ player.id }}"
                  {% if player.is_mandatory %}checked{% endif %}
-                 class="rounded border-stone-300 text-stone-800 focus:ring-stone-500">
+                 class="rounded border-line accent-brand focus:ring-brand">
           <span>{{ player.display_name }}</span>
         </label>
       {% endfor %}
     </div>
     <div class="mt-3">
-      <button type="submit" class="rounded-md bg-stone-800 px-3 py-1.5 text-white text-sm hover:bg-stone-900">Save mandatory attendees</button>
+      <button type="submit" class="btn px-3 py-1.5 text-sm">Save mandatory attendees</button>
     </div>
     {% else %}
-    <p class="mt-3 text-xs text-stone-500 italic">Add players above first.</p>
+    <p class="mt-3 text-xs text-muted italic">Add players above first.</p>
     {% endif %}
   </form>
 </section>
 
-<section class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm mb-6">
+<section class="bg-surface border border-line rounded-lg p-5 shadow-sm mb-6">
   <h2 class="heading text-lg mb-3">Times</h2>
 
   {% if slots %}
-  <ul class="divide-y divide-stone-200">
+  <ul class="divide-y divide-line">
     {% for slot in slots %}
     <li class="py-2 flex items-center justify-between gap-3">
       <span>
         {% if slot.kind.value == "recurring" %}
-          <span class="rounded bg-indigo-50 text-indigo-800 px-1.5 py-0.5 text-xs font-medium mr-2">recurring</span>
+          <span class="rounded bg-indigo-100 text-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200 px-1.5 py-0.5 text-xs font-medium mr-2">recurring</span>
           {{ weekdays[slot.weekday][1] }} {{ slot.start_local }}, {{ slot.duration_hours }} h
         {% else %}
-          <span class="rounded bg-amber-50 text-amber-800 px-1.5 py-0.5 text-xs font-medium mr-2">one-off</span>
+          <span class="rounded bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium mr-2">one-off</span>
           {{ slot.starts_at_utc|local_window(slot.ends_at_utc, campaign.timezone) }}
         {% endif %}
-        {% if slot.label %}<span class="text-stone-500 ml-2">&mdash; {{ slot.label }}</span>{% endif %}
+        {% if slot.label %}<span class="text-muted ml-2">· {{ slot.label }}</span>{% endif %}
       </span>
       <form method="post" action="{{ admin_url }}/slots/{{ slot.id }}/delete">
-        <button class="text-xs rounded border border-stone-300 text-stone-700 px-2 py-1 hover:bg-stone-100"
+        <button class="text-xs rounded border border-line text-muted px-2 py-1 hover:bg-elevated"
                 onclick="return confirm('Delete this time and all its availability?')">
           Delete
         </button>
@@ -153,92 +153,84 @@
     {% endfor %}
   </ul>
   {% else %}
-  <p class="text-stone-500 italic text-sm">No times yet. Add a recurring weekly time or a one-off below.</p>
+  <p class="text-muted italic text-sm">No times yet. Add a recurring weekly time or a one-off below.</p>
   {% endif %}
 
   <div class="grid gap-6 md:grid-cols-2 mt-5">
-    <form method="post" action="{{ admin_url }}/slots" class="border border-stone-200 rounded-md p-4">
+    <form method="post" action="{{ admin_url }}/slots" class="border border-line rounded-md p-4">
       <h3 class="font-medium mb-3">Recurring weekly</h3>
       <input type="hidden" name="kind" value="recurring">
-      <label class="block text-sm">Weekday
-        <select name="weekday" class="mt-1 w-full rounded-md border-stone-300">
-          {% for value, name in weekdays %}<option value="{{ value }}">{{ name }}</option>{% endfor %}
-        </select>
-      </label>
-      <label class="block text-sm mt-2">Start ({{ campaign.timezone|pretty_tz }})
-        <input type="time" name="start_local" required class="mt-1 w-full rounded-md border-stone-300">
-      </label>
-      <label class="block text-sm mt-2">Session duration (hours)
-        <input type="number" name="duration_hours" required min="0.25" max="48" step="0.25" value="3"
-               class="mt-1 w-full rounded-md border-stone-300">
-      </label>
-      <label class="block mt-2 text-sm">Label (optional)
-        <input name="label" placeholder="Friday game night" class="mt-1 w-full rounded-md border-stone-300">
-      </label>
-      <button class="mt-3 rounded-md bg-stone-800 px-3 py-1.5 text-white text-sm hover:bg-stone-900">
+      <label class="block text-sm font-medium text-ink" for="admin-slot-weekday">Weekday</label>
+      <select id="admin-slot-weekday" name="weekday" class="form-field">
+        {% for value, name in weekdays %}<option value="{{ value }}">{{ name }}</option>{% endfor %}
+      </select>
+      <label class="block text-sm mt-2 font-medium text-ink" for="admin-slot-start-local">Start ({{ campaign.timezone|pretty_tz }})</label>
+      <input id="admin-slot-start-local" type="time" name="start_local" required class="form-field">
+      <label class="block text-sm mt-2 font-medium text-ink" for="admin-slot-duration-hours">Session duration (hours)</label>
+      <input id="admin-slot-duration-hours" type="number" name="duration_hours" required min="0.25" max="48" step="0.25" value="3"
+             class="form-field">
+      <label class="block mt-2 text-sm font-medium text-ink" for="admin-slot-label">Label (optional)</label>
+      <input id="admin-slot-label" name="label" placeholder="Friday game night" class="form-field">
+      <button class="mt-3 btn px-3 py-1.5 text-sm">
         Add recurring time
       </button>
     </form>
 
-    <form method="post" action="{{ admin_url }}/slots" class="border border-stone-200 rounded-md p-4">
+    <form method="post" action="{{ admin_url }}/slots" class="border border-line rounded-md p-4">
       <h3 class="font-medium mb-3">One-off session</h3>
       <input type="hidden" name="kind" value="adhoc">
-      <p class="text-xs text-stone-500 mb-2">Date and start time are in <strong>{{ campaign.timezone|pretty_tz }}</strong>. Duration may run past midnight (e.g. start 10:00 PM + 4 h → 2:00 AM next day).</p>
-      <label class="block text-sm">Date
-        <input type="date" name="adhoc_date" required class="mt-1 w-full rounded-md border-stone-300">
-      </label>
-      <label class="block text-sm mt-2">Start time
-        <input type="time" name="adhoc_start_time" required class="mt-1 w-full rounded-md border-stone-300">
-      </label>
-      <label class="block text-sm mt-2">Session duration (hours)
-        <input type="number" name="duration_hours" required min="0.25" max="48" step="0.25" value="3"
-               class="mt-1 w-full rounded-md border-stone-300">
-      </label>
-      <label class="block mt-2 text-sm">Label (optional)
-        <input name="label" placeholder="May 30 one-shot" class="mt-1 w-full rounded-md border-stone-300">
-      </label>
-      <button class="mt-3 rounded-md bg-stone-800 px-3 py-1.5 text-white text-sm hover:bg-stone-900">
+      <p class="text-xs text-muted mb-2">Date and start time are in <strong>{{ campaign.timezone|pretty_tz }}</strong>. Duration may run past midnight (e.g. start 10:00 PM + 4 h &rarr; 2:00 AM next day).</p>
+      <label class="block text-sm font-medium text-ink" for="admin-adhoc-date">Date</label>
+      <input id="admin-adhoc-date" type="date" name="adhoc_date" required class="form-field">
+      <label class="block text-sm mt-2 font-medium text-ink" for="admin-adhoc-start-time">Start time</label>
+      <input id="admin-adhoc-start-time" type="time" name="adhoc_start_time" required class="form-field">
+      <label class="block text-sm mt-2 font-medium text-ink" for="admin-adhoc-duration-hours">Session duration (hours)</label>
+      <input id="admin-adhoc-duration-hours" type="number" name="duration_hours" required min="0.25" max="48" step="0.25" value="3"
+             class="form-field">
+      <label class="block mt-2 text-sm font-medium text-ink" for="admin-adhoc-label">Label (optional)</label>
+      <input id="admin-adhoc-label" name="label" placeholder="May 30 one-shot" class="form-field">
+      <button class="mt-3 btn px-3 py-1.5 text-sm">
         Add one-off time
       </button>
     </form>
   </div>
 </section>
 
-<section class="bg-white border border-stone-300 rounded-lg p-5 shadow-sm mb-6">
+<section class="bg-surface border border-line rounded-lg p-5 shadow-sm mb-6">
   <h2 class="heading text-lg mb-2">Exports &amp; calendar feeds</h2>
-  <p class="text-sm text-stone-600 mb-3">
+  <p class="text-sm text-muted mb-3">
     JSON is a full backup of times, roster, availability, and per-date opt-outs (admin-only).
-    Restore one from the <a class="underline hover:text-red-800" href="/">home page</a> &mdash; importing creates a fresh campaign with brand-new admin and player links.
-    The consensus <code class="text-xs bg-stone-100 px-1 rounded">.ics</code> lives at the public URL and lists upcoming windows where everyone is available, plus near-consensus ones (one player missing) prefixed with <code class="text-xs bg-stone-100 px-1 rounded">[missing: …]</code>. Share this single feed with the group &mdash; the same link is on every player's page too.
+    Restore one from the <a class="underline text-brand-fg hover:text-brand-fg-hover" href="/">home page</a>. Importing creates a fresh campaign with brand-new admin and player links.
+    The consensus <code class="text-xs bg-[color:var(--color-code-bg)] px-1 rounded">.ics</code> lives at the public URL and lists upcoming windows where everyone is available, plus near-consensus ones (one player missing) prefixed with <code class="text-xs bg-[color:var(--color-code-bg)] px-1 rounded">[missing: &hellip;]</code>. Share this single feed with the group. The same link is on every player's page too.
   </p>
   <div class="flex flex-wrap gap-3">
     <a href="{{ admin_url }}/export.json" download
-       class="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50">
+       class="btn-secondary px-3 py-1.5 text-sm">
       Download JSON
     </a>
     <a href="{{ public_url }}/calendar-consensus.ics"
-       class="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50">
+       class="btn-secondary px-3 py-1.5 text-sm">
       Consensus calendar (.ics)
     </a>
   </div>
 </section>
 
-<section class="bg-white border border-red-200 rounded-lg p-5 shadow-sm mb-6">
-  <h2 class="heading text-lg mb-2 text-red-900">Delete campaign</h2>
-  <p class="text-sm text-stone-600 mb-3">
+<section class="bg-surface border border-red-300 dark:border-red-800 rounded-lg p-5 shadow-sm mb-6">
+  <h2 class="heading text-lg mb-2 text-red-800 dark:text-red-400">Delete campaign</h2>
+  <p class="text-sm text-muted mb-3">
     Permanently removes this campaign, every player, time, saved answer, and per-date exception. Admin and player links will stop working.
   </p>
   <form method="post" action="{{ admin_url }}/delete">
     <button type="submit"
-            class="rounded-md bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800"
+            class="rounded-md bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500"
             onclick="return confirm('Delete this entire campaign and all of its data? This cannot be undone.')">
-      Delete campaign…
+      Delete campaign&hellip;
     </button>
   </form>
 </section>
 
-<section class="text-xs text-stone-500">
-  <p>Bookmark this admin URL &mdash; anyone with it can edit the campaign.</p>
+<section class="text-xs text-muted">
+  <p>Bookmark this admin URL. Anyone with it can edit the campaign.</p>
 </section>
 <script>
 (function () {

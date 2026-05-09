@@ -4,22 +4,22 @@
 
 {% block content %}
 <div class="max-w-md mx-auto">
-  <h1 class="heading text-2xl text-red-800">Super admin</h1>
-  <p class="mt-2 text-sm text-stone-600">
+  <h1 class="heading text-2xl text-brand-fg">Super admin</h1>
+  <p class="mt-2 text-sm text-muted">
     Enter the challenge password from the server logs (or set
-    <code class="text-xs bg-stone-200 px-1 rounded">WHENDOWEROLL_SUPER_ADMIN_PASSWORD</code>).
+    <code class="text-xs bg-[color:var(--color-code-bg)] px-1 rounded">WHENDOWEROLL_SUPER_ADMIN_PASSWORD</code>).
   </p>
   {% if error %}
-  <p class="mt-4 text-sm text-red-700">{{ error }}</p>
+  <p class="mt-4 text-sm text-red-700 dark:text-red-400">{{ error }}</p>
   {% endif %}
-  <form method="post" action="/internal/super-admin/login" class="mt-6 space-y-4 bg-white border border-stone-300 rounded-lg p-6 shadow-sm">
+  <form method="post" action="/internal/super-admin/login" class="mt-6 space-y-4 bg-surface border border-line rounded-lg p-6 shadow-sm">
     <div>
-      <label class="block text-sm font-medium text-stone-700">Password</label>
-      <input type="password" name="password" required autocomplete="off"
-             class="mt-1 w-full rounded-md border-stone-300 focus:border-red-700 focus:ring-red-700">
+      <label class="block text-sm font-medium text-ink" for="super-admin-password">Password</label>
+      <input id="super-admin-password" type="password" name="password" required autocomplete="off"
+             class="form-field">
     </div>
     <button type="submit"
-            class="rounded-md bg-stone-800 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-stone-900">
+            class="btn px-5 py-2.5 text-sm shadow-sm">
       Sign in
     </button>
   </form>
