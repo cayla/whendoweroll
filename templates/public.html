@@ -107,7 +107,7 @@
           {% endif %}
           <span class="align-middle text-ink">{{ occ.starts_at_utc|local_time(display_tz) }}</span>
           {% if occ.user_label %}
-            <span class="block sm:inline sm:ml-2 text-xs text-muted">&mdash; {{ occ.user_label }}</span>
+            <span class="block sm:inline sm:ml-2 text-xs text-muted">· {{ occ.user_label }}</span>
           {% endif %}
         </td>
         <td class="text-right">

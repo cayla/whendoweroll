@@ -5,6 +5,7 @@
 <script src="{{ url_for('static', path='js/theme-init.js') }}"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}When Do We Roll{% endblock %}</title>
+<link rel="icon" href="{{ url_for('static', path='img/favicon.svg') }}" type="image/svg+xml">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="{{ url_for('static', path='js/tailwind-config.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
@@ -14,14 +15,14 @@
 <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}">
 </head>
 <body class="min-h-screen bg-canvas text-ink antialiased">
-<header class="border-b border-line bg-[color:var(--color-header-bg)] backdrop-blur sticky top-0 z-10">
-  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3 min-w-0">
-    <a href="/" class="site-logo text-3xl text-brand-fg hover:text-brand-fg-hover shrink-0 transition-colors">When Do We Roll</a>
+<header class="border-b border-[color:var(--color-header-border)] bg-[color:var(--color-header-bg)] text-[color:var(--color-header-ink)] sticky top-0 z-10">
+  <div class="max-w-5xl mx-auto px-4 py-5 flex items-center justify-between gap-3 min-w-0">
+    <a href="/" class="site-logo text-3xl shrink-0 transition-colors text-[color:var(--color-header-logo)] hover:text-[color:var(--color-header-logo-hover)]">When Do We Roll</a>
     <div class="flex items-center justify-end gap-2 min-w-0 text-right">
       <div class="flex items-center gap-2 shrink-0">
         <label for="theme-select" class="sr-only">Color theme</label>
         <select id="theme-select" name="theme"
-                class="max-w-[10rem] rounded-md border border-line text-xs font-medium text-ink shadow-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand"
+                class="max-w-[10rem] rounded-md border border-line text-xs font-medium shadow-sm focus:outline-none"
                 title="Light, dark, or match system setting"
                 aria-describedby="theme-select-hint">
           <option value="light">Light</option>
@@ -31,17 +32,18 @@
         <span id="theme-select-hint" class="sr-only">Auto follows your device light or dark mode.</span>
       </div>
       {% block header_right %}
-      <span class="text-xs text-muted truncate max-w-[min(72vw,28rem)]">{% block subtitle %}{% endblock %}</span>
+      <span class="text-xs truncate max-w-[min(72vw,28rem)] text-[color:var(--color-header-muted)]">{% block subtitle %}{% endblock %}</span>
       {% endblock %}
     </div>
   </div>
 </header>
-<main class="max-w-5xl mx-auto px-4 py-8">
+<main class="{% block main_class %}max-w-5xl mx-auto px-4 py-8{% endblock %}">
   {% block content %}{% endblock %}
 </main>
-<footer class="max-w-5xl mx-auto px-4 py-6 text-xs text-muted text-center">
-  No accounts. URLs are the keys &mdash; share player links privately.
+<footer class="max-w-5xl mx-auto px-4 mt-10 pt-6 pb-8 border-t border-line text-xs text-muted text-center">
+  Links are your login. Share player URLs privately and guard your admin URL.
 </footer>
 <script src="{{ url_for('static', path='js/theme-ui.js') }}"></script>
+{% block page_scripts %}{% endblock %}
 </body>
 </html>

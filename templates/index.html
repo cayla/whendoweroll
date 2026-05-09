@@ -1,85 +1,149 @@
 {% extends "base.html" %}
 {% block title %}Create campaign &middot; When Do We Roll{% endblock %}
+{% block main_class %}max-w-5xl mx-auto px-4 pt-0 pb-8{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
-  <h1 class="heading text-3xl text-brand-fg">Roll for initiative</h1>
-  <p class="mt-2 text-muted">
-    Spin up a lightweight scheduler for your campaign. No accounts &mdash; you'll
-    get one secret admin link plus a private link per player.
-  </p>
+<div class="home-root">
+  <div class="home-hero-viewport">
+  <section class="home-hero relative rounded-none border-b border-line">
+    <div class="home-hero-content relative z-10 px-4 pt-14 pb-[calc(3.5rem+10px)] md:pt-20 md:pb-[calc(5rem+10px)] lg:pt-24 lg:pb-[calc(6rem+10px)] text-center">
+      <h1 class="heading home-hero-title text-4xl md:text-6xl">Roll for initiative</h1>
+      <p class="home-hero-lede mt-5 max-w-xl mx-auto leading-relaxed text-lg md:text-xl">
+        Spin up a lightweight scheduler for your campaign
+      </p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+        {% if not new_campaigns_disabled %}
+        <button type="button" id="home-open-create" class="home-hero-btn home-hero-btn-secondary px-5 py-2.5 text-base font-medium">
+          Create campaign
+        </button>
+        {% endif %}
+        <button type="button" id="home-open-restore" class="home-hero-btn home-hero-btn-secondary px-5 py-2.5 text-base font-medium">
+          Restore campaign
+        </button>
+      </div>
+    </div>
+  </section>
+  </div>
 
   {% if new_campaigns_disabled %}
-  <div class="mt-8 rounded-md border border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-600/80 dark:bg-amber-950/40 dark:text-amber-100">
+  <div class="max-w-2xl mx-auto mt-8 rounded-md border border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-600/80 dark:bg-amber-950/40 dark:text-amber-100">
     <strong>New campaigns are disabled</strong> on this instance (operator setting).
     Existing campaign links still work.
   </div>
-  {% else %}
-  <form method="post" action="/" class="mt-8 space-y-5 bg-surface border border-line rounded-lg p-6 shadow-sm">
-    <div>
-      <label class="block text-sm font-medium text-ink" for="create-campaign-name">Campaign name</label>
-      <input id="create-campaign-name" name="name" required maxlength="80" placeholder="Trouble with the Gazebo"
-             class="form-field">
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-ink" for="create-campaign-timezone">Timezone</label>
-      <select id="create-campaign-timezone" name="timezone" required class="form-field">
-        {% for value, label in timezone_options %}
-          <option value="{{ value }}" {% if value == default_tz %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-      <p class="mt-1 text-sm text-muted">Used to interpret weekly recurring times</p>
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-ink" for="create-player-names">Players (one name per line)</label>
-      <textarea id="create-player-names" name="player_names" rows="5" placeholder="Alice&#10;Bob&#10;Cayla"
-                class="form-field font-mono text-sm"></textarea>
-      <p class="text-sm text-muted">Optional &mdash; you can add more later</p>
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-ink" for="create-horizon-weeks">Scheduling horizon</label>
-      <div class="mt-1 flex items-center gap-2">
-        <input id="create-horizon-weeks" name="horizon_weeks" type="number" min="1" max="52" value="12" class="w-24 form-field">
-        <span class="text-sm text-muted">weeks of recurring sessions</span>
-      </div>
-    </div>
-
-    <div class="pt-2">
-      <button type="submit" class="btn px-4 py-2">
-        Create campaign
-      </button>
-    </div>
-  </form>
-
-  <div class="mt-6 flex items-center gap-3 text-xs uppercase tracking-wider text-muted">
-    <span class="h-px flex-1 bg-line"></span>
-    <span>or restore a backup</span>
-    <span class="h-px flex-1 bg-line"></span>
-  </div>
-
-  <form method="post" action="/import" enctype="multipart/form-data"
-        class="mt-4 space-y-4 bg-surface border border-line rounded-lg p-6 shadow-sm">
-    <div>
-      <h2 class="heading text-lg">Import from JSON</h2>
-      <p class="mt-1 text-sm text-muted">
-        Upload an <code class="text-xs bg-[color:var(--color-code-bg)] px-1 rounded">export.json</code> from a previous
-        admin page. You'll get a new admin link and new player links. The originals aren't stored in the backup, so they can't be reused.
-      </p>
-    </div>
-    <div>
-      <label class="block text-sm font-medium text-ink" for="import-backup-file">Backup file</label>
-      <input id="import-backup-file" type="file" name="backup" accept="application/json,.json" required
-             class="mt-1 w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-btn-primary file:px-3 file:py-1.5 file:text-on-btn hover:file:bg-btn-primary-hover">
-    </div>
-    <div>
-      <button type="submit" class="btn-secondary px-4 py-2 font-medium">
-        Restore campaign
-      </button>
-    </div>
-  </form>
   {% endif %}
+
+  <section class="home-features max-w-5xl mx-auto px-4 mt-12 md:mt-16 mb-4" aria-labelledby="home-features-heading">
+    <h2 id="home-features-heading" class="heading text-center text-2xl md:text-3xl text-ink mb-8 md:mb-10">
+      Built for your table
+    </h2>
+    <div class="grid gap-6 md:grid-cols-3 md:gap-8">
+      <article class="home-feature-card">
+        <div class="home-feature-card-icon" aria-hidden="true">
+          <img src="{{ url_for('static', path='img/hero-dice/d4-outline.svg') }}" alt="" width="48" height="48" class="home-feature-dice" decoding="async">
+        </div>
+        <h3 class="heading text-lg text-ink mt-4 mb-2">No Accounts</h3>
+        <p class="text-sm text-muted leading-relaxed m-0">
+          One secret admin link for you and a private link per player. That&apos;s the whole login. No passwords, no sign-up wall.
+        </p>
+      </article>
+      <article class="home-feature-card">
+        <div class="home-feature-card-icon" aria-hidden="true">
+          <img src="{{ url_for('static', path='img/hero-dice/d10-outline.svg') }}" alt="" width="48" height="48" class="home-feature-dice" decoding="async">
+        </div>
+        <h3 class="heading text-lg text-ink mt-4 mb-2">Players Stay Private</h3>
+        <p class="text-sm text-muted leading-relaxed m-0">
+          Private links for players; your admin URL stays apart. Run the roster from there and regenerate a player link when you need a new one. The old URL stops working.
+        </p>
+      </article>
+      <article class="home-feature-card">
+        <div class="home-feature-card-icon" aria-hidden="true">
+          <img src="{{ url_for('static', path='img/hero-dice/d12-outline.svg') }}" alt="" width="48" height="48" class="home-feature-dice" decoding="async">
+        </div>
+        <h3 class="heading text-lg text-ink mt-4 mb-2">Recurring Sessions</h3>
+        <p class="text-sm text-muted leading-relaxed m-0">
+          Offer recurring slots and how far ahead you plan. Players mark when they&apos;re free instead of chasing replies in chat.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  {% if not new_campaigns_disabled %}
+  <dialog id="home-dialog-create" class="home-dialog" aria-labelledby="home-dialog-create-title">
+    <div class="home-dialog-header">
+      <h2 id="home-dialog-create-title" class="heading text-lg text-ink m-0">Create campaign</h2>
+      <button type="button" class="home-dialog-close" data-dialog-close aria-label="Close dialog">&times;</button>
+    </div>
+    <form method="post" action="/" class="home-dialog-form space-y-5">
+      <div>
+        <label class="block text-sm font-medium text-ink" for="create-campaign-name">Campaign name</label>
+        <input id="create-campaign-name" name="name" required maxlength="80" placeholder="Trouble with the Gazebo"
+               class="form-field">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-ink" for="create-campaign-timezone">Timezone</label>
+        <select id="create-campaign-timezone" name="timezone" required class="form-field">
+          {% for value, label in timezone_options %}
+            <option value="{{ value }}" {% if value == default_tz %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <p class="mt-1 text-sm text-muted">Used to interpret weekly recurring times</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-ink" for="create-player-names">Players (one name per line)</label>
+        <textarea id="create-player-names" name="player_names" rows="5" placeholder="Alice&#10;Bob&#10;Cayla"
+                  class="form-field font-mono text-sm"></textarea>
+        <p class="text-sm text-muted">Optional. You can add more later.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-ink" for="create-horizon-weeks">Scheduling horizon</label>
+        <div class="mt-1 flex items-center gap-2">
+          <input id="create-horizon-weeks" name="horizon_weeks" type="number" min="1" max="52" value="12" class="w-24 form-field">
+          <span class="text-sm text-muted">weeks of recurring sessions</span>
+        </div>
+      </div>
+
+      <div class="pt-2 flex flex-wrap gap-2 justify-end">
+        <button type="button" class="btn-secondary px-4 py-2" data-dialog-close>Cancel</button>
+        <button type="submit" class="btn px-4 py-2">
+          Create campaign
+        </button>
+      </div>
+    </form>
+  </dialog>
+  {% endif %}
+
+  <dialog id="home-dialog-restore" class="home-dialog" aria-labelledby="home-dialog-restore-title">
+    <div class="home-dialog-header">
+      <h2 id="home-dialog-restore-title" class="heading text-lg text-ink m-0">Restore campaign</h2>
+      <button type="button" class="home-dialog-close" data-dialog-close aria-label="Close dialog">&times;</button>
+    </div>
+    <form method="post" action="/import" enctype="multipart/form-data" class="home-dialog-form space-y-4">
+      <div>
+        <p class="font-medium text-ink m-0">Import from JSON</p>
+        <p class="mt-1 text-sm text-muted">
+          Upload an <code class="text-xs bg-[color:var(--color-code-bg)] px-1 rounded">export.json</code> from a previous
+          admin page. You'll get a new admin link and new player links. The originals aren't stored in the backup, so they can't be reused.
+        </p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-ink" for="import-backup-file">Backup file</label>
+        <input id="import-backup-file" type="file" name="backup" accept="application/json,.json" required
+               class="input-file-chooser mt-1 w-full text-sm text-ink">
+      </div>
+      <div class="flex flex-wrap gap-2 justify-end pt-2">
+        <button type="button" class="btn-secondary px-4 py-2 font-medium" data-dialog-close>Cancel</button>
+        <button type="submit" class="btn px-4 py-2 font-medium">
+          Restore campaign
+        </button>
+      </div>
+    </form>
+  </dialog>
 </div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', path='js/home-modals.js') }}"></script>
 {% endblock %}

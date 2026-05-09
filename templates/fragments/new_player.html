@@ -1,7 +1,7 @@
 <div class="rounded-md border border-emerald-400 bg-emerald-50 p-3 text-sm dark:border-emerald-700 dark:bg-emerald-950/35">
   <div class="font-medium text-emerald-900 dark:text-emerald-200">{{ player.display_name }}'s private link</div>
   <p class="text-xs text-emerald-800 dark:text-emerald-300/90 mt-1">
-    This is the only time you'll see it &mdash; copy it now and send it to them privately.
+    This is the only time you'll see it. Copy it now and send it to them privately.
   </p>
   <label class="sr-only" for="new-player-url-{{ player.id }}">{{ player.display_name }} private link URL</label>
   <input id="new-player-url-{{ player.id }}" readonly value="{{ player_url }}" onclick="this.select()"
