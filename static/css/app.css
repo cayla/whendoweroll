@@ -800,3 +800,20 @@ select.form-field::-ms-expand,
     outline-offset: 2px;
   }
 }
+
+/* Created campaign page: confirmation toast above copy button */
+.created-copy-toast {
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 6px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0.18s ease;
+}
+
+.created-copy-toast.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
