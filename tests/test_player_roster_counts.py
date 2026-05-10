@@ -33,7 +33,8 @@ def test_player_slot_row_shows_can_make_pair(client):
     )
     assert r.status_code == 200
     public_id, secret = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text).groups()
-    tokens = re.findall(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
+    raw = re.findall(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
+    tokens = list(dict.fromkeys(raw))
     client.post(
         f"/c/{public_id}/admin/{secret}/slots",
         data={"kind": "recurring", "weekday": "4", "start_local": "18:00", "duration_hours": "3"},
@@ -74,7 +75,8 @@ def _three_player_campaign_with_slot(client) -> tuple[str, str, list[str]]:
     )
     assert r.status_code == 200
     public_id, secret = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text).groups()
-    tokens = re.findall(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
+    raw = re.findall(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
+    tokens = list(dict.fromkeys(raw))
     client.post(
         f"/c/{public_id}/admin/{secret}/slots",
         data={"kind": "recurring", "weekday": "4", "start_local": "18:00", "duration_hours": "3"},

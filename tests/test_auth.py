@@ -23,7 +23,9 @@ def _create_campaign(client) -> tuple[str, str, list[str]]:
     )
     assert r.status_code == 200
     public_id, secret = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text).groups()
-    tokens = re.findall(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
+    raw = re.findall(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
+    # Created page may repeat each player link (e.g. two sections); keep unique order.
+    tokens = list(dict.fromkeys(raw))
     assert len(tokens) == 3
     return public_id, secret, tokens
 

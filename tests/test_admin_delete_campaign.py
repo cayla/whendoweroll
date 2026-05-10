@@ -17,7 +17,8 @@ def _create_campaign(client):
     )
     assert r.status_code == 200
     public_id, secret = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text).groups()
-    tokens = re.findall(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
+    raw = re.findall(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
+    tokens = list(dict.fromkeys(raw))
     assert len(tokens) == 2
     return public_id, secret, tokens
 
