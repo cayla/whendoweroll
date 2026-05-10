@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
-from app.models import PublicRecurrenceMode, Slot, SlotKind
+from app.models import Campaign, PublicRecurrenceMode, Slot, SlotKind
 from app.services.slots import upcoming_occurrences_for_slot
 
 _WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -51,19 +51,25 @@ def recurring_slot_primary_label(slot: Slot, campaign, display_tz: str) -> str:
     return f"{wn} {slot.start_local}, {dh} h ({campaign.timezone})"
 
 
-def player_slot_public_frequency_caption(slot: Slot) -> str:
-    """Short label for how this recurring slot is thinned on the public page and .ics."""
-    if slot.kind is not SlotKind.recurring:
-        return ""
-    raw = getattr(slot, "public_recurrence_mode", None)
+def player_campaign_tempo_caption(campaign: Campaign) -> str:
+    """Short label for how recurring sessions are thinned on the public page and .ics."""
+    raw = getattr(campaign, "public_recurrence_mode", None)
     try:
         mode = raw if isinstance(raw, PublicRecurrenceMode) else PublicRecurrenceMode(str(raw))
     except ValueError:
         mode = PublicRecurrenceMode.weekly
     if mode is PublicRecurrenceMode.weekly:
-        return "Tempo: weekly"
+        return "Tempo: weekly — the public page and consensus calendar list every date below."
     if mode is PublicRecurrenceMode.twice_per_month:
-        return "Tempo: biweekly / twice a month"
+        return (
+            "Tempo: about twice a month — the public page and calendar show at most "
+            "two sessions per calendar month across all recurring options "
+            "(you still see every date here)."
+        )
     if mode is PublicRecurrenceMode.once_per_month:
-        return "Tempo: once a month"
+        return (
+            "Tempo: about once a month — the public page and calendar take only "
+            "the first qualifying session each calendar month "
+            "(you still see every date here)."
+        )
     return ""

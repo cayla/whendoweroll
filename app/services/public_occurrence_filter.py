@@ -23,11 +23,19 @@ def filter_occurrences_for_public_display(
     availability: Mapping[tuple[int, int], AvailabilityStatus],
     policy: ConsensusPolicy,
     opt_outs: set[tuple[int, int, datetime]],
+    public_recurrence_mode: PublicRecurrenceMode,
 ) -> list[Occurrence]:
-    """Drop recurring dates per ``Slot.public_recurrence_mode``; keep ad-hoc rows."""
+    """Drop recurring dates per ``Campaign.public_recurrence_mode``; keep ad-hoc rows."""
     by_id = {s.id: s for s in slots if s.id is not None}
-    twice_counts: dict[tuple[int, int, int], int] = {}
-    once_done: set[tuple[int, int, int]] = set()
+    mode = public_recurrence_mode
+    if not isinstance(mode, PublicRecurrenceMode):
+        try:
+            mode = PublicRecurrenceMode(str(mode))
+        except ValueError:
+            mode = PublicRecurrenceMode.weekly
+
+    twice_counts: dict[tuple[int, int], int] = {}
+    once_done: set[tuple[int, int]] = set()
     out: list[Occurrence] = []
 
     for occ in sorted(occurrences, key=lambda o: o.starts_at_utc):
@@ -36,19 +44,12 @@ def filter_occurrences_for_public_display(
             out.append(occ)
             continue
 
-        mode = slot.public_recurrence_mode
-        if not isinstance(mode, PublicRecurrenceMode):
-            try:
-                mode = PublicRecurrenceMode(str(mode))
-            except ValueError:
-                mode = PublicRecurrenceMode.weekly
-
         if mode is PublicRecurrenceMode.weekly:
             out.append(occ)
             continue
 
         local = occ.starts_at_utc.astimezone(tz)
-        key = (occ.slot_id, local.year, local.month)
+        key = (local.year, local.month)
 
         if mode is PublicRecurrenceMode.twice_per_month:
             n = twice_counts.get(key, 0)

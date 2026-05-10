@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from app.display_time import format_local_window, player_slot_public_frequency_caption
-from app.models import PublicRecurrenceMode, Slot, SlotKind
+from app.display_time import format_local_window, player_campaign_tempo_caption
+from app.models import Campaign, PublicRecurrenceMode
 
 
 def test_format_local_window_same_day():
@@ -33,23 +33,12 @@ def test_format_local_window_cross_day():
     assert "EST" not in s
 
 
-def test_player_public_frequency_caption_recurring_only():
-    recurring = Slot(
-        id=1,
-        campaign_id=1,
-        kind=SlotKind.recurring,
-        weekday=4,
-        start_local="19:00",
-        duration_hours=3.0,
+def test_player_campaign_tempo_caption():
+    c = Campaign(
+        public_id="x",
+        name="n",
+        timezone="UTC",
+        admin_secret_hash="h",
         public_recurrence_mode=PublicRecurrenceMode.twice_per_month,
     )
-    assert player_slot_public_frequency_caption(recurring) == "Tempo: biweekly / twice a month"
-    adhoc = Slot(
-        id=2,
-        campaign_id=1,
-        kind=SlotKind.adhoc,
-        duration_hours=2.0,
-        starts_at_utc=datetime.now(UTC),
-        ends_at_utc=datetime.now(UTC),
-    )
-    assert player_slot_public_frequency_caption(adhoc) == ""
+    assert "twice a month" in player_campaign_tempo_caption(c)

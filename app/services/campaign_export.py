@@ -49,6 +49,11 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
             "timezone": campaign.timezone,
             "horizon_weeks": campaign.horizon_weeks,
             "consensus_policy": campaign.consensus_policy.value,
+            "public_recurrence_mode": (
+                campaign.public_recurrence_mode.value
+                if isinstance(campaign.public_recurrence_mode, PublicRecurrenceMode)
+                else str(campaign.public_recurrence_mode)
+            ),
             "created_at": _iso(campaign.created_at),
         },
         "players": [
@@ -70,11 +75,6 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
                 "duration_hours": s.duration_hours,
                 "starts_at_utc": _iso(s.starts_at_utc),
                 "ends_at_utc": _iso(s.ends_at_utc),
-                "public_recurrence_mode": (
-                    s.public_recurrence_mode.value
-                    if isinstance(s.public_recurrence_mode, PublicRecurrenceMode)
-                    else str(s.public_recurrence_mode)
-                ),
             }
             for s in slots
         ],

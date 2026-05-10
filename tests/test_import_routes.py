@@ -57,6 +57,7 @@ def _seed(engine, *, public_id: str) -> dict:
         campaign = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
         campaign.consensus_policy = ConsensusPolicy.allow_one
         campaign.horizon_weeks = 7
+        campaign.public_recurrence_mode = PublicRecurrenceMode.twice_per_month
         s.add(campaign)
         recurring = Slot(
             campaign_id=campaign.id,
@@ -65,7 +66,6 @@ def _seed(engine, *, public_id: str) -> dict:
             weekday=4,
             start_local="18:00",
             duration_hours=3.5,
-            public_recurrence_mode=PublicRecurrenceMode.twice_per_month,
         )
         s.add(recurring)
 
@@ -125,8 +125,9 @@ def test_export_then_import_roundtrips_full_campaign(client, engine):
     payload = export.json()
     assert payload["export_version"] == 3
     assert payload["campaign"]["consensus_policy"] == ConsensusPolicy.allow_one.value
+    assert payload["campaign"]["public_recurrence_mode"] == PublicRecurrenceMode.twice_per_month.value
     recurring_export = next(s for s in payload["slots"] if s["kind"] == "recurring")
-    assert recurring_export["public_recurrence_mode"] == PublicRecurrenceMode.twice_per_month.value
+    assert "public_recurrence_mode" not in recurring_export
 
     imported = _post_import(client, payload)
     assert imported.status_code == 200
@@ -143,6 +144,7 @@ def test_export_then_import_roundtrips_full_campaign(client, engine):
         assert new_campaign.timezone == "UTC"
         assert new_campaign.horizon_weeks == 7
         assert new_campaign.consensus_policy == ConsensusPolicy.allow_one
+        assert new_campaign.public_recurrence_mode == PublicRecurrenceMode.twice_per_month
 
         roster = s.exec(select(Player).where(Player.campaign_id == new_campaign.id).order_by(Player.sort_order)).all()
         assert [p.display_name for p in roster] == ["Alice", "Bob"]
@@ -155,7 +157,6 @@ def test_export_then_import_roundtrips_full_campaign(client, engine):
         assert recurring.start_local == "18:00"
         assert recurring.duration_hours == 3.5
         assert recurring.label == "Friday game"
-        assert recurring.public_recurrence_mode == PublicRecurrenceMode.twice_per_month
         assert adhoc.starts_at_utc.replace(tzinfo=UTC) == fixture["adhoc_starts_at_utc"]
         assert adhoc.duration_hours == 2.0
 

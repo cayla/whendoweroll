@@ -8,8 +8,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
 
 from app.db import (
+    migrate_sqlite_campaign_public_recurrence_mode,
     migrate_sqlite_slot_max_sessions_per_month,
-    migrate_sqlite_slot_public_recurrence_mode,
     migrate_sqlite_slot_recurrence_cadence,
     migrate_sqlite_slot_schema,
 )
@@ -145,7 +145,7 @@ def test_migration_adds_recurrence_cadence_columns():
     assert "recurrence_anchor_local_date" in names
 
 
-def test_migration_adds_public_recurrence_mode_column():
+def test_migration_adds_campaign_public_recurrence_mode_and_backfills():
     eng = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -155,15 +155,46 @@ def test_migration_adds_public_recurrence_mode_column():
         conn.execute(
             text(
                 """
-                CREATE TABLE slot (
+                CREATE TABLE campaign (
                     id INTEGER PRIMARY KEY,
-                    campaign_id INTEGER NOT NULL,
-                    kind VARCHAR NOT NULL
+                    public_id VARCHAR NOT NULL,
+                    name VARCHAR NOT NULL,
+                    timezone VARCHAR NOT NULL,
+                    admin_secret_hash VARCHAR NOT NULL,
+                    horizon_weeks INTEGER NOT NULL DEFAULT 12,
+                    consensus_policy VARCHAR NOT NULL DEFAULT 'no_two_nears',
+                    created_at VARCHAR
                 )
                 """
             )
         )
-    migrate_sqlite_slot_public_recurrence_mode(eng)
+        conn.execute(
+            text(
+                "INSERT INTO campaign (id, public_id, name, timezone, admin_secret_hash) "
+                "VALUES (1, 'pid', 'n', 'UTC', 'h')"
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE TABLE slot (
+                    id INTEGER PRIMARY KEY,
+                    campaign_id INTEGER NOT NULL,
+                    kind VARCHAR NOT NULL,
+                    public_recurrence_mode VARCHAR NOT NULL DEFAULT 'weekly'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO slot (id, campaign_id, kind, public_recurrence_mode) "
+                "VALUES (1, 1, 'recurring', 'twice_per_month')"
+            )
+        )
+    migrate_sqlite_campaign_public_recurrence_mode(eng)
     with eng.connect() as conn:
-        names = {row[1] for row in conn.execute(text("PRAGMA table_info(slot)")).fetchall()}
+        names = {row[1] for row in conn.execute(text("PRAGMA table_info(campaign)")).fetchall()}
+        row = conn.execute(text("SELECT public_recurrence_mode FROM campaign WHERE id = 1")).one()
     assert "public_recurrence_mode" in names
+    assert row[0] == "twice_per_month"
