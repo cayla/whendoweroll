@@ -39,9 +39,9 @@ def test_player_campaign_tempo_caption():
         name="n",
         timezone="UTC",
         admin_secret_hash="h",
-        public_recurrence_mode=PublicRecurrenceMode.twice_per_month,
+        public_recurrence_mode=PublicRecurrenceMode.two_weeks,
     )
-    assert "twice a month" in player_campaign_tempo_caption(c)
+    assert "two weeks" in player_campaign_tempo_caption(c).lower()
 
 
 def test_public_campaign_tempo_caption():

@@ -109,7 +109,7 @@ def _infer_public_recurrence_from_legacy_slots(slots_raw: list[Any]) -> PublicRe
             continue
         legacy_n = raw.get("every_n_weeks")
         if raw.get("public_recurrence_mode") is None and legacy_n in (2, "2"):
-            modes.add(PublicRecurrenceMode.twice_per_month)
+            modes.add(PublicRecurrenceMode.two_weeks)
             continue
         modes.add(
             _parse_public_recurrence_mode_import(
@@ -119,19 +119,22 @@ def _infer_public_recurrence_from_legacy_slots(slots_raw: list[Any]) -> PublicRe
         )
     if PublicRecurrenceMode.once_per_month in modes:
         return PublicRecurrenceMode.once_per_month
-    if PublicRecurrenceMode.twice_per_month in modes:
-        return PublicRecurrenceMode.twice_per_month
+    if PublicRecurrenceMode.two_weeks in modes:
+        return PublicRecurrenceMode.two_weeks
     return PublicRecurrenceMode.weekly
 
 
 def _parse_public_recurrence_mode_import(raw: Any, *, field: str) -> PublicRecurrenceMode:
     if raw is None or (isinstance(raw, str) and not raw.strip()):
         return PublicRecurrenceMode.weekly
+    s = str(raw).strip()
+    if s == "twice_per_month":
+        s = "two_weeks"
     try:
-        return PublicRecurrenceMode(str(raw).strip())
+        return PublicRecurrenceMode(s)
     except ValueError as exc:
         raise CampaignImportError(
-            f"{field} must be 'weekly', 'twice_per_month', or 'once_per_month'",
+            f"{field} must be 'weekly', 'two_weeks', 'once_per_month' (legacy 'twice_per_month' accepted)",
         ) from exc
 
 

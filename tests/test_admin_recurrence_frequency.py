@@ -29,7 +29,7 @@ def test_admin_add_recurring_slot_does_not_change_campaign_tempo(client, engine)
     public_id, secret = _new_campaign(client)
     with Session(engine) as s:
         c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
-        c.public_recurrence_mode = PublicRecurrenceMode.twice_per_month
+        c.public_recurrence_mode = PublicRecurrenceMode.two_weeks
         s.add(c)
         s.commit()
 
@@ -48,7 +48,7 @@ def test_admin_add_recurring_slot_does_not_change_campaign_tempo(client, engine)
         slot = s.exec(select(Slot).where(Slot.kind == SlotKind.recurring)).one()
         c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
     assert slot.weekday == 4
-    assert c.public_recurrence_mode == PublicRecurrenceMode.twice_per_month
+    assert c.public_recurrence_mode == PublicRecurrenceMode.two_weeks
 
 
 def test_admin_update_campaign_public_recurrence_mode(client, engine):

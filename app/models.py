@@ -16,10 +16,11 @@ Time conventions:
     wants sessions to surface on the **public** next-game cards and consensus
     ``.ics`` only. Applies across all recurring slot options together. Player
     pages always list every occurrence. ``weekly`` (default),
-    ``twice_per_month``, and ``once_per_month`` all use the same public **tempo
-    chain**: earliest qualifying window first, then each next listing is chosen
-    near an anchor **7 days**, **14 days**, or **one calendar month** after the
-    previous kept start (closest qualifying match in a lookahead bracket).
+    ``two_weeks`` (about a fourteen-day beat), and ``once_per_month`` all use the
+    same public **tempo chain**: earliest qualifying window first, then each
+    next listing is chosen near an anchor **7 days**, **14 days**, or **one
+    calendar month** after the previous kept start (closest qualifying match in
+    a lookahead bracket).
   - ``OccurrenceOptOut``: for a recurring slot, a player can opt out of one
     concrete occurrence (identified by that occurrence's UTC start) while
     keeping their standing yes/no on the logical slot.
@@ -44,10 +45,13 @@ class SlotKind(StrEnum):
 
 
 class PublicRecurrenceMode(StrEnum):
-    """How the campaign thins recurring dates on the public page and consensus ICS."""
+    """How the campaign thins recurring dates on the public page and consensus ICS.
+
+    ``two_weeks`` is the fourteen-day tempo (not “two dates per calendar month”).
+    """
 
     weekly = "weekly"
-    twice_per_month = "twice_per_month"
+    two_weeks = "two_weeks"
     once_per_month = "once_per_month"
 
 

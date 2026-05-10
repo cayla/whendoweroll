@@ -138,6 +138,10 @@ def occurrence_qualifies_under_policy(
 
     Does not apply between-window guardrails from ``find_next_meets``; those
     run after the occurrence list is built.
+
+    With an empty ``players`` sequence, returns ``False`` (no one can count as
+    present). The public tempo chain therefore yields **no** recurring rows when
+    the roster is empty, rather than guessing a first row.
     """
     if not players:
         return False
@@ -192,6 +196,16 @@ def find_next_meets(
     consensus ``.ics`` feed (large ``limit``); the ICS feed is intentionally
     tight to match the cards so subscribers can rely on it as the actual
     play schedule.
+
+    **Ordering vs tempo:** Callers (e.g. the public routes) usually pass
+    occurrences that have already been **tempo-thinned** by
+    ``filter_occurrences_for_public_display``. This function then walks that
+    list in time order, keeping each window that satisfies the per-window
+    missing bound **and** does not violate the policy's **between-window**
+    guardrails (e.g. ``no_two_nears``). So the first green summary card is **not**
+    guaranteed to be the first tempo-chain row: it is the first row that survives
+    *both* the tempo pass and this guardrail pass. A chronologically earlier
+    window can be skipped if it would pair badly with the previous kept card.
     """
     candidates = list_consensus_occurrences(
         occurrences,

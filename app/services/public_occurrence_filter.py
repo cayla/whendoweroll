@@ -16,7 +16,7 @@ Every tempo uses the same **momentum chain** on recurring rows:
 Anchors:
 
   - ``weekly``: previous kept + **7** calendar days.
-  - ``twice_per_month``: previous kept + **14** calendar days.
+  - ``two_weeks``: previous kept + **14** calendar days.
   - ``once_per_month``: previous kept + **1** calendar month (same day when
     possible; shorter months clamp, e.g. Jan 31 → Feb 28).
 
@@ -177,6 +177,10 @@ def _apply_public_tempo_chain(
     pool = sorted(recurring, key=lambda o: o.starts_at_utc)
     if not pool:
         return []
+    # No roster → no policy-qualified windows; do not invent a "first" row (see
+    # ``occurrence_qualifies_under_policy`` docstring).
+    if not players:
+        return []
     viable_first = [o for o in pool if occurrence_qualifies_under_policy(o, players, availability, policy, opt_outs)]
     kept: list[Occurrence] = [min(viable_first if viable_first else pool, key=lambda o: o.starts_at_utc)]
     rest = [o for o in pool[1:] if o.starts_at_utc > kept[-1].starts_at_utc]
@@ -216,7 +220,7 @@ def _apply_public_tempo_chain(
                 opt_outs=opt_outs,
             )
         else:
-            period = 7 if mode is PublicRecurrenceMode.weekly else 14
+            period = 14 if mode is PublicRecurrenceMode.two_weeks else 7
             ideal = _add_local_calendar_days(last_ts, period, tz)
             win_end = _add_local_calendar_days(last_ts, 2 * period, tz)
             window = [o for o in future if o.starts_at_utc <= win_end]
@@ -249,7 +253,11 @@ def filter_occurrences_for_public_display(
     opt_outs: set[tuple[int, int, datetime]],
     public_recurrence_mode: PublicRecurrenceMode,
 ) -> list[Occurrence]:
-    """Thin recurring rows for public / ICS using the campaign tempo chain."""
+    """Thin recurring rows for public / ICS using the campaign tempo chain.
+
+    With an empty ``players`` list, recurring rows are omitted (nothing can
+    satisfy the policy bar); ad-hoc rows are still returned.
+    """
     by_id = {s.id: s for s in slots if s.id is not None}
     mode = public_recurrence_mode
     if not isinstance(mode, PublicRecurrenceMode):

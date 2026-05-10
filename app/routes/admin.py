@@ -33,11 +33,11 @@ _PUBLIC_RECURRENCE_MODE_CHOICES: tuple[tuple[PublicRecurrenceMode, str, str], ..
         "Public next-game cards and consensus calendar list every scheduled recurring session.",
     ),
     (
-        PublicRecurrenceMode.twice_per_month,
-        "About twice a month",
+        PublicRecurrenceMode.two_weeks,
+        "Every two weeks (~14 days)",
         (
             "Public page and calendar: earliest qualifying session, then each next pick near "
-            "two weeks after the previous kept listing (closest match in a bracket). "
+            "fourteen days after the previous kept listing (closest match in a bracket). "
             "Player pages still list every date."
         ),
     ),
@@ -95,8 +95,11 @@ def _parse_session_duration_hours(raw: str | None) -> float:
 def _parse_public_recurrence_mode(raw: str | None) -> PublicRecurrenceMode:
     if raw is None or not str(raw).strip():
         return PublicRecurrenceMode.weekly
+    s = str(raw).strip()
+    if s == "twice_per_month":
+        s = "two_weeks"
     try:
-        return PublicRecurrenceMode(str(raw).strip())
+        return PublicRecurrenceMode(s)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Unknown public recurrence mode") from exc
 

@@ -53,17 +53,17 @@ def recurring_slot_primary_label(slot: Slot, campaign, display_tz: str) -> str:
 
 def player_campaign_tempo_caption(campaign: Campaign) -> str:
     """Short label for how recurring sessions are thinned on the public page and .ics."""
-    raw = getattr(campaign, "public_recurrence_mode", None)
+    raw = campaign.public_recurrence_mode
     try:
         mode = raw if isinstance(raw, PublicRecurrenceMode) else PublicRecurrenceMode(str(raw))
     except ValueError:
         mode = PublicRecurrenceMode.weekly
     if mode is PublicRecurrenceMode.weekly:
         return "Tempo: weekly — the public page and consensus calendar list every date below."
-    if mode is PublicRecurrenceMode.twice_per_month:
+    if mode is PublicRecurrenceMode.two_weeks:
         return (
-            "Tempo: about twice a month — the public page and calendar walk forward from the "
-            "earliest qualifying session, then each next pick is the best match near two weeks "
+            "Tempo: every two weeks — the public page and calendar walk forward from the "
+            "earliest qualifying session, then each next pick is the best match near fourteen days "
             "after the last one shown. You still see every date here."
         )
     if mode is PublicRecurrenceMode.once_per_month:
@@ -76,7 +76,7 @@ def player_campaign_tempo_caption(campaign: Campaign) -> str:
 
 def public_campaign_tempo_caption(campaign: Campaign) -> str:
     """One-line tempo for the anonymous public campaign page."""
-    raw = getattr(campaign, "public_recurrence_mode", None)
+    raw = campaign.public_recurrence_mode
     try:
         mode = raw if isinstance(raw, PublicRecurrenceMode) else PublicRecurrenceMode(str(raw))
     except ValueError:
@@ -86,10 +86,10 @@ def public_campaign_tempo_caption(campaign: Campaign) -> str:
             "Tempo: weekly — this page and the consensus calendar list every "
             "qualifying session. Player links list every occurrence."
         )
-    if mode is PublicRecurrenceMode.twice_per_month:
+    if mode is PublicRecurrenceMode.two_weeks:
         return (
-            "Tempo: about twice a month — earliest qualifying session first, then each next "
-            "listing near two weeks after the previous one here and on the calendar. "
+            "Tempo: every two weeks — earliest qualifying session first, then each next "
+            "listing near fourteen days after the previous one here and on the calendar. "
             "Player links list every occurrence."
         )
     if mode is PublicRecurrenceMode.once_per_month:

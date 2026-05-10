@@ -64,7 +64,7 @@ def test_rhythm_picks_near_ideal_when_exact_anchor_is_short_handed():
     assert pick.starts_at_utc == may16.starts_at_utc
 
 
-def test_twice_per_month_picks_two_spaced_by_closest_to_fourteen_day_beat():
+def test_two_weeks_tempo_picks_spaced_by_closest_to_fourteen_day_beat():
     slot = Slot(
         id=1,
         campaign_id=1,
@@ -88,7 +88,7 @@ def test_twice_per_month_picks_two_spaced_by_closest_to_fourteen_day_beat():
         availability={(1, 1): AvailabilityStatus.yes},
         policy=ConsensusPolicy.strict,
         opt_outs=set(),
-        public_recurrence_mode=PublicRecurrenceMode.twice_per_month,
+        public_recurrence_mode=PublicRecurrenceMode.two_weeks,
     )
     jan_pub = [o for o in filtered if o.starts_at_utc.astimezone(tz).month == 1]
     assert len(jan_pub) == 2
@@ -97,7 +97,7 @@ def test_twice_per_month_picks_two_spaced_by_closest_to_fourteen_day_beat():
     assert jan_pub[1].starts_at_utc.astimezone(tz).day == 20
 
 
-def test_twice_per_month_tempo_chain_across_two_slots():
+def test_two_weeks_tempo_chain_across_two_slots():
     mon = Slot(
         id=1,
         campaign_id=1,
@@ -126,7 +126,7 @@ def test_twice_per_month_tempo_chain_across_two_slots():
         availability={(1, 1): AvailabilityStatus.yes, (1, 2): AvailabilityStatus.yes},
         policy=ConsensusPolicy.strict,
         opt_outs=set(),
-        public_recurrence_mode=PublicRecurrenceMode.twice_per_month,
+        public_recurrence_mode=PublicRecurrenceMode.two_weeks,
     )
     jan = [o for o in jan_pub if o.starts_at_utc.astimezone(tz).month == 1]
     # 14-day tempo can surface more than two January rows when the horizon is short; the chain

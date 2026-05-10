@@ -9,9 +9,8 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import (
     migrate_sqlite_campaign_public_recurrence_mode,
-    migrate_sqlite_slot_max_sessions_per_month,
-    migrate_sqlite_slot_recurrence_cadence,
     migrate_sqlite_slot_schema,
+    migrate_sqlite_strip_superseded_columns,
 )
 
 
@@ -96,7 +95,8 @@ def test_migration_adhoc_from_utc_bounds():
     assert abs(dh - 2.5) < 1e-6
 
 
-def test_migration_adds_max_sessions_per_month_column():
+def test_migration_strips_superseded_columns_when_present():
+    """Orphan columns from pre-release schema experiments are dropped (SQLite 3.35+)."""
     eng = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -106,43 +106,35 @@ def test_migration_adds_max_sessions_per_month_column():
         conn.execute(
             text(
                 """
-                CREATE TABLE slot (
+                CREATE TABLE campaign (
                     id INTEGER PRIMARY KEY,
-                    campaign_id INTEGER NOT NULL,
-                    kind VARCHAR NOT NULL
+                    public_min_gap_days INTEGER NOT NULL DEFAULT 0
                 )
                 """
             )
         )
-    migrate_sqlite_slot_max_sessions_per_month(eng)
-    with eng.connect() as conn:
-        names = {row[1] for row in conn.execute(text("PRAGMA table_info(slot)")).fetchall()}
-    assert "max_sessions_per_month" in names
-
-
-def test_migration_adds_recurrence_cadence_columns():
-    eng = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    with eng.begin() as conn:
         conn.execute(
             text(
                 """
                 CREATE TABLE slot (
                     id INTEGER PRIMARY KEY,
-                    campaign_id INTEGER NOT NULL,
-                    kind VARCHAR NOT NULL
+                    public_recurrence_mode VARCHAR,
+                    max_sessions_per_month INTEGER,
+                    every_n_weeks INTEGER,
+                    recurrence_anchor_local_date VARCHAR
                 )
                 """
             )
         )
-    migrate_sqlite_slot_recurrence_cadence(eng)
+    migrate_sqlite_strip_superseded_columns(eng)
     with eng.connect() as conn:
-        names = {row[1] for row in conn.execute(text("PRAGMA table_info(slot)")).fetchall()}
-    assert "every_n_weeks" in names
-    assert "recurrence_anchor_local_date" in names
+        c_names = {row[1] for row in conn.execute(text("PRAGMA table_info(campaign)")).fetchall()}
+        s_names = {row[1] for row in conn.execute(text("PRAGMA table_info(slot)")).fetchall()}
+    assert "public_min_gap_days" not in c_names
+    assert "public_recurrence_mode" not in s_names
+    assert "max_sessions_per_month" not in s_names
+    assert "every_n_weeks" not in s_names
+    assert "recurrence_anchor_local_date" not in s_names
 
 
 def test_migration_adds_campaign_public_recurrence_mode_and_backfills():
@@ -197,4 +189,4 @@ def test_migration_adds_campaign_public_recurrence_mode_and_backfills():
         names = {row[1] for row in conn.execute(text("PRAGMA table_info(campaign)")).fetchall()}
         row = conn.execute(text("SELECT public_recurrence_mode FROM campaign WHERE id = 1")).one()
     assert "public_recurrence_mode" in names
-    assert row[0] == "twice_per_month"
+    assert row[0] == "two_weeks"
