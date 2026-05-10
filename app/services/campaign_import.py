@@ -28,6 +28,7 @@ from app.models import (
     ConsensusPolicy,
     OccurrenceOptOut,
     Player,
+    PublicRecurrenceMode,
     Slot,
     SlotKind,
 )
@@ -81,7 +82,60 @@ def _parse_campaign(payload: dict) -> dict:
             policy = ConsensusPolicy(str(policy_raw))
         except ValueError as exc:
             raise CampaignImportError(f"Unknown consensus policy: {policy_raw!r}") from exc
-    return {"name": name, "timezone": tz, "horizon_weeks": horizon_weeks, "consensus_policy": policy}
+    pub_raw = c.get("public_recurrence_mode")
+    if pub_raw is None or (isinstance(pub_raw, str) and not pub_raw.strip()):
+        public_recurrence_mode: PublicRecurrenceMode | None = None
+    else:
+        public_recurrence_mode = _parse_public_recurrence_mode_import(
+            pub_raw,
+            field="campaign.public_recurrence_mode",
+        )
+    return {
+        "name": name,
+        "timezone": tz,
+        "horizon_weeks": horizon_weeks,
+        "consensus_policy": policy,
+        "public_recurrence_mode": public_recurrence_mode,
+    }
+
+
+def _infer_public_recurrence_from_legacy_slots(slots_raw: list[Any]) -> PublicRecurrenceMode:
+    """When ``campaign.public_recurrence_mode`` is absent, derive from per-slot export fields."""
+    modes: set[PublicRecurrenceMode] = set()
+    for i, raw in enumerate(slots_raw):
+        if not isinstance(raw, dict):
+            continue
+        if str(raw.get("kind", "")) != SlotKind.recurring.value:
+            continue
+        legacy_n = raw.get("every_n_weeks")
+        if raw.get("public_recurrence_mode") is None and legacy_n in (2, "2"):
+            modes.add(PublicRecurrenceMode.two_weeks)
+            continue
+        modes.add(
+            _parse_public_recurrence_mode_import(
+                raw.get("public_recurrence_mode"),
+                field=f"slots[{i}].public_recurrence_mode",
+            )
+        )
+    if PublicRecurrenceMode.once_per_month in modes:
+        return PublicRecurrenceMode.once_per_month
+    if PublicRecurrenceMode.two_weeks in modes:
+        return PublicRecurrenceMode.two_weeks
+    return PublicRecurrenceMode.weekly
+
+
+def _parse_public_recurrence_mode_import(raw: Any, *, field: str) -> PublicRecurrenceMode:
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return PublicRecurrenceMode.weekly
+    s = str(raw).strip()
+    if s == "twice_per_month":
+        s = "two_weeks"
+    try:
+        return PublicRecurrenceMode(s)
+    except ValueError as exc:
+        raise CampaignImportError(
+            f"{field} must be 'weekly', 'two_weeks', 'once_per_month' (legacy 'twice_per_month' accepted)",
+        ) from exc
 
 
 def _parse_player(raw: Any, *, index: int) -> dict:
@@ -169,6 +223,8 @@ def _validate_payload(payload: Any) -> tuple[dict, list[dict], list[dict], list[
     slots_raw = payload.get("slots", []) or []
     _require(isinstance(slots_raw, list), "'slots' must be a list")
     slots = [_parse_slot(s, index=i) for i, s in enumerate(slots_raw)]
+    if campaign_fields["public_recurrence_mode"] is None:
+        campaign_fields["public_recurrence_mode"] = _infer_public_recurrence_from_legacy_slots(slots_raw)
 
     avail_raw = payload.get("availability", []) or []
     _require(isinstance(avail_raw, list), "'availability' must be a list")
@@ -211,6 +267,7 @@ def import_campaign(session: Session, payload: Any) -> tuple[Campaign, str, list
         admin_secret_hash=hash_token(admin_secret),
         horizon_weeks=campaign_fields["horizon_weeks"],
         consensus_policy=campaign_fields["consensus_policy"],
+        public_recurrence_mode=campaign_fields["public_recurrence_mode"],
     )
     session.add(campaign)
     session.flush()  # need campaign.id

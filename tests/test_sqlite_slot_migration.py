@@ -7,7 +7,11 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
 
-from app.db import migrate_sqlite_slot_schema
+from app.db import (
+    migrate_sqlite_campaign_public_recurrence_mode,
+    migrate_sqlite_slot_schema,
+    migrate_sqlite_strip_superseded_columns,
+)
 
 
 def test_migration_adds_duration_from_end_local():
@@ -89,3 +93,100 @@ def test_migration_adhoc_from_utc_bounds():
     with eng.connect() as conn:
         dh = conn.execute(text("SELECT duration_hours FROM slot WHERE id = 1")).scalar_one()
     assert abs(dh - 2.5) < 1e-6
+
+
+def test_migration_strips_superseded_columns_when_present():
+    """Orphan columns from pre-release schema experiments are dropped (SQLite 3.35+)."""
+    eng = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    with eng.begin() as conn:
+        conn.execute(
+            text(
+                """
+                CREATE TABLE campaign (
+                    id INTEGER PRIMARY KEY,
+                    public_min_gap_days INTEGER NOT NULL DEFAULT 0
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE TABLE slot (
+                    id INTEGER PRIMARY KEY,
+                    public_recurrence_mode VARCHAR,
+                    max_sessions_per_month INTEGER,
+                    every_n_weeks INTEGER,
+                    recurrence_anchor_local_date VARCHAR
+                )
+                """
+            )
+        )
+    migrate_sqlite_strip_superseded_columns(eng)
+    with eng.connect() as conn:
+        c_names = {row[1] for row in conn.execute(text("PRAGMA table_info(campaign)")).fetchall()}
+        s_names = {row[1] for row in conn.execute(text("PRAGMA table_info(slot)")).fetchall()}
+    assert "public_min_gap_days" not in c_names
+    assert "public_recurrence_mode" not in s_names
+    assert "max_sessions_per_month" not in s_names
+    assert "every_n_weeks" not in s_names
+    assert "recurrence_anchor_local_date" not in s_names
+
+
+def test_migration_adds_campaign_public_recurrence_mode_and_backfills():
+    eng = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    with eng.begin() as conn:
+        conn.execute(
+            text(
+                """
+                CREATE TABLE campaign (
+                    id INTEGER PRIMARY KEY,
+                    public_id VARCHAR NOT NULL,
+                    name VARCHAR NOT NULL,
+                    timezone VARCHAR NOT NULL,
+                    admin_secret_hash VARCHAR NOT NULL,
+                    horizon_weeks INTEGER NOT NULL DEFAULT 12,
+                    consensus_policy VARCHAR NOT NULL DEFAULT 'no_two_nears',
+                    created_at VARCHAR
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO campaign (id, public_id, name, timezone, admin_secret_hash) "
+                "VALUES (1, 'pid', 'n', 'UTC', 'h')"
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE TABLE slot (
+                    id INTEGER PRIMARY KEY,
+                    campaign_id INTEGER NOT NULL,
+                    kind VARCHAR NOT NULL,
+                    public_recurrence_mode VARCHAR NOT NULL DEFAULT 'weekly'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO slot (id, campaign_id, kind, public_recurrence_mode) "
+                "VALUES (1, 1, 'recurring', 'twice_per_month')"
+            )
+        )
+    migrate_sqlite_campaign_public_recurrence_mode(eng)
+    with eng.connect() as conn:
+        names = {row[1] for row in conn.execute(text("PRAGMA table_info(campaign)")).fetchall()}
+        row = conn.execute(text("SELECT public_recurrence_mode FROM campaign WHERE id = 1")).one()
+    assert "public_recurrence_mode" in names
+    assert row[0] == "two_weeks"

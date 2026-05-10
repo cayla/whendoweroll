@@ -25,6 +25,7 @@ from app.models import (
     ConsensusPolicy,
     OccurrenceOptOut,
     Player,
+    PublicRecurrenceMode,
     Slot,
     SlotKind,
 )
@@ -56,6 +57,7 @@ def _seed(engine, *, public_id: str) -> dict:
         campaign = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
         campaign.consensus_policy = ConsensusPolicy.allow_one
         campaign.horizon_weeks = 7
+        campaign.public_recurrence_mode = PublicRecurrenceMode.two_weeks
         s.add(campaign)
         recurring = Slot(
             campaign_id=campaign.id,
@@ -123,6 +125,9 @@ def test_export_then_import_roundtrips_full_campaign(client, engine):
     payload = export.json()
     assert payload["export_version"] == 3
     assert payload["campaign"]["consensus_policy"] == ConsensusPolicy.allow_one.value
+    assert payload["campaign"]["public_recurrence_mode"] == PublicRecurrenceMode.two_weeks.value
+    recurring_export = next(s for s in payload["slots"] if s["kind"] == "recurring")
+    assert "public_recurrence_mode" not in recurring_export
 
     imported = _post_import(client, payload)
     assert imported.status_code == 200
@@ -139,6 +144,7 @@ def test_export_then_import_roundtrips_full_campaign(client, engine):
         assert new_campaign.timezone == "UTC"
         assert new_campaign.horizon_weeks == 7
         assert new_campaign.consensus_policy == ConsensusPolicy.allow_one
+        assert new_campaign.public_recurrence_mode == PublicRecurrenceMode.two_weeks
 
         roster = s.exec(select(Player).where(Player.campaign_id == new_campaign.id).order_by(Player.sort_order)).all()
         assert [p.display_name for p in roster] == ["Alice", "Bob"]
@@ -230,6 +236,40 @@ def test_import_rejects_unknown_timezone(client):
         },
     )
     assert r.status_code == 400
+
+
+def test_import_accepts_legacy_twice_per_month_campaign_mode(client, engine):
+    r = _post_import(
+        client,
+        {
+            "export_version": 3,
+            "campaign": {
+                "name": "Legacy label",
+                "timezone": "UTC",
+                "horizon_weeks": 4,
+                "consensus_policy": "strict",
+                "public_recurrence_mode": "twice_per_month",
+            },
+            "players": [{"id": 1, "display_name": "A", "sort_order": 0}],
+            "slots": [
+                {
+                    "id": 1,
+                    "kind": "recurring",
+                    "weekday": 0,
+                    "start_local": "18:00",
+                    "duration_hours": 2,
+                }
+            ],
+            "availability": [{"player_id": 1, "slot_id": 1, "status": "yes"}],
+            "occurrence_opt_outs": [],
+        },
+    )
+    assert r.status_code == 200
+    m = re.search(r"/c/([0-9a-f]+)/admin/", r.text)
+    assert m
+    with Session(engine) as s:
+        campaign = s.exec(select(Campaign).where(Campaign.public_id == m.group(1))).one()
+    assert campaign.public_recurrence_mode == PublicRecurrenceMode.two_weeks
 
 
 def test_import_rejects_dangling_availability_reference(client):

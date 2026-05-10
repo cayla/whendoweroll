@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from app.display_time import format_local_window
+from app.display_time import format_local_window, player_campaign_tempo_caption, public_campaign_tempo_caption
+from app.models import Campaign, PublicRecurrenceMode
 
 
 def test_format_local_window_same_day():
@@ -30,3 +31,25 @@ def test_format_local_window_cross_day():
     assert "Fri" in s
     assert "EDT" not in s
     assert "EST" not in s
+
+
+def test_player_campaign_tempo_caption():
+    c = Campaign(
+        public_id="x",
+        name="n",
+        timezone="UTC",
+        admin_secret_hash="h",
+        public_recurrence_mode=PublicRecurrenceMode.two_weeks,
+    )
+    assert "two weeks" in player_campaign_tempo_caption(c).lower()
+
+
+def test_public_campaign_tempo_caption():
+    c = Campaign(
+        public_id="x",
+        name="n",
+        timezone="UTC",
+        admin_secret_hash="h",
+        public_recurrence_mode=PublicRecurrenceMode.weekly,
+    )
+    assert "this page" in public_campaign_tempo_caption(c)

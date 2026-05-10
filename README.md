@@ -27,11 +27,11 @@ public read-only link, and one private link per player.
   duplicating an existing campaign template.
 - **iCalendar**: every campaign has a single shared feed at
   `…/c/{public_id}/calendar-consensus.ics`. It lists the upcoming windows
-  that qualify under the campaign's **scheduling policy** (see below);
-  near-consensus windows (one player missing) are prefixed with
-  `[missing: <name>]` so they're easy to spot in a calendar. Opt-outs are
-  honoured. The link is surfaced on the admin, public, and per-player
-  pages — there is no per-player feed.
+  that qualify under the campaign's **scheduling policy** (see below), after
+  **public tempo** thinning (see below); near-consensus windows (one player
+  missing) are prefixed with `[missing: <name>]` so they're easy to spot in
+  a calendar. Opt-outs are honoured. The link is surfaced on the admin,
+  public, and per-player pages — there is no per-player feed.
 - The campaign home page shows the next two qualifying sessions as
   prominent cards: solid emerald when full consensus, dashed amber for a
   near-consensus window (the holdout's name is shown so the organizer can
@@ -61,6 +61,37 @@ policy. Pick one in admin → Settings:
 | **Allow one missing — never two in a row** *(default)* | Windows with at most one holdout, but never two short-handed sessions back-to-back. |
 | **Allow one missing — but rotate who** | Windows with at most one holdout, and the same player can't be the holdout in two consecutive sessions. |
 | **Allow one missing — always** | Windows with at most one holdout, no further constraint. |
+
+### Public tempo (cards + calendar only)
+
+**Player** pages always show the full expanded list of recurring and ad-hoc
+windows. The **public** campaign page and the **consensus `.ics` feed** use a
+campaign-level **tempo** setting (admin → Settings) to thin *recurring* rows
+so the roster is not overwhelmed:
+
+| Mode | Meaning |
+| --- | --- |
+| **Weekly** | Momentum chain with a **7-day** anchor between kept listings. |
+| **Every two weeks (~14 days)** | Same idea with a **14-day** anchor (this is *not* “two sessions per calendar month”). |
+| **About once a month** | Anchors advance by **one calendar month** (same local time-of-day; short months clamp). |
+
+How it works: the **first** kept row is the earliest recurring start that meets
+the same **per-window** bar as the summary cards (full vs one missing, per
+policy). Each **next** row is chosen among later starts inside a lookahead
+bracket, **closest in time** to the next anchor (with sensible tie-breaks).
+Ad-hoc sessions are not tempo-thinned.
+
+The two **summary cards** and the ICS builder then run **`find_next_meets`**
+on that already-thinned list. That step adds **between-window** guardrails
+(e.g. never two near-consensus sessions in a row). So the first solid-green
+card is not always the first tempo-chain row: it is the first window that
+passes **both** the tempo pass and the guardrail pass.
+
+With **no players** on the roster, public/ICS recurring listings stay empty
+until someone exists to satisfy the policy bar.
+
+**JSON import** still accepts the legacy string `twice_per_month` on old
+exports; it is normalized to **`two_weeks`**.
 
 ### Display timezone (player + public pages)
 
@@ -123,8 +154,9 @@ uv run pytest
 
 The suite covers consensus math (including per-occurrence opt-outs and
 each scheduling policy's window-selection + sequence guardrails),
-recurring-slot expansion across a DST boundary, iCal output, admin JSON
-export auth, and the capability URL boundaries.
+public tempo thinning, recurring-slot expansion across a DST boundary,
+iCal output, admin JSON export auth, import/restore, SQLite migrations,
+and the capability URL boundaries.
 
 ## Layout
 
@@ -141,7 +173,8 @@ export auth, and the capability URL boundaries.
 | [app/templates_setup.py](app/templates_setup.py) | Single Jinja environment + custom filters, plus the timezone choice list. |
 | [app/view_timezone.py](app/view_timezone.py) | Per-viewer display-timezone cookie helpers. |
 | [app/services/slots.py](app/services/slots.py) | Expands recurring + ad-hoc slots into concrete occurrences. |
-| [app/services/consensus.py](app/services/consensus.py) | Finds upcoming qualifying windows under the campaign's scheduling policy (honoring mandatory attendees and per-occurrence opt-outs). |
+| [app/services/consensus.py](app/services/consensus.py) | Finds upcoming qualifying windows under the campaign's scheduling policy (honoring mandatory attendees and per-occurrence opt-outs); sequence guardrails run after public tempo thinning. |
+| [app/services/public_occurrence_filter.py](app/services/public_occurrence_filter.py) | Thins recurring occurrences for the public page and consensus ICS by campaign tempo (player pages use full expansion). |
 | [app/services/availability.py](app/services/availability.py) | Reads/writes the availability rows. |
 | [app/services/opt_outs.py](app/services/opt_outs.py) | Per-date opt-outs on top of standing "yes" answers. |
 | [app/services/occurrence_match.py](app/services/occurrence_match.py) | Validates a client-submitted instant against a slot's expansion. |

@@ -11,7 +11,7 @@ from sqlmodel import Session, select
 
 from app.db import get_session
 from app.deps import require_admin
-from app.models import Availability, ConsensusPolicy, Player, Slot, SlotKind
+from app.models import Availability, ConsensusPolicy, Player, PublicRecurrenceMode, Slot, SlotKind
 from app.security import hash_token, new_token
 from app.services.campaign_delete import delete_campaign_cascade
 from app.services.campaign_export import build_export_payload
@@ -26,6 +26,31 @@ _MAX_SESSION_HOURS = 48.0
 # (value, short label, hint) for the Settings card dropdown. Order is the
 # spectrum from strictest to most permissive so organisers can scan it
 # top-to-bottom.
+_PUBLIC_RECURRENCE_MODE_CHOICES: tuple[tuple[PublicRecurrenceMode, str, str], ...] = (
+    (
+        PublicRecurrenceMode.weekly,
+        "Weekly",
+        "Public next-game cards and consensus calendar list every scheduled recurring session.",
+    ),
+    (
+        PublicRecurrenceMode.two_weeks,
+        "Every two weeks (~14 days)",
+        (
+            "Public page and calendar: earliest qualifying session, then each next pick near "
+            "fourteen days after the previous kept listing (closest match in a bracket). "
+            "Player pages still list every date."
+        ),
+    ),
+    (
+        PublicRecurrenceMode.once_per_month,
+        "About once a month",
+        (
+            "Public page and calendar: earliest qualifying session, then each next pick near the "
+            "same calendar date one month after the previous kept listing. Player pages still list every date."
+        ),
+    ),
+)
+
 _CONSENSUS_POLICY_CHOICES: tuple[tuple[ConsensusPolicy, str, str], ...] = (
     (
         ConsensusPolicy.strict,
@@ -67,6 +92,18 @@ def _parse_session_duration_hours(raw: str | None) -> float:
     return h
 
 
+def _parse_public_recurrence_mode(raw: str | None) -> PublicRecurrenceMode:
+    if raw is None or not str(raw).strip():
+        return PublicRecurrenceMode.weekly
+    s = str(raw).strip()
+    if s == "twice_per_month":
+        s = "two_weeks"
+    try:
+        return PublicRecurrenceMode(s)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Unknown public recurrence mode") from exc
+
+
 def _redirect_to_admin(public_id: str, secret: str) -> RedirectResponse:
     return RedirectResponse(url=f"/c/{public_id}/admin/{secret}", status_code=303)
 
@@ -103,6 +140,7 @@ def admin_home(
                 (5, "Sat"),
                 (6, "Sun"),
             ],
+            "public_recurrence_mode_choices": _PUBLIC_RECURRENCE_MODE_CHOICES,
         },
     )
 
@@ -115,6 +153,7 @@ def update_settings(
     timezone: str = Form(...),
     horizon_weeks: int = Form(12),
     consensus_policy: str = Form(...),
+    public_recurrence_mode: str | None = Form("weekly"),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     campaign = require_admin(session, public_id, secret)
@@ -129,10 +168,12 @@ def update_settings(
         policy = ConsensusPolicy(consensus_policy.strip())
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Unknown consensus policy") from exc
+    mode = _parse_public_recurrence_mode(public_recurrence_mode)
     campaign.name = name
     campaign.timezone = timezone
     campaign.horizon_weeks = max(1, min(horizon_weeks, 52))
     campaign.consensus_policy = policy
+    campaign.public_recurrence_mode = mode
     session.add(campaign)
     session.commit()
     return _redirect_to_admin(public_id, secret)

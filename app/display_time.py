@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
-from app.models import Slot, SlotKind
+from app.models import Campaign, PublicRecurrenceMode, Slot, SlotKind
 from app.services.slots import upcoming_occurrences_for_slot
 
 _WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -49,3 +49,53 @@ def recurring_slot_primary_label(slot: Slot, campaign, display_tz: str) -> str:
     wn = _WEEKDAY_SHORT[slot.weekday]
     dh = slot.duration_hours if slot.duration_hours is not None else 0
     return f"{wn} {slot.start_local}, {dh} h ({campaign.timezone})"
+
+
+def player_campaign_tempo_caption(campaign: Campaign) -> str:
+    """Short label for how recurring sessions are thinned on the public page and .ics."""
+    raw = campaign.public_recurrence_mode
+    try:
+        mode = raw if isinstance(raw, PublicRecurrenceMode) else PublicRecurrenceMode(str(raw))
+    except ValueError:
+        mode = PublicRecurrenceMode.weekly
+    if mode is PublicRecurrenceMode.weekly:
+        return "Tempo: weekly — the public page and consensus calendar list every date below."
+    if mode is PublicRecurrenceMode.two_weeks:
+        return (
+            "Tempo: every two weeks — the public page and calendar walk forward from the "
+            "earliest qualifying session, then each next pick is the best match near fourteen days "
+            "after the last one shown. You still see every date here."
+        )
+    if mode is PublicRecurrenceMode.once_per_month:
+        return (
+            "Tempo: about once a month — same walk, but each next pick is chosen near the same "
+            "calendar date one month after the last one shown. You still see every date here."
+        )
+    return ""
+
+
+def public_campaign_tempo_caption(campaign: Campaign) -> str:
+    """One-line tempo for the anonymous public campaign page."""
+    raw = campaign.public_recurrence_mode
+    try:
+        mode = raw if isinstance(raw, PublicRecurrenceMode) else PublicRecurrenceMode(str(raw))
+    except ValueError:
+        mode = PublicRecurrenceMode.weekly
+    if mode is PublicRecurrenceMode.weekly:
+        return (
+            "Tempo: weekly — this page and the consensus calendar list every "
+            "qualifying session. Player links list every occurrence."
+        )
+    if mode is PublicRecurrenceMode.two_weeks:
+        return (
+            "Tempo: every two weeks — earliest qualifying session first, then each next "
+            "listing near fourteen days after the previous one here and on the calendar. "
+            "Player links list every occurrence."
+        )
+    if mode is PublicRecurrenceMode.once_per_month:
+        return (
+            "Tempo: about once a month — earliest qualifying session first, then each next listing "
+            "near the same calendar date one month out from the last one here and on the calendar. "
+            "Player links list every occurrence."
+        )
+    return ""

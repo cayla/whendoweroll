@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 
-from app.models import Availability, Campaign, OccurrenceOptOut, Player, Slot
+from app.models import Availability, Campaign, OccurrenceOptOut, Player, PublicRecurrenceMode, Slot
 
 
 def _iso(dt: datetime | None) -> str | None:
@@ -49,6 +49,11 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
             "timezone": campaign.timezone,
             "horizon_weeks": campaign.horizon_weeks,
             "consensus_policy": campaign.consensus_policy.value,
+            "public_recurrence_mode": (
+                campaign.public_recurrence_mode.value
+                if isinstance(campaign.public_recurrence_mode, PublicRecurrenceMode)
+                else str(campaign.public_recurrence_mode)
+            ),
             "created_at": _iso(campaign.created_at),
         },
         "players": [

@@ -50,6 +50,23 @@
         Drives both the public summary cards and the consensus calendar feed. Mandatory attendees still apply on top.
       </p>
     </div>
+    <div class="md:col-span-3 js-public-recurrence-hint-root">
+      <label class="block text-sm font-medium text-ink" for="admin-settings-public-recurrence">
+        Meeting tempo (public page &amp; calendar)
+      </label>
+      <select id="admin-settings-public-recurrence" name="public_recurrence_mode"
+              class="form-field max-w-xl js-public-recurrence-select">
+        {% for value, label, _hint in public_recurrence_mode_choices %}
+          <option value="{{ value.value }}" {% if value == campaign.public_recurrence_mode %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <p class="mt-1 text-xs text-muted">
+        {% for value, _label, hint in public_recurrence_mode_choices %}
+          <span data-public-recurrence-hint="{{ value.value }}"{% if value != campaign.public_recurrence_mode %} hidden{% endif %}>{{ hint }}</span>
+        {% endfor %}
+        Player links always list every date.
+      </p>
+    </div>
     <div class="md:col-span-3">
       <button class="btn px-3 py-1.5 text-sm">Save settings</button>
     </div>
@@ -132,23 +149,25 @@
   {% if slots %}
   <ul class="divide-y divide-line">
     {% for slot in slots %}
-    <li class="py-2 flex items-center justify-between gap-3">
-      <span>
-        {% if slot.kind.value == "recurring" %}
-          <span class="rounded bg-indigo-100 text-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200 px-1.5 py-0.5 text-xs font-medium mr-2">recurring</span>
-          {{ weekdays[slot.weekday][1] }} {{ slot.start_local }}, {{ slot.duration_hours }} h
-        {% else %}
-          <span class="rounded bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium mr-2">one-off</span>
-          {{ slot.starts_at_utc|local_window(slot.ends_at_utc, campaign.timezone) }}
-        {% endif %}
-        {% if slot.label %}<span class="text-muted ml-2">· {{ slot.label }}</span>{% endif %}
-      </span>
-      <form method="post" action="{{ admin_url }}/slots/{{ slot.id }}/delete">
-        <button class="text-xs rounded border border-line text-muted px-2 py-1 hover:bg-elevated"
-                onclick="return confirm('Delete this time and all its availability?')">
-          Delete
-        </button>
-      </form>
+    <li class="py-3">
+      <div class="flex items-start justify-between gap-3">
+        <span class="min-w-0">
+          {% if slot.kind.value == "recurring" %}
+            <span class="rounded bg-indigo-100 text-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200 px-1.5 py-0.5 text-xs font-medium mr-2">recurring</span>
+            {{ weekdays[slot.weekday][1] }} {{ slot.start_local }}, {{ slot.duration_hours }} h
+          {% else %}
+            <span class="rounded bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium mr-2">one-off</span>
+            {{ slot.starts_at_utc|local_window(slot.ends_at_utc, campaign.timezone) }}
+          {% endif %}
+          {% if slot.label %}<span class="text-muted ml-2">· {{ slot.label }}</span>{% endif %}
+        </span>
+        <form method="post" action="{{ admin_url }}/slots/{{ slot.id }}/delete">
+          <button class="text-xs rounded border border-line text-muted px-2 py-1 hover:bg-elevated"
+                  onclick="return confirm('Delete this time and all its availability?')">
+            Delete
+          </button>
+        </form>
+      </div>
     </li>
     {% endfor %}
   </ul>
@@ -171,6 +190,7 @@
              class="form-field">
       <label class="block mt-2 text-sm font-medium text-ink" for="admin-slot-label">Label (optional)</label>
       <input id="admin-slot-label" name="label" placeholder="Friday game night" class="form-field">
+      <p class="text-xs text-muted mt-2">Meeting tempo for the public page and calendar is set under <strong>Settings</strong> above.</p>
       <button class="mt-3 btn px-3 py-1.5 text-sm">
         Add recurring time
       </button>
@@ -243,6 +263,21 @@
     hints.forEach(function (h) {
       h.hidden = h.getAttribute("data-policy-hint") !== v;
     });
+  });
+})();
+(function () {
+  document.querySelectorAll(".js-public-recurrence-hint-root").forEach(function (root) {
+    var sel = root.querySelector(".js-public-recurrence-select");
+    var hints = root.querySelectorAll("[data-public-recurrence-hint]");
+    if (!sel || !hints.length) return;
+    function sync() {
+      var v = sel.value;
+      hints.forEach(function (h) {
+        h.hidden = h.getAttribute("data-public-recurrence-hint") !== v;
+      });
+    }
+    sel.addEventListener("change", sync);
+    sync();
   });
 })();
 </script>

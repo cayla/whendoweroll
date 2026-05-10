@@ -2,8 +2,9 @@
 
 A "slot" is a logical session option (Friday 18:00, the May 30 one-shot, etc.).
 An "occurrence" is one concrete time window on the wall calendar that the
-group could meet at. Recurring slots fan out into many occurrences across the
-horizon; ad-hoc slots become a single occurrence in their own right.
+group could meet at. Recurring slots fan out on every matching weekday in
+the horizon; public pages and the consensus ICS may thin those further per
+``Campaign.public_recurrence_mode``. Ad-hoc slots become a single occurrence.
 
 DST policy: we anchor recurring slots to local *wall time* in the campaign's
 IANA timezone, so a Sunday 19:00 slot stays at 19:00 local on both sides of a

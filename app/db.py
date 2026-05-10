@@ -150,6 +150,94 @@ def migrate_sqlite_campaign_consensus_policy(eng) -> None:
             conn.execute(text("ALTER TABLE campaign ADD COLUMN consensus_policy TEXT NOT NULL DEFAULT 'no_two_nears'"))
 
 
+def migrate_sqlite_campaign_public_recurrence_mode(eng) -> None:
+    """Add ``public_recurrence_mode`` to ``campaign``; backfill from legacy per-slot column once."""
+    added = False
+    with eng.begin() as conn:
+        info = conn.execute(text("PRAGMA table_info(campaign)")).fetchall()
+        if not info:
+            return
+        names = {row[1] for row in info}
+        if "public_recurrence_mode" not in names:
+            conn.execute(
+                text("ALTER TABLE campaign ADD COLUMN public_recurrence_mode VARCHAR NOT NULL DEFAULT 'weekly'")
+            )
+            added = True
+    if not added:
+        return
+    with eng.begin() as conn:
+        slot_info = conn.execute(text("PRAGMA table_info(slot)")).fetchall()
+        slot_names = {row[1] for row in slot_info} if slot_info else set()
+        if "public_recurrence_mode" not in slot_names:
+            return
+        for (cid,) in conn.execute(text("SELECT id FROM campaign")).fetchall():
+            rows = conn.execute(
+                text("SELECT public_recurrence_mode FROM slot WHERE campaign_id = :cid AND kind = 'recurring'"),
+                {"cid": cid},
+            ).fetchall()
+            modes = {str(r[0]) for r in rows if r[0] is not None}
+            if "once_per_month" in modes:
+                mode = "once_per_month"
+            elif "two_weeks" in modes or "twice_per_month" in modes:
+                mode = "two_weeks"
+            else:
+                mode = "weekly"
+            conn.execute(
+                text("UPDATE campaign SET public_recurrence_mode = :m WHERE id = :cid"),
+                {"m": mode, "cid": cid},
+            )
+
+
+def migrate_sqlite_normalize_public_recurrence_mode_strings(eng) -> None:
+    """Rename legacy ``twice_per_month`` stored values to ``two_weeks`` (SQLite)."""
+    with eng.begin() as conn:
+        c_info = conn.execute(text("PRAGMA table_info(campaign)")).fetchall()
+        c_names = {row[1] for row in c_info} if c_info else set()
+        if "public_recurrence_mode" in c_names:
+            conn.execute(
+                text(
+                    "UPDATE campaign SET public_recurrence_mode = 'two_weeks' "
+                    "WHERE public_recurrence_mode = 'twice_per_month'"
+                )
+            )
+        s_info = conn.execute(text("PRAGMA table_info(slot)")).fetchall()
+        s_names = {row[1] for row in s_info} if s_info else set()
+        if "public_recurrence_mode" in s_names:
+            conn.execute(
+                text(
+                    "UPDATE slot SET public_recurrence_mode = 'two_weeks' "
+                    "WHERE public_recurrence_mode = 'twice_per_month'"
+                )
+            )
+
+
+def migrate_sqlite_strip_superseded_columns(eng) -> None:
+    """Drop SQLite columns that no longer exist on current SQLModel tables.
+
+    Runs after ``migrate_sqlite_campaign_public_recurrence_mode`` so a one-time
+    backfill from ``slot.public_recurrence_mode`` can still occur before that
+    legacy column is removed. Requires SQLite 3.35+ for ``DROP COLUMN``; older
+    SQLite leaves the orphan columns in place (suppressed).
+    """
+    drops: tuple[tuple[str, str], ...] = (
+        ("campaign", "public_min_gap_days"),
+        ("slot", "public_recurrence_mode"),
+        ("slot", "max_sessions_per_month"),
+        ("slot", "every_n_weeks"),
+        ("slot", "recurrence_anchor_local_date"),
+    )
+    with eng.begin() as conn:
+        for table, column in drops:
+            info = conn.execute(text(f"PRAGMA table_info({table})")).fetchall()
+            if not info:
+                continue
+            names = {row[1] for row in info}
+            if column not in names:
+                continue
+            with contextlib.suppress(Exception):
+                conn.execute(text(f'ALTER TABLE "{table}" DROP COLUMN "{column}"'))
+
+
 def init_db() -> None:
     # Importing models registers them on SQLModel.metadata before create_all.
     from app import models  # noqa: F401
@@ -159,6 +247,9 @@ def init_db() -> None:
         migrate_sqlite_slot_schema(engine)
         migrate_sqlite_player_is_mandatory(engine)
         migrate_sqlite_campaign_consensus_policy(engine)
+        migrate_sqlite_campaign_public_recurrence_mode(engine)
+        migrate_sqlite_normalize_public_recurrence_mode_strings(engine)
+        migrate_sqlite_strip_superseded_columns(engine)
 
 
 def get_session() -> Iterator[Session]:

@@ -28,6 +28,7 @@
 {% if not slots %}
 <p class="text-muted italic">No times have been added yet.</p>
 {% else %}
+<p class="text-xs text-muted mb-2">{{ campaign|player_tempo }}</p>
 <div class="bg-surface border border-line rounded-lg shadow-sm overflow-hidden">
   <table class="w-full text-sm">
     <thead class="text-left bg-elevated text-xs uppercase tracking-wide text-muted">

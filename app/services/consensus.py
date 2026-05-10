@@ -127,6 +127,30 @@ def _max_missing_for(policy: ConsensusPolicy) -> int:
     return 1
 
 
+def occurrence_qualifies_under_policy(
+    occ: Occurrence,
+    players: Sequence[Player],
+    availability: Mapping[tuple[int, int], AvailabilityStatus],
+    policy: ConsensusPolicy,
+    opt_outs: set[tuple[int, int, datetime]] | None = None,
+) -> bool:
+    """Whether this window meets the same bar as public consensus cards (per-window only).
+
+    Does not apply between-window guardrails from ``find_next_meets``; those
+    run after the occurrence list is built.
+
+    With an empty ``players`` sequence, returns ``False`` (no one can count as
+    present). The public tempo chain therefore yields **no** recurring rows when
+    the roster is empty, rather than guessing a first row.
+    """
+    if not players:
+        return False
+    _yes_ids, missing_ids = _yes_set_for_occurrence(occ, players, availability, opt_outs or set())
+    if _mandatory_missing(players, missing_ids):
+        return False
+    return len(missing_ids) <= _max_missing_for(policy)
+
+
 def _guardrail_blocks(policy: ConsensusPolicy, prev: ConsensusResult, curr: ConsensusResult) -> bool:
     """Between-window guardrail: should ``curr`` be skipped given the previously picked ``prev``?
 
@@ -172,6 +196,16 @@ def find_next_meets(
     consensus ``.ics`` feed (large ``limit``); the ICS feed is intentionally
     tight to match the cards so subscribers can rely on it as the actual
     play schedule.
+
+    **Ordering vs tempo:** Callers (e.g. the public routes) usually pass
+    occurrences that have already been **tempo-thinned** by
+    ``filter_occurrences_for_public_display``. This function then walks that
+    list in time order, keeping each window that satisfies the per-window
+    missing bound **and** does not violate the policy's **between-window**
+    guardrails (e.g. ``no_two_nears``). So the first green summary card is **not**
+    guaranteed to be the first tempo-chain row: it is the first row that survives
+    *both* the tempo pass and this guardrail pass. A chronologically earlier
+    window can be skipped if it would pair badly with the previous kept card.
     """
     candidates = list_consensus_occurrences(
         occurrences,
