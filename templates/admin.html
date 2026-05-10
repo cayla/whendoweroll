@@ -6,12 +6,12 @@
 <div class="admin-page">
 <header class="mb-6 flex items-baseline justify-between flex-wrap gap-2">
   <div class="min-w-0">
-    <h1 class="heading text-3xl text-brand-fg">Admin Dashboard: {{ campaign.name }}</h1>
-    <p class="text-sm text-muted mt-1">Times shown in {{ campaign.timezone|pretty_tz }}.</p>
-    <p class="text-sm text-muted mt-2">
+    <h1 class="heading text-3xl text-brand-fg mb-4">Admin Dashboard: {{ campaign.name }}</h1>
+    <p class="text-sm mb-4">Times shown in {{ campaign.timezone|pretty_tz }}.</p>
+    <p class="text-sm mb-4">
       Bookmark this Admin Dashboard page. Anyone with the link can edit the campaign.
     </p>
-    <div class="mt-2">
+    <div>
       <a href="{{ public_url }}" target="_blank" rel="noopener noreferrer" class="btn px-3 py-1.5 text-sm">
         View Public Campaign page
       </a>

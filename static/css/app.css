@@ -818,15 +818,17 @@ select.form-field::-ms-expand,
   transform: translate(-50%, 0);
 }
 
-/* Admin + player pages: sticky section sub-nav and anchor scroll offset */
+/* Admin + player + public pages: smooth scroll (public has no sticky sub-nav) */
 html:has(.admin-page),
-html:has(.player-page) {
+html:has(.player-page),
+html:has(.public-page) {
   scroll-behavior: smooth;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html:has(.admin-page),
-  html:has(.player-page) {
+  html:has(.player-page),
+  html:has(.public-page) {
     scroll-behavior: auto;
   }
 }
@@ -876,11 +878,39 @@ html:has(.player-page) {
   scroll-margin-top: 8.75rem;
 }
 
+/* Public campaign: hero definition list (Tempo / Players / Roster) */
+.public-meta-dl {
+  margin: 0;
+  max-width: 65ch;
+}
+
+.public-meta-dl dt {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.public-meta-dl dt:first-child {
+  margin-top: 0;
+}
+
+.public-meta-dl dd {
+  margin: 0.125rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-ink);
+}
+
 /* Player tables: vertical-align middle (Tailwind align-middle can miss on cells via CDN). */
 .player-avail-table th,
 .player-avail-table td,
 .player-exceptions-table th,
-.player-exceptions-table td {
+.player-exceptions-table td,
+.public-windows-table th,
+.public-windows-table td {
   vertical-align: middle;
 }
 

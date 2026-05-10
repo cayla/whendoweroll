@@ -1,27 +1,53 @@
 {% extends "base.html" %}
 {% block title %}{{ campaign.name }} &middot; When Do We Roll{% endblock %}
 
-{% block header_right %}
-{% with tz_prefix="public", tz_submit_url=("/c/" ~ campaign.public_id ~ "/display-timezone"), campaign_timezone=campaign.timezone %}
-  {% include "fragments/viewer_tz_modal.html" %}
-{% endwith %}
-{% endblock %}
+{% block header_right %}{% endblock %}
 
 {% block content %}
+<div class="public-page">
 <header class="mb-6">
-  <h1 class="heading text-3xl text-brand-fg">{{ campaign.name }}</h1>
-  <p class="text-sm text-muted">
-    {{ players|length }} player{% if players|length != 1 %}s{% endif %} &middot;
-    {{ slots|length }} time{% if slots|length != 1 %}s{% endif %} &middot;
-    Rolling {{ campaign.horizon_weeks }}-week horizon
-  </p>
-  <p class="mt-2 text-xs text-muted">{{ campaign|public_tempo }}</p>
-  <p class="mt-1 text-xs text-muted">
-    <a class="underline text-brand-fg hover:text-brand-fg-hover" href="/c/{{ campaign.public_id }}/calendar-consensus.ics">Subscribe to consensus calendar (.ics)</a>
-  </p>
+  <div class="min-w-0">
+    <h1 class="heading text-3xl text-brand-fg mb-4">{{ campaign.name }}</h1>
+    <p class="text-sm mb-4">
+      Open the link your organizer sent you to update your availability.
+    </p>
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-3 mb-4">
+      <span class="text-sm font-medium text-muted">Display times in</span>
+      {% with tz_prefix="public", tz_submit_url=("/c/" ~ campaign.public_id ~ "/display-timezone"), campaign_timezone=campaign.timezone %}
+        {% include "fragments/viewer_tz_modal.html" %}
+      {% endwith %}
+    </div>
+    <dl class="public-meta-dl mb-4">
+      <dt>Tempo</dt>
+      <dd>{{ campaign|public_tempo }}</dd>
+      <dt>Players</dt>
+      <dd>
+        {{ players|length }} player{% if players|length != 1 %}s{% endif %} &middot;
+        {{ slots|length }} time{% if slots|length != 1 %}s{% endif %} &middot;
+        Rolling {{ campaign.horizon_weeks }}-week horizon
+      </dd>
+      <dt>Roster</dt>
+      <dd>
+        {% if players %}
+          {% for p in players %}
+            <span class="inline">{{ p.display_name }}{% if p.is_mandatory %} <span class="text-amber-800 dark:text-amber-300 font-medium" title="Mandatory attendee">(mandatory)</span>{% endif %}{% if not loop.last %}, {% endif %}</span>
+          {% endfor %}
+        {% else %}
+          <span class="text-muted italic">No players yet.</span>
+        {% endif %}
+      </dd>
+    </dl>
+  </div>
+  <div class="flex flex-wrap items-center gap-2 mb-4">
+    <a href="/c/{{ campaign.public_id }}/calendar-consensus.ics" class="btn-secondary px-3 py-1.5 text-sm">
+      Subscribe to consensus calendar (.ics)
+    </a>
+  </div>
 </header>
 
-<section class="grid gap-4 md:grid-cols-2 mb-8">
+<section id="consensus" class="bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
+  <h2 class="heading text-lg mb-4">Consensus</h2>
+  <div class="grid gap-4 md:grid-cols-2">
   {% if upcoming_meets %}
     {% for meet in upcoming_meets %}
       {% set is_full = meet.missing_count == 0 %}
@@ -31,13 +57,13 @@
       <div class="bg-surface border-2 {% if is_full %}border-emerald-500 dark:border-emerald-400{% else %}border-amber-500 border-dashed dark:border-amber-400{% endif %} rounded-lg p-5 shadow-sm">
         <div class="flex items-start justify-between gap-4">
           <div class="flex-1 min-w-0">
-            <h2 class="heading text-lg {% if is_full %}text-emerald-800 dark:text-emerald-300{% else %}text-amber-800 dark:text-amber-200{% endif %}">
+            <h3 class="heading text-lg {% if is_full %}text-emerald-800 dark:text-emerald-300{% else %}text-amber-800 dark:text-amber-200{% endif %}">
               {% if loop.first %}
                 {% if is_full %}Next time everyone can meet{% else %}Next time we could meet{% endif %}
               {% else %}
                 {% if is_full %}Then everyone can meet{% else %}Then we could meet{% endif %}
               {% endif %}
-            </h2>
+            </h3>
             {% if is_oneoff %}
               <p class="mt-1">
                 <span class="inline-block rounded bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium">one-off</span>
@@ -78,9 +104,9 @@
       </div>
     {% endfor %}
   {% else %}
-    <div class="bg-surface border border-line rounded-lg p-5 shadow-sm md:col-span-2">
-      <h2 class="heading text-lg text-ink">No upcoming consensus</h2>
-      <p class="mt-2 text-muted italic">
+    <div class="bg-elevated border border-line rounded-lg p-5 md:col-span-2">
+      <h3 class="heading text-lg text-ink">No upcoming consensus</h3>
+      <p class="mt-2 text-sm text-muted italic">
         {% if has_mandatory %}
           There are no options in the next {{ campaign.horizon_weeks }} weeks that match the consensus criteria.
         {% else %}
@@ -89,51 +115,49 @@
       </p>
     </div>
   {% endif %}
+  </div>
 </section>
 
-<section class="bg-surface border border-line rounded-lg p-5 shadow-sm">
-  <h2 class="heading text-lg">Upcoming windows</h2>
+<section id="windows" class="bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
+  <h2 class="heading text-lg mb-3">Upcoming windows</h2>
   {% if occurrence_rows %}
-  <table class="mt-3 w-full text-sm">
-    <thead class="text-left text-xs text-muted uppercase tracking-wide">
-      <tr><th class="py-1">When</th><th class="text-right">Yes</th></tr>
-    </thead>
-    <tbody>
-      {% for row in occurrence_rows %}
-      {% set occ = row.occ %}
-      <tr class="border-t border-line">
-        <td class="py-1.5 pr-4">
-          {% if occ.kind.value == "adhoc" %}
-            <span class="rounded bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium mr-2 align-middle">one-off</span>
-          {% endif %}
-          <span class="align-middle text-ink">{{ occ.starts_at_utc|local_time(display_tz) }}</span>
-          {% if occ.user_label %}
-            <span class="block sm:inline sm:ml-2 text-xs text-muted">· {{ occ.user_label }}</span>
-          {% endif %}
-        </td>
-        <td class="text-right">
-          <span class="rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200 px-1.5 py-0.5 text-xs font-medium">
-            {{ row.yes_count }} / {{ total_players }}
-          </span>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="overflow-x-auto rounded-lg border border-line -mx-2 sm:mx-0">
+    <table class="public-windows-table w-full min-w-[min(100%,24rem)] border-collapse text-sm">
+      <caption class="sr-only">Upcoming session windows and yes counts</caption>
+      <thead class="text-left bg-elevated text-xs font-medium uppercase tracking-wide text-muted">
+        <tr>
+          <th scope="col" class="py-2.5 pl-3 pr-2 font-medium align-middle">When</th>
+          <th scope="col" class="py-2.5 pr-3 pl-2 font-medium align-middle text-right">Yes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in occurrence_rows %}
+        {% set occ = row.occ %}
+        <tr class="border-t border-line">
+          <td class="py-2.5 pl-3 pr-2">
+            {% if occ.kind.value == "adhoc" %}
+              <span class="rounded bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium mr-2 align-middle">one-off</span>
+            {% endif %}
+            <span class="align-middle text-ink">{{ occ.starts_at_utc|local_time(display_tz) }}</span>
+            {% if occ.user_label %}
+              <span class="block sm:inline sm:ml-2 text-xs text-muted">· {{ occ.user_label }}</span>
+            {% endif %}
+          </td>
+          <td class="py-2.5 pr-3 pl-2 text-right align-middle">
+            <span class="rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200 px-1.5 py-0.5 text-xs font-medium">
+              {{ row.yes_count }} / {{ total_players }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-  <p class="mt-2 text-muted italic">No times have been added yet.</p>
+  <p class="mt-2 text-sm text-muted italic">No times have been added yet.</p>
   {% endif %}
 </section>
 
-<section class="mt-8 text-sm text-muted">
-  <p>Players: open the link the organizer sent you to update your availability.</p>
-  <p class="mt-1">
-    Roster:
-    {% for p in players %}
-      <span class="inline">{{ p.display_name }}{% if p.is_mandatory %} <span class="text-amber-800 dark:text-amber-300 font-medium" title="Mandatory attendee">(mandatory)</span>{% endif %}{% if not loop.last %}, {% endif %}</span>
-    {% endfor %}
-  </p>
-</section>
 <script>
 (function () {
   try {
@@ -145,4 +169,5 @@
   } catch (e) {}
 })();
 </script>
+</div>
 {% endblock %}
