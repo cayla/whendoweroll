@@ -818,18 +818,21 @@ select.form-field::-ms-expand,
   transform: translate(-50%, 0);
 }
 
-/* Admin dashboard: sticky section sub-nav and anchor scroll offset */
-html:has(.admin-page) {
+/* Admin + player pages: sticky section sub-nav and anchor scroll offset */
+html:has(.admin-page),
+html:has(.player-page) {
   scroll-behavior: smooth;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html:has(.admin-page) {
+  html:has(.admin-page),
+  html:has(.player-page) {
     scroll-behavior: auto;
   }
 }
 
-.admin-page .admin-subnav {
+.admin-page .admin-subnav,
+.player-page .player-subnav {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -845,7 +848,8 @@ html:has(.admin-page) {
   backdrop-filter: blur(8px);
 }
 
-.admin-page .admin-subnav a {
+.admin-page .admin-subnav a,
+.player-page .player-subnav a {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--color-brand-fg);
@@ -854,19 +858,30 @@ html:has(.admin-page) {
   padding: 0.125rem 0;
 }
 
-.admin-page .admin-subnav a:hover {
+.admin-page .admin-subnav a:hover,
+.player-page .player-subnav a:hover {
   text-decoration: underline;
   color: var(--color-brand-fg-hover);
 }
 
-.admin-page .admin-subnav a:focus-visible {
+.admin-page .admin-subnav a:focus-visible,
+.player-page .player-subnav a:focus-visible {
   outline: 2px solid var(--color-ring);
   outline-offset: 2px;
 }
 
-.admin-page .admin-anchor-target {
+.admin-page .admin-anchor-target,
+.player-page .player-anchor-target {
   /* Site header + sticky sub-nav + breathing room */
   scroll-margin-top: 8.75rem;
+}
+
+/* Player tables: vertical-align middle (Tailwind align-middle can miss on cells via CDN). */
+.player-avail-table th,
+.player-avail-table td,
+.player-exceptions-table th,
+.player-exceptions-table td {
+  vertical-align: middle;
 }
 
 /* Shared admin confirmation modal (<dialog>) */

@@ -178,11 +178,23 @@ def player_recurring_exceptions_fragment(
 ) -> HTMLResponse:
     campaign, player = require_player(session, public_id, token)
     slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
-    if not has_recurring_slot(slots):
-        return HTMLResponse("")
+    display_tz = effective_display_timezone(request, campaign.timezone)
+    has_recurring = has_recurring_slot(slots)
+    if not has_recurring:
+        return templates.TemplateResponse(
+            request,
+            "fragments/player_recurring_exceptions_inner.html",
+            {
+                "has_recurring": False,
+                "unified_rows": [],
+                "campaign": campaign,
+                "player": player,
+                "token": token,
+                "display_tz": display_tz,
+            },
+        )
     availability = load_availability_map(session, [player])
     avail_by_slot = {sid: st for (_pid, sid), st in availability.items()}
-    display_tz = effective_display_timezone(request, campaign.timezone)
     cid = campaign.id
     if cid is None:
         all_players, full_map, opt_outs = _empty_roster_context()
@@ -202,6 +214,7 @@ def player_recurring_exceptions_fragment(
         request,
         "fragments/player_recurring_exceptions_inner.html",
         {
+            "has_recurring": True,
             "unified_rows": unified_rows,
             "campaign": campaign,
             "player": player,

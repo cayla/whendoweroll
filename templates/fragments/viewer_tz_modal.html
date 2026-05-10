@@ -1,6 +1,22 @@
 {# Expects: tz_prefix, tz_submit_url, display_tz, timezones, campaign_timezone, extra_help (optional) #}
 <style>
 #{{ tz_prefix }}-tz-dlg::backdrop { background: var(--color-backdrop); }
+/* Native <dialog> is centered by default; pin to top of viewport. */
+#{{ tz_prefix }}-tz-dlg {
+  position: fixed;
+  top: max(1rem, env(safe-area-inset-top));
+  margin: 0;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  max-height: min(calc(100vh - 2rem), 90vh);
+  overflow-y: auto;
+}
+/* .form-field sets width:100%; shrink select to content for this modal */
+#{{ tz_prefix }}-tz-dlg select.form-field {
+  width: auto;
+  max-width: 100%;
+}
 </style>
 {% set _tz_short = display_tz|tz_abbrev %}
 {% set _tz_pretty = display_tz|pretty_tz %}
@@ -20,17 +36,17 @@
     <button type="button" id="{{ tz_prefix }}-tz-close" class="rounded p-1 text-muted hover:bg-elevated text-lg leading-none -mt-1 -mr-1" aria-label="Close">&times;</button>
   </div>
 
-  {#- Row 1: explicit time zone selection. -#}
-  <form method="post" action="{{ tz_submit_url }}" class="flex flex-wrap items-end gap-2">
-    <div class="block min-w-0 flex-1 basis-48">
-      <label class="text-xs font-medium text-muted" for="{{ tz_prefix }}-viewer-timezone">Pick a time zone</label>
-      <select id="{{ tz_prefix }}-viewer-timezone" name="timezone" class="form-field mt-1 block w-full max-w-full text-sm">
+  {#- Row 1: explicit time zone selection (select + Apply share one row; heights matched). -#}
+  <form method="post" action="{{ tz_submit_url }}" class="block">
+    <label class="text-xs font-medium text-muted" for="{{ tz_prefix }}-viewer-timezone">Pick a time zone</label>
+    <div class="mt-1 flex flex-wrap items-center gap-2">
+      <select id="{{ tz_prefix }}-viewer-timezone" name="timezone" class="form-field text-sm max-w-full">
         {% for tz in timezones %}
           <option value="{{ tz }}" {% if tz == display_tz %}selected{% endif %}>{{ tz|pretty_tz }}</option>
         {% endfor %}
       </select>
+      <button type="submit" class="btn px-3 text-sm shrink-0 min-h-[2.875rem]">Apply</button>
     </div>
-    <button type="submit" class="btn px-3 py-1.5 text-sm shrink-0">Apply</button>
   </form>
 
   {#- Visual "or" separator between the two ways to set the zone. -#}
