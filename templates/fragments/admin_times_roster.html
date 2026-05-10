@@ -23,7 +23,7 @@
         </td>
         <td class="max-w-[14rem] py-2.5 px-2 align-middle text-ink sm:max-w-none">
           {% if slot.kind.value == "recurring" %}
-            {{ weekdays[slot.weekday][1] }} {{ slot.start_local }}
+            {{ weekdays[slot.weekday][1] }} {{ slot.start_local|hhmm_12h }}
           {% else %}
             {{ slot.starts_at_utc|local_window(slot.ends_at_utc, campaign.timezone) }}
           {% endif %}

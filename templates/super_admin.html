@@ -82,8 +82,8 @@
               </a>
             </td>
             <td class="px-4 py-2 text-right tabular-nums text-muted">{{ c.player_count }}</td>
-            <td class="px-4 py-2 text-muted">{{ c.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
-            <td class="px-4 py-2 text-muted">{{ c.last_activity_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            <td class="px-4 py-2 text-muted">{{ c.created_at|datetime_12h }}</td>
+            <td class="px-4 py-2 text-muted">{{ c.last_activity_at|datetime_12h }}</td>
             <td class="px-4 py-3 text-right align-middle">
               <form method="post" action="/internal/super-admin/campaigns/{{ c.public_id }}/delete" class="inline"
                     onsubmit="return confirm('Delete this campaign and all players, times, and availability? This cannot be undone.');">

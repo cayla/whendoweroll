@@ -46,6 +46,7 @@ def test_super_admin_list_and_delete_campaign(client):
     assert r.status_code == 200
     assert "Listed" in r.text
     assert public_id in r.text
+    assert " AM" in r.text or " PM" in r.text
 
     d = client.post(
         f"/internal/super-admin/campaigns/{public_id}/delete",
