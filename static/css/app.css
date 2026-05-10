@@ -881,7 +881,6 @@ html:has(.public-page) {
 /* Public campaign: hero definition list (Tempo / Players / Roster) */
 .public-meta-dl {
   margin: 0;
-  max-width: 65ch;
 }
 
 .public-meta-dl dt {
@@ -902,6 +901,11 @@ html:has(.public-page) {
   font-size: 0.875rem;
   line-height: 1.5;
   color: var(--color-ink);
+}
+
+/* Long tempo copy: relaxed line-height for scanning */
+.public-meta-dl dd.public-meta-dd-tempo {
+  line-height: 1.6;
 }
 
 /* Player tables: vertical-align middle (Tailwind align-middle can miss on cells via CDN). */

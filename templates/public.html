@@ -8,40 +8,43 @@
 <header class="mb-6">
   <div class="min-w-0">
     <h1 class="heading text-3xl text-brand-fg mb-4">{{ campaign.name }}</h1>
-    <p class="text-sm mb-4">
-      Open the link your organizer sent you to update your availability.
-    </p>
+
+    <div class="rounded-lg border border-line bg-elevated p-4 mb-4">
+      <dl class="public-meta-dl">
+        <dt>Tempo</dt>
+        <dd class="public-meta-dd-tempo">{{ campaign|public_tempo }}</dd>
+        <dt>Players</dt>
+        <dd>
+          {{ players|length }} player{% if players|length != 1 %}s{% endif %} &middot;
+          {{ slots|length }} time{% if slots|length != 1 %}s{% endif %} &middot;
+          Rolling {{ campaign.horizon_weeks }}-week horizon
+        </dd>
+        <dt>Roster</dt>
+        <dd>
+          {% if players %}
+            {% for p in players %}
+              <span class="inline">{{ p.display_name }}{% if p.is_mandatory %} <span class="text-amber-800 dark:text-amber-300 font-medium" title="Mandatory attendee">(mandatory)</span>{% endif %}{% if not loop.last %}, {% endif %}</span>
+            {% endfor %}
+          {% else %}
+            <span class="text-muted italic">No players yet.</span>
+          {% endif %}
+        </dd>
+      </dl>
+    </div>
+
     <div class="flex flex-wrap items-center gap-x-4 gap-y-3 mb-4">
-      <span class="text-sm font-medium text-muted">Display times in</span>
+      <span class="text-sm font-medium text-muted shrink-0">Display times in</span>
       {% with tz_prefix="public", tz_submit_url=("/c/" ~ campaign.public_id ~ "/display-timezone"), campaign_timezone=campaign.timezone %}
         {% include "fragments/viewer_tz_modal.html" %}
       {% endwith %}
+      <a href="/c/{{ campaign.public_id }}/calendar-consensus.ics" class="btn-secondary px-3 py-1.5 text-sm shrink-0">
+        Subscribe to consensus calendar (.ics)
+      </a>
     </div>
-    <dl class="public-meta-dl mb-4">
-      <dt>Tempo</dt>
-      <dd>{{ campaign|public_tempo }}</dd>
-      <dt>Players</dt>
-      <dd>
-        {{ players|length }} player{% if players|length != 1 %}s{% endif %} &middot;
-        {{ slots|length }} time{% if slots|length != 1 %}s{% endif %} &middot;
-        Rolling {{ campaign.horizon_weeks }}-week horizon
-      </dd>
-      <dt>Roster</dt>
-      <dd>
-        {% if players %}
-          {% for p in players %}
-            <span class="inline">{{ p.display_name }}{% if p.is_mandatory %} <span class="text-amber-800 dark:text-amber-300 font-medium" title="Mandatory attendee">(mandatory)</span>{% endif %}{% if not loop.last %}, {% endif %}</span>
-          {% endfor %}
-        {% else %}
-          <span class="text-muted italic">No players yet.</span>
-        {% endif %}
-      </dd>
-    </dl>
-  </div>
-  <div class="flex flex-wrap items-center gap-2 mb-4">
-    <a href="/c/{{ campaign.public_id }}/calendar-consensus.ics" class="btn-secondary px-3 py-1.5 text-sm">
-      Subscribe to consensus calendar (.ics)
-    </a>
+
+    <p class="text-sm">
+      Open the link your organizer sent you to update your availability.
+    </p>
   </div>
 </header>
 

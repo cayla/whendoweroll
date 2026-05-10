@@ -83,18 +83,18 @@ def public_campaign_tempo_caption(campaign: Campaign) -> str:
         mode = PublicRecurrenceMode.weekly
     if mode is PublicRecurrenceMode.weekly:
         return (
-            "Tempo: weekly — this page and the consensus calendar list every "
+            "Weekly — this page and the consensus calendar list every "
             "qualifying session. Player links list every occurrence."
         )
     if mode is PublicRecurrenceMode.two_weeks:
         return (
-            "Tempo: every two weeks — earliest qualifying session first, then each next "
+            "Every two weeks — earliest qualifying session first, then each next "
             "listing near fourteen days after the previous one here and on the calendar. "
             "Player links list every occurrence."
         )
     if mode is PublicRecurrenceMode.once_per_month:
         return (
-            "Tempo: about once a month — earliest qualifying session first, then each next listing "
+            "About once a month — earliest qualifying session first, then each next listing "
             "near the same calendar date one month out from the last one here and on the calendar. "
             "Player links list every occurrence."
         )

@@ -52,4 +52,6 @@ def test_public_campaign_tempo_caption():
         admin_secret_hash="h",
         public_recurrence_mode=PublicRecurrenceMode.weekly,
     )
-    assert "this page" in public_campaign_tempo_caption(c)
+    cap = public_campaign_tempo_caption(c)
+    assert "this page" in cap
+    assert not cap.lower().startswith("tempo:")
