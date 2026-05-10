@@ -29,7 +29,7 @@
 
 <section id="settings" class="admin-anchor-target bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
   <h2 class="heading text-lg mb-3">Settings</h2>
-  <form method="post" action="{{ admin_url }}/settings" class="flex flex-col gap-6">
+  <form method="post" action="{{ admin_path }}/settings" class="flex flex-col gap-6">
     <div class="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-3 md:gap-y-0">
       <div class="min-w-0">
         <label class="block text-sm font-medium text-ink" for="admin-settings-name">Name</label>
@@ -99,7 +99,7 @@
   </div>
 
   <form class="mt-4"
-        hx-post="{{ admin_url }}/players"
+        hx-post="{{ admin_path }}/players"
         hx-target="#new-player-info" hx-swap="innerHTML"
         hx-on::after-request="this.reset()">
     <label class="block text-sm font-medium text-ink" for="admin-add-player-display-name">Add player</label>
@@ -117,7 +117,7 @@
 
   <div id="new-player-info" class="mt-4"></div>
 
-  <form method="post" action="{{ admin_url }}/mandatory-attendees" class="mt-6 rounded-md border border-line bg-elevated p-4">
+  <form method="post" action="{{ admin_path }}/mandatory-attendees" class="mt-6 rounded-md border border-line bg-elevated p-4">
     <h3 class="text-sm font-medium text-ink">Mandatory attendees</h3>
     <p class="text-xs text-muted mt-2">
       Mandatory attendees (e.g. the GM, or co-GMs) must <em>all</em> be available for any window to count toward consensus on the Public Campaign page.
@@ -143,8 +143,8 @@
   </p>
 
   <div class="grid gap-6 md:grid-cols-2">
-    <form method="post" action="{{ admin_url }}/slots" class="border border-line rounded-md p-4"
-          hx-post="{{ admin_url }}/slots" hx-swap="none"
+    <form method="post" action="{{ admin_path }}/slots" class="border border-line rounded-md p-4"
+          hx-post="{{ admin_path }}/slots" hx-swap="none"
           hx-on::after-request="if (event.detail.successful) this.reset()">
       <h3 class="font-medium mb-3">Recurring weekly</h3>
       <input type="hidden" name="kind" value="recurring">
@@ -165,8 +165,8 @@
       </button>
     </form>
 
-    <form method="post" action="{{ admin_url }}/slots" class="border border-line rounded-md p-4"
-          hx-post="{{ admin_url }}/slots" hx-swap="none"
+    <form method="post" action="{{ admin_path }}/slots" class="border border-line rounded-md p-4"
+          hx-post="{{ admin_path }}/slots" hx-swap="none"
           hx-on::after-request="if (event.detail.successful) this.reset()">
       <h3 class="font-medium mb-3">One-off session</h3>
       <input type="hidden" name="kind" value="adhoc">
@@ -194,7 +194,7 @@
     The consensus <code class="text-xs bg-[color:var(--color-code-bg)] px-1 rounded">.ics</code> lives at the public URL and lists upcoming windows where everyone is available, plus near-consensus ones (one player missing) prefixed with <code class="text-xs bg-[color:var(--color-code-bg)] px-1 rounded">[missing: &hellip;]</code>. Share this single feed with the group. The same link is on every player's page too.
   </p>
   <div class="flex flex-wrap gap-3">
-    <a href="{{ admin_url }}/export" download="{{ export_json_filename }}"
+    <a href="{{ admin_path }}/export" download="{{ export_json_filename }}"
        class="btn-secondary px-3 py-1.5 text-sm"
        title="{{ export_json_filename }}">
       Download JSON
@@ -211,7 +211,7 @@
   <p class="text-sm text-muted mb-3">
     Permanently removes this campaign, every player, time, saved answer, and per-date exception. Admin and player links will stop working.
   </p>
-  <form method="post" action="{{ admin_url }}/delete">
+  <form method="post" action="{{ admin_path }}/delete">
     <button type="button"
             class="rounded-md bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500"
             data-admin-confirm

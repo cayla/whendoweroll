@@ -127,6 +127,10 @@ def _redirect_to_admin(public_id: str, secret: str) -> RedirectResponse:
     return RedirectResponse(url=f"/c/{public_id}/admin/{secret}", status_code=303)
 
 
+def _admin_path(public_id: str, secret: str) -> str:
+    return f"/c/{public_id}/admin/{secret}"
+
+
 @router.get("", response_class=HTMLResponse)
 def admin_home(
     public_id: str,
@@ -146,6 +150,7 @@ def admin_home(
             "players": players,
             "slots": slots,
             "admin_url": f"{base_url}/c/{campaign.public_id}/admin/{secret}",
+            "admin_path": _admin_path(campaign.public_id, secret),
             "public_url": f"{base_url}/c/{campaign.public_id}",
             "export_json_filename": campaign_export_download_filename(campaign),
             "secret": secret,
@@ -260,6 +265,7 @@ def add_player(
             "campaign": campaign,
             "players": players,
             "admin_url": admin_url,
+            "admin_path": _admin_path(campaign.public_id, secret),
         },
     )
 
@@ -294,6 +300,7 @@ def regenerate_player_token(
             "campaign": campaign,
             "players": players,
             "admin_url": admin_url,
+            "admin_path": _admin_path(campaign.public_id, secret),
         },
     )
 
@@ -323,7 +330,12 @@ def delete_player(
     return templates.TemplateResponse(
         request,
         "fragments/player_delete_response.html",
-        {"removed_name": removed_name, "players": players, "admin_url": admin_url},
+        {
+            "removed_name": removed_name,
+            "players": players,
+            "admin_url": admin_url,
+            "admin_path": _admin_path(campaign.public_id, secret),
+        },
     )
 
 
@@ -401,6 +413,7 @@ def add_slot(
                 "slots": slots,
                 "weekdays": _ADMIN_WEEKDAY_CHOICES,
                 "admin_url": f"{base_url}/c/{campaign.public_id}/admin/{secret}",
+                "admin_path": _admin_path(campaign.public_id, secret),
                 "times_status_message": times_status_message,
             },
         )
@@ -437,6 +450,7 @@ def delete_slot(
                 "slots": slots,
                 "weekdays": _ADMIN_WEEKDAY_CHOICES,
                 "admin_url": f"{base_url}/c/{campaign.public_id}/admin/{secret}",
+                "admin_path": _admin_path(campaign.public_id, secret),
                 "times_status_message": "Time removed.",
             },
         )

@@ -14,15 +14,15 @@
         <th scope="row" class="py-2.5 pl-3 pr-2 align-middle text-left font-medium text-ink">{{ player.display_name }}</th>
         <td class="py-2.5 pr-3 pl-2 align-middle text-right whitespace-nowrap">
           <span class="inline-flex flex-wrap items-center justify-end gap-2">
-            <form method="post" action="{{ admin_url }}/players/{{ player.id }}/regenerate"
-                  hx-post="{{ admin_url }}/players/{{ player.id }}/regenerate"
+            <form method="post" action="{{ admin_path }}/players/{{ player.id }}/regenerate"
+                  hx-post="{{ admin_path }}/players/{{ player.id }}/regenerate"
                   hx-target="#new-player-info" hx-swap="innerHTML">
               <button class="text-xs rounded border border-line px-2 py-1 hover:bg-elevated text-ink">
                 Regenerate link
               </button>
             </form>
-            <form method="post" action="{{ admin_url }}/players/{{ player.id }}/delete"
-                  hx-post="{{ admin_url }}/players/{{ player.id }}/delete"
+            <form method="post" action="{{ admin_path }}/players/{{ player.id }}/delete"
+                  hx-post="{{ admin_path }}/players/{{ player.id }}/delete"
                   hx-swap="none">
               <button type="button"
                       class="text-xs rounded border border-line px-2 py-1 hover:bg-elevated text-ink"
