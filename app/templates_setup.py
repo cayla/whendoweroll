@@ -12,6 +12,7 @@ from app.display_time import (
     format_datetime_clock_12h,
     format_hhmm_12h,
     format_local_window,
+    format_local_window_dated,
     player_campaign_tempo_caption,
     public_campaign_tempo_caption,
     recurring_slot_primary_label,
@@ -64,6 +65,7 @@ def _pretty_tz(tz_name: str) -> str:
 
 templates.env.filters["local_time"] = _format_local
 templates.env.filters["local_window"] = format_local_window
+templates.env.filters["local_window_dated"] = format_local_window_dated
 templates.env.filters["datetime_12h"] = _format_datetime_12h
 templates.env.filters["hhmm_12h"] = format_hhmm_12h
 templates.env.filters["recurring_slot_viewer"] = recurring_slot_primary_label

@@ -81,6 +81,20 @@ def test_admin_oneoff_duration_crosses_midnight(client, engine):
     assert (b.hour, b.minute) == (2, 0)
 
 
+def test_admin_oneoff_rejects_past_start(client):
+    public_id, secret = _new_campaign(client)
+    r = client.post(
+        f"/c/{public_id}/admin/{secret}/slots",
+        data={
+            "kind": "adhoc",
+            "adhoc_date": "2001-01-01",
+            "adhoc_start_time": "10:00",
+            "duration_hours": "2",
+        },
+    )
+    assert r.status_code == 400
+
+
 def test_admin_recurring_times_display_as_12_hour(client):
     public_id, secret = _new_campaign(client)
     r = client.post(

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
-from app.models import AvailabilityStatus, Player
+from sqlmodel import Session, select
+
+from app.models import AvailabilityStatus, Campaign, Player, Slot, SlotKind
 from app.services.availability import roster_can_make_occurrence
 from app.services.timeutil import normalize_occurrence_start
 
@@ -82,3 +84,42 @@ def _three_player_campaign_with_slot(client) -> tuple[str, str, list[str]]:
         data={"kind": "recurring", "weekday": "4", "start_local": "18:00", "duration_hours": "3"},
     )
     return public_id, secret, tokens
+
+
+def test_player_cannot_change_availability_on_ended_oneoff(client, engine):
+    r = client.post(
+        "/",
+        data={
+            "name": "PastOneoff",
+            "timezone": "America/New_York",
+            "player_names": "Solo",
+            "horizon_weeks": "4",
+        },
+    )
+    assert r.status_code == 200
+    public_id, _secret = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text).groups()
+    token = re.search(r"/c/" + public_id + r"/p/([\w\-]+)", r.text).group(1)
+
+    with Session(engine) as s:
+        campaign = s.exec(select(Campaign).where(Campaign.public_id == public_id)).first()
+        assert campaign is not None
+        cid = campaign.id
+        past_start = datetime(2019, 6, 1, 16, 0, tzinfo=UTC)
+        slot = Slot(
+            campaign_id=cid,
+            kind=SlotKind.adhoc,
+            duration_hours=1.0,
+            starts_at_utc=past_start,
+            ends_at_utc=past_start + timedelta(hours=1),
+        )
+        s.add(slot)
+        s.commit()
+        s.refresh(slot)
+        sid = slot.id
+    assert sid is not None
+
+    resp = client.post(
+        f"/c/{public_id}/p/{token}/availability/{sid}",
+        data={"status": "yes"},
+    )
+    assert resp.status_code == 400
