@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlmodel import Session, select
 
 from app.db import get_session
@@ -36,6 +36,22 @@ def _players_ordered_for_admin(session: Session, campaign_id: int) -> list[Playe
     """Alphabetical by display name (case-insensitive) for admin roster and mandatory UI."""
     return session.exec(
         select(Player).where(Player.campaign_id == campaign_id).order_by(func.lower(Player.display_name))
+    ).all()
+
+
+def _slots_ordered_for_admin(session: Session, campaign_id: int) -> list[Slot]:
+    """Recurring Mon→Sun by local start time, then one-offs by session start (UTC)."""
+    recurring_first = case((Slot.kind == SlotKind.recurring, 0), else_=1)
+    return session.exec(
+        select(Slot)
+        .where(Slot.campaign_id == campaign_id)
+        .order_by(
+            recurring_first,
+            Slot.weekday.asc().nulls_last(),
+            Slot.start_local.asc().nulls_last(),
+            Slot.starts_at_utc.asc().nulls_last(),
+            Slot.id.asc(),
+        )
     ).all()
 
 
@@ -140,7 +156,7 @@ def admin_home(
 ) -> HTMLResponse:
     campaign = require_admin(session, public_id, secret)
     players = _players_ordered_for_admin(session, campaign.id)
-    slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
+    slots = _slots_ordered_for_admin(session, campaign.id)
     base_url = str(request.base_url).rstrip("/")
     return templates.TemplateResponse(
         request,
@@ -401,7 +417,7 @@ def add_slot(
 
     if request.headers.get("HX-Request"):
         base_url = str(request.base_url).rstrip("/")
-        slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
+        slots = _slots_ordered_for_admin(session, campaign.id)
         times_status_message = (
             "Recurring time added." if kind == SlotKind.recurring.value else "One-off session added."
         )
@@ -441,7 +457,7 @@ def delete_slot(
 
     if request.headers.get("HX-Request"):
         base_url = str(request.base_url).rstrip("/")
-        slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
+        slots = _slots_ordered_for_admin(session, campaign.id)
         return templates.TemplateResponse(
             request,
             "fragments/admin_slots_roster_oob.html",
