@@ -52,6 +52,9 @@
 
   <section>
     <h2 class="text-lg font-semibold text-ink mb-3">Campaigns</h2>
+    <p class="text-xs text-muted mb-3 max-w-2xl">
+      <strong class="text-ink">Last activity</strong> uses related row timestamps only; there is no <code class="bg-[color:var(--color-code-bg)] px-1 rounded">campaign.updated_at</code>, so settings-only edits may not move this date.
+    </p>
     {% if not campaigns %}
     <p class="text-sm text-muted">No campaigns in the database.</p>
     {% else %}
@@ -61,7 +64,11 @@
           <tr>
             <th class="px-4 py-2">Name</th>
             <th class="px-4 py-2">Public id</th>
+            <th class="px-4 py-2 text-right">Players</th>
             <th class="px-4 py-2">Created (UTC)</th>
+            <th class="px-4 py-2">
+              <abbr title="Latest change among players, sessions, availability, or occurrence opt-outs.">Last activity (UTC)</abbr>
+            </th>
             <th class="px-4 py-2 text-right">Actions</th>
           </tr>
         </thead>
@@ -69,8 +76,14 @@
           {% for c in campaigns %}
           <tr>
             <td class="px-4 py-2 font-medium text-ink">{{ c.name }}</td>
-            <td class="px-4 py-2 font-mono text-xs text-muted">{{ c.public_id }}</td>
+            <td class="px-4 py-2 font-mono text-xs text-muted">
+              <a href="/c/{{ c.public_id }}">
+                {{ c.public_id }}
+              </a>
+            </td>
+            <td class="px-4 py-2 text-right tabular-nums text-muted">{{ c.player_count }}</td>
             <td class="px-4 py-2 text-muted">{{ c.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            <td class="px-4 py-2 text-muted">{{ c.last_activity_at.strftime("%Y-%m-%d %H:%M") }}</td>
             <td class="px-4 py-3 text-right align-middle">
               <form method="post" action="/internal/super-admin/campaigns/{{ c.public_id }}/delete" class="inline"
                     onsubmit="return confirm('Delete this campaign and all players, times, and availability? This cannot be undone.');">

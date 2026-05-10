@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlmodel import Session, select
+from sqlalchemy import union_all
+from sqlmodel import Session, func, select
 
 from app import settings as settings_module
 from app.db import get_session
-from app.models import Campaign
+from app.models import Availability, Campaign, OccurrenceOptOut, Player, Slot
 from app.services.campaign_delete import delete_campaign_cascade
 from app.super_admin_auth import (
     SESSION_COOKIE_NAME,
@@ -20,6 +24,76 @@ from app.super_admin_auth import (
 from app.templates_setup import templates
 
 router = APIRouter(prefix="/internal/super-admin", tags=["super-admin"])
+
+
+@dataclass(frozen=True)
+class SuperAdminCampaignRow:
+    """One row for the super-admin campaign table (denormalised for the template)."""
+
+    name: str
+    public_id: str
+    created_at: datetime
+    player_count: int
+    last_activity_at: datetime
+
+
+def _as_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
+
+
+def _super_admin_campaign_rows(session: Session) -> list[SuperAdminCampaignRow]:
+    """Campaign list with player counts and a derived last-activity timestamp.
+
+    There is no ``campaign.updated_at`` in the schema. ``last_activity_at`` is
+    the latest UTC instant among: campaign creation, player creation, slot
+    creation, availability updates, and occurrence opt-out rows. Pure admin
+    settings edits that do not touch those tables will not advance this signal.
+    """
+    campaigns = session.exec(select(Campaign).order_by(Campaign.created_at.desc())).all()
+    if not campaigns:
+        return []
+
+    count_rows = session.exec(select(Player.campaign_id, func.count(Player.id)).group_by(Player.campaign_id)).all()
+    counts: dict[int, int] = {int(cid): int(n) for cid, n in count_rows if cid is not None}
+
+    p = select(Player.campaign_id.label("cid"), Player.created_at.label("ts"))
+    s = select(Slot.campaign_id.label("cid"), Slot.created_at.label("ts"))
+    a = (
+        select(Player.campaign_id.label("cid"), Availability.updated_at.label("ts"))
+        .select_from(Availability)
+        .join(Player, Availability.player_id == Player.id)
+    )
+    o = (
+        select(Player.campaign_id.label("cid"), OccurrenceOptOut.created_at.label("ts"))
+        .select_from(OccurrenceOptOut)
+        .join(Player, OccurrenceOptOut.player_id == Player.id)
+    )
+    combined = union_all(p, s, a, o).subquery()
+    agg = select(combined.c.cid, func.max(combined.c.ts).label("last_ts")).group_by(combined.c.cid)
+    activity: dict[int, datetime] = {}
+    for row in session.exec(agg):
+        activity[int(row.cid)] = row.last_ts
+
+    rows: list[SuperAdminCampaignRow] = []
+    for c in campaigns:
+        if c.id is None:
+            continue
+        pc = counts.get(c.id, 0)
+        sub = activity.get(c.id)
+        created = _as_utc(c.created_at)
+        last = created if sub is None else max(created, _as_utc(sub))
+        rows.append(
+            SuperAdminCampaignRow(
+                name=c.name,
+                public_id=c.public_id,
+                created_at=c.created_at,
+                player_count=pc,
+                last_activity_at=last,
+            )
+        )
+    return rows
 
 
 def _cookie_flags(request: Request) -> dict:
@@ -45,7 +119,7 @@ def super_admin_page(
 ) -> HTMLResponse:
     if not verify_session_token(request.cookies.get(SESSION_COOKIE_NAME)):
         return templates.TemplateResponse(request, "super_admin_login.html", {"error": None})
-    campaigns = session.exec(select(Campaign).order_by(Campaign.created_at.desc())).all()
+    campaigns = _super_admin_campaign_rows(session)
     return templates.TemplateResponse(
         request,
         "super_admin.html",
