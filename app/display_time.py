@@ -62,15 +62,14 @@ def player_campaign_tempo_caption(campaign: Campaign) -> str:
         return "Tempo: weekly — the public page and consensus calendar list every date below."
     if mode is PublicRecurrenceMode.twice_per_month:
         return (
-            "Tempo: about twice a month — the public page and calendar show at most "
-            "two sessions per calendar month across all recurring options "
-            "(you still see every date here)."
+            "Tempo: about twice a month — the public page and calendar walk forward from the "
+            "earliest qualifying session, then each next pick is the best match near two weeks "
+            "after the last one shown. You still see every date here."
         )
     if mode is PublicRecurrenceMode.once_per_month:
         return (
-            "Tempo: about once a month — the public page and calendar take only "
-            "the first qualifying session each calendar month "
-            "(you still see every date here)."
+            "Tempo: about once a month — same walk, but each next pick is chosen near the same "
+            "calendar date one month after the last one shown. You still see every date here."
         )
     return ""
 
@@ -89,12 +88,14 @@ def public_campaign_tempo_caption(campaign: Campaign) -> str:
         )
     if mode is PublicRecurrenceMode.twice_per_month:
         return (
-            "Tempo: about twice a month — at most two sessions per calendar month "
-            "appear here and on the calendar. Player links list every occurrence."
+            "Tempo: about twice a month — earliest qualifying session first, then each next "
+            "listing near two weeks after the previous one here and on the calendar. "
+            "Player links list every occurrence."
         )
     if mode is PublicRecurrenceMode.once_per_month:
         return (
-            "Tempo: about once a month — only the first qualifying session each "
-            "month appears here and on the calendar. Player links list every occurrence."
+            "Tempo: about once a month — earliest qualifying session first, then each next listing "
+            "near the same calendar date one month out from the last one here and on the calendar. "
+            "Player links list every occurrence."
         )
     return ""

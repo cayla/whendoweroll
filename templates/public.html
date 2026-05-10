@@ -16,13 +16,6 @@
     Rolling {{ campaign.horizon_weeks }}-week horizon
   </p>
   <p class="mt-2 text-xs text-muted">{{ campaign|public_tempo }}</p>
-  {% if campaign.public_min_gap_days > 0 %}
-  <p class="mt-1 text-xs text-muted">
-    Spacing: public listings stay at least <strong>{{ campaign.public_min_gap_days }}</strong>
-    calendar day(s) apart (in {{ campaign.timezone|pretty_tz }}), so multiple weekly options
-    do not crowd the cards and calendar.
-  </p>
-  {% endif %}
   <p class="mt-1 text-xs text-muted">
     <a class="underline text-brand-fg hover:text-brand-fg-hover" href="/c/{{ campaign.public_id }}/calendar-consensus.ics">Subscribe to consensus calendar (.ics)</a>
   </p>

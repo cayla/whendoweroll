@@ -54,7 +54,6 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
                 if isinstance(campaign.public_recurrence_mode, PublicRecurrenceMode)
                 else str(campaign.public_recurrence_mode)
             ),
-            "public_min_gap_days": int(getattr(campaign, "public_min_gap_days", 0) or 0),
             "created_at": _iso(campaign.created_at),
         },
         "players": [

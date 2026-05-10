@@ -126,7 +126,6 @@ def test_export_then_import_roundtrips_full_campaign(client, engine):
     assert payload["export_version"] == 3
     assert payload["campaign"]["consensus_policy"] == ConsensusPolicy.allow_one.value
     assert payload["campaign"]["public_recurrence_mode"] == PublicRecurrenceMode.twice_per_month.value
-    assert payload["campaign"]["public_min_gap_days"] == 0
     recurring_export = next(s for s in payload["slots"] if s["kind"] == "recurring")
     assert "public_recurrence_mode" not in recurring_export
 
@@ -146,7 +145,6 @@ def test_export_then_import_roundtrips_full_campaign(client, engine):
         assert new_campaign.horizon_weeks == 7
         assert new_campaign.consensus_policy == ConsensusPolicy.allow_one
         assert new_campaign.public_recurrence_mode == PublicRecurrenceMode.twice_per_month
-        assert new_campaign.public_min_gap_days == 0
 
         roster = s.exec(select(Player).where(Player.campaign_id == new_campaign.id).order_by(Player.sort_order)).all()
         assert [p.display_name for p in roster] == ["Alice", "Bob"]

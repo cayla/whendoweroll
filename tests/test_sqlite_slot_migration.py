@@ -8,7 +8,6 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
 
 from app.db import (
-    migrate_sqlite_campaign_public_min_gap_days,
     migrate_sqlite_campaign_public_recurrence_mode,
     migrate_sqlite_slot_max_sessions_per_month,
     migrate_sqlite_slot_recurrence_cadence,
@@ -199,29 +198,3 @@ def test_migration_adds_campaign_public_recurrence_mode_and_backfills():
         row = conn.execute(text("SELECT public_recurrence_mode FROM campaign WHERE id = 1")).one()
     assert "public_recurrence_mode" in names
     assert row[0] == "twice_per_month"
-
-
-def test_migration_adds_campaign_public_min_gap_days_column():
-    eng = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    with eng.begin() as conn:
-        conn.execute(
-            text(
-                """
-                CREATE TABLE campaign (
-                    id INTEGER PRIMARY KEY,
-                    public_id VARCHAR NOT NULL,
-                    name VARCHAR NOT NULL,
-                    timezone VARCHAR NOT NULL,
-                    admin_secret_hash VARCHAR NOT NULL
-                )
-                """
-            )
-        )
-    migrate_sqlite_campaign_public_min_gap_days(eng)
-    with eng.connect() as conn:
-        names = {row[1] for row in conn.execute(text("PRAGMA table_info(campaign)")).fetchall()}
-    assert "public_min_gap_days" in names

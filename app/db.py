@@ -188,19 +188,6 @@ def migrate_sqlite_campaign_public_recurrence_mode(eng) -> None:
             )
 
 
-def migrate_sqlite_campaign_public_min_gap_days(eng) -> None:
-    """Add ``public_min_gap_days`` to ``campaign`` (SQLite). Default ``0`` = off."""
-    with eng.begin() as conn:
-        info = conn.execute(text("PRAGMA table_info(campaign)")).fetchall()
-        if not info:
-            return
-        names = {row[1] for row in info}
-        if "public_min_gap_days" not in names:
-            conn.execute(
-                text("ALTER TABLE campaign ADD COLUMN public_min_gap_days INTEGER NOT NULL DEFAULT 0")
-            )
-
-
 def migrate_sqlite_slot_max_sessions_per_month(eng) -> None:
     """Legacy: add ``max_sessions_per_month`` if missing (superseded by cadence fields)."""
     with eng.begin() as conn:
@@ -235,7 +222,6 @@ def init_db() -> None:
         migrate_sqlite_player_is_mandatory(engine)
         migrate_sqlite_campaign_consensus_policy(engine)
         migrate_sqlite_campaign_public_recurrence_mode(engine)
-        migrate_sqlite_campaign_public_min_gap_days(engine)
         migrate_sqlite_slot_max_sessions_per_month(engine)
         migrate_sqlite_slot_recurrence_cadence(engine)
 

@@ -29,12 +29,6 @@
 <p class="text-muted italic">No times have been added yet.</p>
 {% else %}
 <p class="text-xs text-muted mb-2">{{ campaign|player_tempo }}</p>
-{% if campaign.public_min_gap_days > 0 %}
-<p class="text-xs text-muted mb-2">
-  Public page spacing: at least <strong>{{ campaign.public_min_gap_days }}</strong> calendar day(s) between listed
-  session starts (your table below is unchanged).
-</p>
-{% endif %}
 <div class="bg-surface border border-line rounded-lg shadow-sm overflow-hidden">
   <table class="w-full text-sm">
     <thead class="text-left bg-elevated text-xs uppercase tracking-wide text-muted">

@@ -36,17 +36,17 @@ _PUBLIC_RECURRENCE_MODE_CHOICES: tuple[tuple[PublicRecurrenceMode, str, str], ..
         PublicRecurrenceMode.twice_per_month,
         "About twice a month",
         (
-            "At most two sessions per calendar month across all recurring options on the public "
-            "page and calendar (earliest dates win). Player pages still list every date."
+            "Public page and calendar: earliest qualifying session, then each next pick near "
+            "two weeks after the previous kept listing (closest match in a bracket). "
+            "Player pages still list every date."
         ),
     ),
     (
         PublicRecurrenceMode.once_per_month,
         "About once a month",
         (
-            "Only the first calendar month date that meets your consensus policy (everyone, or "
-            "all but one) appears publicly across recurring options; the next public pick is in "
-            "the following month."
+            "Public page and calendar: earliest qualifying session, then each next pick near the "
+            "same calendar date one month after the previous kept listing. Player pages still list every date."
         ),
     ),
 )
@@ -101,16 +101,6 @@ def _parse_public_recurrence_mode(raw: str | None) -> PublicRecurrenceMode:
         raise HTTPException(status_code=400, detail="Unknown public recurrence mode") from exc
 
 
-def _parse_public_min_gap_days(raw: str | None) -> int:
-    if raw is None or not str(raw).strip():
-        return 0
-    try:
-        n = int(str(raw).strip(), 10)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail="Minimum gap days must be an integer") from exc
-    return max(0, min(n, 30))
-
-
 def _redirect_to_admin(public_id: str, secret: str) -> RedirectResponse:
     return RedirectResponse(url=f"/c/{public_id}/admin/{secret}", status_code=303)
 
@@ -161,7 +151,6 @@ def update_settings(
     horizon_weeks: int = Form(12),
     consensus_policy: str = Form(...),
     public_recurrence_mode: str | None = Form("weekly"),
-    public_min_gap_days: str | None = Form("0"),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     campaign = require_admin(session, public_id, secret)
@@ -177,13 +166,11 @@ def update_settings(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Unknown consensus policy") from exc
     mode = _parse_public_recurrence_mode(public_recurrence_mode)
-    gap = _parse_public_min_gap_days(public_min_gap_days)
     campaign.name = name
     campaign.timezone = timezone
     campaign.horizon_weeks = max(1, min(horizon_weeks, 52))
     campaign.consensus_policy = policy
     campaign.public_recurrence_mode = mode
-    campaign.public_min_gap_days = gap
     session.add(campaign)
     session.commit()
     return _redirect_to_admin(public_id, secret)

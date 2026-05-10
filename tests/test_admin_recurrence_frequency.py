@@ -74,31 +74,9 @@ def test_admin_update_campaign_public_recurrence_mode(client, engine):
             "horizon_weeks": str(c.horizon_weeks),
             "consensus_policy": c.consensus_policy.value,
             "public_recurrence_mode": "once_per_month",
-            "public_min_gap_days": "0",
         },
     )
     assert r.status_code in (200, 303)
     with Session(engine) as s:
         c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
     assert c.public_recurrence_mode == PublicRecurrenceMode.once_per_month
-
-
-def test_admin_saves_public_min_gap_days(client, engine):
-    public_id, secret = _new_campaign(client)
-    with Session(engine) as s:
-        c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
-    r = client.post(
-        f"/c/{public_id}/admin/{secret}/settings",
-        data={
-            "name": c.name,
-            "timezone": c.timezone,
-            "horizon_weeks": str(c.horizon_weeks),
-            "consensus_policy": c.consensus_policy.value,
-            "public_recurrence_mode": c.public_recurrence_mode.value,
-            "public_min_gap_days": "5",
-        },
-    )
-    assert r.status_code in (200, 303)
-    with Session(engine) as s:
-        c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
-    assert c.public_min_gap_days == 5

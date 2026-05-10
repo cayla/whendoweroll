@@ -68,18 +68,6 @@
       </p>
     </div>
     <div class="md:col-span-3">
-      <label class="block text-sm font-medium text-ink" for="admin-settings-pub-gap">
-        Minimum days between public listings
-      </label>
-      <input id="admin-settings-pub-gap" name="public_min_gap_days" type="number" min="0" max="30"
-             value="{{ campaign.public_min_gap_days }}" class="form-field max-w-xs">
-      <p class="mt-1 text-xs text-muted max-w-2xl">
-        Optional anti-clustering: after tempo rules, drop rows whose <em>start date</em> in the
-        campaign timezone is closer than this many calendar days to the previous kept row.
-        Use <strong>0</strong> to turn off. Try <strong>4</strong>–<strong>7</strong> when several weekly times all show green.
-      </p>
-    </div>
-    <div class="md:col-span-3">
       <button class="btn px-3 py-1.5 text-sm">Save settings</button>
     </div>
   </form>
