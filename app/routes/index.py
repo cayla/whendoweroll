@@ -194,13 +194,14 @@ async def import_campaign_route(
     backup: UploadFile = File(...),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    """Restore a campaign from a previously-downloaded ``export.json`` file.
+    """Restore a campaign from a previously-downloaded admin JSON export file.
 
     Importing creates a brand-new campaign (fresh admin link, fresh per-player
     links) populated with the file's roster, slots, availability, and
-    per-occurrence opt-outs. The original public id and capability secrets
-    are intentionally not reused. The export never carried them, and we
-    want every link in the system to remain unguessable.
+    per-occurrence opt-outs. The original capability secrets are not reused.
+    When the JSON includes ``campaign.public_id`` from this app (current exports
+    do), the matching prior campaign row is deleted after the new one succeeds,
+    so old links stop resolving instead of leaving a stale duplicate.
     """
     if new_campaigns_disabled():
         return templates.TemplateResponse(

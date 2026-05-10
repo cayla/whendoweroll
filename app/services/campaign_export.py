@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from datetime import UTC, datetime
 
 from sqlmodel import Session, select
@@ -15,6 +17,33 @@ def _iso(dt: datetime | None) -> str | None:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=UTC)
     return dt.astimezone(UTC).isoformat()
+
+
+def _ascii_slug_for_export(name: str, *, max_len: int = 50) -> str:
+    """Lowercase hyphenated slug safe for ASCII filenames (``Content-Disposition``)."""
+    s = name.strip()
+    if not s:
+        return "campaign"
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    s = s.lower()
+    s = re.sub(r"[^a-z0-9]+", "-", s)
+    s = re.sub(r"-+", "-", s).strip("-")
+    if not s:
+        s = "campaign"
+    if len(s) > max_len:
+        s = s[:max_len].rstrip("-")
+    return s or "campaign"
+
+
+def campaign_export_download_filename(campaign: Campaign, *, as_of: datetime | None = None) -> str:
+    """Suggested download name: ``whendoweroll-{slug}-{YYYYMMDD}.json`` (UTC date)."""
+    when = as_of or datetime.now(UTC)
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    date_s = when.astimezone(UTC).strftime("%Y%m%d")
+    slug = _ascii_slug_for_export(campaign.name)
+    return f"whendoweroll-{slug}-{date_s}.json"
 
 
 def build_export_payload(session: Session, campaign: Campaign) -> dict:
@@ -82,6 +111,7 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
         "occurrence_opt_outs": opt_out_rows,
         "_note": (
             "Admin and player URL tokens are never included. Re-import this file "
-            "from the home page to restore into a fresh campaign with new links."
+            "from the home page to restore into a fresh campaign with new links; "
+            "the campaign this snapshot was exported from is then removed from the server."
         ),
     }
