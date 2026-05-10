@@ -55,7 +55,7 @@ def _created_page_context(
     ui_rows: list[dict[str, Any]] = [
         {
             "kind": "admin",
-            "title": "Admin link",
+            "title": "Admin Dashboard Link",
             "badge": "Keep secret",
             "description": manifest_rows[0]["link_description"],
             "url": admin_url,
@@ -63,7 +63,7 @@ def _created_page_context(
         },
         {
             "kind": "public",
-            "title": "Public campaign page",
+            "title": "Public Campaign Page",
             "badge": "",
             "description": manifest_rows[1]["link_description"],
             "url": public_url,

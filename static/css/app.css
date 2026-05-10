@@ -817,3 +817,74 @@ select.form-field::-ms-expand,
   visibility: visible;
   transform: translate(-50%, 0);
 }
+
+/* Admin dashboard: sticky section sub-nav and anchor scroll offset */
+html:has(.admin-page) {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.admin-page) {
+    scroll-behavior: auto;
+  }
+}
+
+.admin-page .admin-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  position: sticky;
+  /* Below global sticky header (~py-5 + logo line) */
+  top: 4.75rem;
+  z-index: 9;
+  margin: 0 -1rem 1.5rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-canvas) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.admin-page .admin-subnav a {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-brand-fg);
+  text-decoration: none;
+  border-radius: 0.25rem;
+  padding: 0.125rem 0;
+}
+
+.admin-page .admin-subnav a:hover {
+  text-decoration: underline;
+  color: var(--color-brand-fg-hover);
+}
+
+.admin-page .admin-subnav a:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.admin-page .admin-anchor-target {
+  /* Site header + sticky sub-nav + breathing room */
+  scroll-margin-top: 8.75rem;
+}
+
+/* Shared admin confirmation modal (<dialog>) */
+.admin-confirm-dialog {
+  border: none;
+  padding: 0;
+  max-width: min(100vw - 2rem, 28rem);
+  width: min(100vw - 2rem, 28rem);
+  max-height: min(85vh, 40rem);
+  overflow-y: auto;
+  background: transparent;
+  margin: 0;
+  position: fixed;
+  top: 5.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.admin-confirm-dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}

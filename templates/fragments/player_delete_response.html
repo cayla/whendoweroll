@@ -1,0 +1,11 @@
+<div hx-swap-oob="innerHTML:#players-card-status">
+  <div class="rounded-md border border-emerald-400 bg-emerald-50 p-3 mb-2 text-sm dark:border-emerald-700 dark:bg-emerald-950/35">
+    <div class="font-medium text-emerald-900 dark:text-emerald-200">{{ removed_name }} was removed from the campaign.</div>
+  </div>
+</div>
+<div hx-swap-oob="innerHTML:#admin-players-roster">
+{% include "fragments/admin_players_roster.html" %}
+</div>
+<div hx-swap-oob="innerHTML:#mandatory-attendees-inner">
+{% include "fragments/mandatory_attendees_inner.html" %}
+</div>

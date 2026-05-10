@@ -1,205 +1,174 @@
 {% extends "base.html" %}
-{% block title %}{{ campaign.name }} &middot; admin{% endblock %}
-{% block subtitle %}admin &middot; {{ campaign.timezone|pretty_tz }}{% endblock %}
+{% block title %}Admin Dashboard: {{ campaign.name }}{% endblock %}
+{% block subtitle %}{% endblock %}
 
 {% block content %}
+<div class="admin-page">
 <header class="mb-6 flex items-baseline justify-between flex-wrap gap-2">
-  <div>
-    <h1 class="heading text-3xl text-brand-fg">{{ campaign.name }} <span class="text-subtle text-base font-sans">/ admin</span></h1>
-    <p class="text-sm text-muted">
-      Public link: <a class="underline text-brand-fg hover:text-brand-fg-hover" href="{{ public_url }}" target="_blank">{{ public_url }}</a>
+  <div class="min-w-0">
+    <h1 class="heading text-3xl text-brand-fg">Admin Dashboard: {{ campaign.name }}</h1>
+    <p class="text-sm text-muted mt-1">Times shown in {{ campaign.timezone|pretty_tz }}.</p>
+    <p class="text-sm text-muted mt-2">
+      Bookmark this Admin Dashboard page. Anyone with the link can edit the campaign.
     </p>
+    <div class="mt-2">
+      <a href="{{ public_url }}" target="_blank" rel="noopener noreferrer" class="btn px-3 py-1.5 text-sm">
+        View Public Campaign page
+      </a>
+    </div>
   </div>
 </header>
 
-<section class="bg-surface border border-line rounded-lg p-5 shadow-sm mb-6">
+<nav class="admin-subnav" aria-label="Admin sections">
+  <a href="#settings">Settings</a>
+  <a href="#players">Players</a>
+  <a href="#times">Times</a>
+  <a href="#exports">Exports</a>
+  <a href="#delete">Delete</a>
+</nav>
+
+<section id="settings" class="admin-anchor-target bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
   <h2 class="heading text-lg mb-3">Settings</h2>
-  <form method="post" action="{{ admin_url }}/settings" class="grid gap-4 md:grid-cols-3">
-    <div>
-      <label class="block text-sm font-medium text-ink" for="admin-settings-name">Name</label>
-      <input id="admin-settings-name" name="name" value="{{ campaign.name }}" required class="form-field">
+  <form method="post" action="{{ admin_url }}/settings" class="flex flex-col gap-6">
+    <div class="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-3 md:gap-y-0">
+      <div class="min-w-0">
+        <label class="block text-sm font-medium text-ink" for="admin-settings-name">Name</label>
+        <input id="admin-settings-name" name="name" value="{{ campaign.name }}" required class="form-field">
+      </div>
+      <div class="min-w-0">
+        <label class="block text-sm font-medium text-ink" for="admin-settings-timezone">Timezone</label>
+        <select id="admin-settings-timezone" name="timezone" class="form-field w-full min-w-0">
+          {% for tz in timezones %}
+            <option value="{{ tz }}" {% if tz == campaign.timezone %}selected{% endif %}>{{ tz|pretty_tz }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="min-w-0">
+        <label class="block text-sm font-medium text-ink" for="admin-settings-horizon">Horizon (weeks)</label>
+        <input id="admin-settings-horizon" name="horizon_weeks" type="number" min="1" max="52" value="{{ campaign.horizon_weeks }}"
+               class="form-field">
+      </div>
+    </div>
+    <div class="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+      <div class="min-w-0">
+        <label class="block text-sm font-medium text-ink" for="consensus-policy-select">Scheduling policy</label>
+        <select id="consensus-policy-select" name="consensus_policy"
+                class="form-field w-auto">
+          {% for value, label, _hint in consensus_policy_choices %}
+            <option value="{{ value }}" {% if value == campaign.consensus_policy %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {#- All hints are rendered; JS toggles which one is visible based on
+            the current select value. That way the helper text reflects the
+            *pending* (unsaved) policy choice instead of the persisted one. -#}
+        <p class="mt-2 text-xs text-muted">
+          {% for value, _label, hint in consensus_policy_choices %}
+            <span data-policy-hint="{{ value }}"{% if value != campaign.consensus_policy %} hidden{% endif %}>{{ hint }}</span>
+          {% endfor %}
+          Drives both the public summary cards and the consensus calendar feed. Mandatory attendees still apply on top.
+        </p>
+      </div>
+      <div class="min-w-0 js-public-recurrence-hint-root">
+        <label class="block text-sm font-medium text-ink" for="admin-settings-public-recurrence">Meeting tempo</label>
+        <select id="admin-settings-public-recurrence" name="public_recurrence_mode"
+                class="form-field w-auto js-public-recurrence-select">
+          {% for value, label, _hint in public_recurrence_mode_choices %}
+            <option value="{{ value.value }}" {% if value == campaign.public_recurrence_mode %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <p class="mt-2 text-xs text-muted">
+          {% for value, _label, hint in public_recurrence_mode_choices %}
+            <span data-public-recurrence-hint="{{ value.value }}"{% if value != campaign.public_recurrence_mode %} hidden{% endif %}>{{ hint }}</span>
+          {% endfor %}
+          Player links always list every date.
+        </p>
+      </div>
     </div>
     <div>
-      <label class="block text-sm font-medium text-ink" for="admin-settings-timezone">Timezone</label>
-      <select id="admin-settings-timezone" name="timezone" class="form-field">
-        {% for tz in timezones %}
-          <option value="{{ tz }}" {% if tz == campaign.timezone %}selected{% endif %}>{{ tz|pretty_tz }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label class="block text-sm font-medium text-ink" for="admin-settings-horizon">Horizon (weeks)</label>
-      <input id="admin-settings-horizon" name="horizon_weeks" type="number" min="1" max="52" value="{{ campaign.horizon_weeks }}"
-             class="form-field">
-    </div>
-    <div class="md:col-span-3">
-      <label class="block text-sm font-medium text-ink" for="consensus-policy-select">Scheduling policy</label>
-      <select id="consensus-policy-select" name="consensus_policy"
-              class="form-field">
-        {% for value, label, _hint in consensus_policy_choices %}
-          <option value="{{ value }}" {% if value == campaign.consensus_policy %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-      {#- All hints are rendered; JS toggles which one is visible based on
-          the current select value. That way the helper text reflects the
-          *pending* (unsaved) policy choice instead of the persisted one. -#}
-      <p class="mt-1 text-xs text-muted">
-        {% for value, _label, hint in consensus_policy_choices %}
-          <span data-policy-hint="{{ value }}"{% if value != campaign.consensus_policy %} hidden{% endif %}>{{ hint }}</span>
-        {% endfor %}
-        Drives both the public summary cards and the consensus calendar feed. Mandatory attendees still apply on top.
-      </p>
-    </div>
-    <div class="md:col-span-3 js-public-recurrence-hint-root">
-      <label class="block text-sm font-medium text-ink" for="admin-settings-public-recurrence">
-        Meeting tempo (public page &amp; calendar)
-      </label>
-      <select id="admin-settings-public-recurrence" name="public_recurrence_mode"
-              class="form-field max-w-xl js-public-recurrence-select">
-        {% for value, label, _hint in public_recurrence_mode_choices %}
-          <option value="{{ value.value }}" {% if value == campaign.public_recurrence_mode %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-      <p class="mt-1 text-xs text-muted">
-        {% for value, _label, hint in public_recurrence_mode_choices %}
-          <span data-public-recurrence-hint="{{ value.value }}"{% if value != campaign.public_recurrence_mode %} hidden{% endif %}>{{ hint }}</span>
-        {% endfor %}
-        Player links always list every date.
-      </p>
-    </div>
-    <div class="md:col-span-3">
       <button class="btn px-3 py-1.5 text-sm">Save settings</button>
     </div>
   </form>
 </section>
 
-<section class="bg-surface border border-line rounded-lg p-5 shadow-sm mb-6">
+<section id="players" class="admin-anchor-target bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
   <h2 class="heading text-lg mb-3">Players</h2>
+  <div id="players-card-status" class="mt-1 min-h-0" role="status" aria-live="polite"></div>
 
-  <ul id="player-list" class="divide-y divide-line">
-    {% for player in players %}
-    <li class="py-2 flex items-center justify-between gap-3">
-      <span class="font-medium">{{ player.display_name }}</span>
-      <span class="flex items-center gap-2">
-        <form method="post" action="{{ admin_url }}/players/{{ player.id }}/regenerate"
-              hx-post="{{ admin_url }}/players/{{ player.id }}/regenerate"
-              hx-target="#new-player-info" hx-swap="innerHTML">
-          <button class="text-xs rounded border border-line px-2 py-1 hover:bg-elevated text-ink">
-            Regenerate link
-          </button>
-        </form>
-        <form method="post" action="{{ admin_url }}/players/{{ player.id }}/delete"
-              hx-post="{{ admin_url }}/players/{{ player.id }}/delete"
-              hx-target="closest li" hx-swap="outerHTML"
-              hx-confirm="Delete {{ player.display_name }} and their availability?">
-          <button class="text-xs rounded border border-line text-muted px-2 py-1 hover:bg-elevated">
-            Delete
-          </button>
-        </form>
-      </span>
-    </li>
-    {% else %}
-    <li class="py-2 text-muted italic text-sm">No players yet.</li>
-    {% endfor %}
-  </ul>
+  <div id="admin-players-roster">
+    {% include "fragments/admin_players_roster.html" %}
+  </div>
 
-  <form class="mt-4 flex items-end gap-2"
+  <form class="mt-4"
         hx-post="{{ admin_url }}/players"
         hx-target="#new-player-info" hx-swap="innerHTML"
         hx-on::after-request="this.reset()">
-    <div class="flex-1">
-      <label class="block text-sm font-medium text-ink" for="admin-add-player-display-name">Add player</label>
+    <label class="block text-sm font-medium text-ink" for="admin-add-player-display-name">Add player</label>
+    <div class="mt-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2 items-stretch">
       <input id="admin-add-player-display-name" name="display_name" required placeholder="Display name"
-             class="form-field">
+             class="form-field mt-0 min-h-0 w-full min-w-0">
+      <div class="flex min-h-0 shrink-0 self-stretch">
+        <button type="submit"
+                class="btn box-border inline-flex h-full min-h-0 shrink-0 items-center justify-center px-3 py-0 text-sm">
+          Add
+        </button>
+      </div>
     </div>
-    <button class="btn px-3 py-1.5 text-sm">Add</button>
   </form>
 
   <div id="new-player-info" class="mt-4"></div>
 
   <form method="post" action="{{ admin_url }}/mandatory-attendees" class="mt-6 rounded-md border border-line bg-elevated p-4">
     <h3 class="text-sm font-medium text-ink">Mandatory attendees</h3>
-    <p class="text-xs text-muted mt-1">
-      Mandatory attendees (e.g. the GM, or co-GMs) must <em>all</em> be available for any window to count toward consensus on the public page. Pick zero or more.
+    <p class="text-xs text-muted mt-2">
+      Mandatory attendees (e.g. the GM, or co-GMs) must <em>all</em> be available for any window to count toward consensus on the Public Campaign page.
+      Select none or any number of players below.
     </p>
-    {% if players %}
-    <div class="mt-3 flex flex-wrap gap-2">
-      {% for player in players %}
-        <label class="inline-flex items-center gap-2 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm"
-               for="mandatory-player-{{ player.id }}">
-          <input id="mandatory-player-{{ player.id }}" type="checkbox" name="mandatory_player_ids" value="{{ player.id }}"
-                 {% if player.is_mandatory %}checked{% endif %}
-                 class="rounded border-line accent-brand focus:ring-brand">
-          <span>{{ player.display_name }}</span>
-        </label>
-      {% endfor %}
+    <div id="mandatory-attendees-inner">
+    {% include "fragments/mandatory_attendees_inner.html" %}
     </div>
-    <div class="mt-3">
-      <button type="submit" class="btn px-3 py-1.5 text-sm">Save mandatory attendees</button>
-    </div>
-    {% else %}
-    <p class="mt-3 text-xs text-muted italic">Add players above first.</p>
-    {% endif %}
   </form>
 </section>
 
-<section class="bg-surface border border-line rounded-lg p-5 shadow-sm mb-6">
+<section id="times" class="admin-anchor-target bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
   <h2 class="heading text-lg mb-3">Times</h2>
 
-  {% if slots %}
-  <ul class="divide-y divide-line">
-    {% for slot in slots %}
-    <li class="py-3">
-      <div class="flex items-start justify-between gap-3">
-        <span class="min-w-0">
-          {% if slot.kind.value == "recurring" %}
-            <span class="rounded bg-indigo-100 text-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200 px-1.5 py-0.5 text-xs font-medium mr-2">recurring</span>
-            {{ weekdays[slot.weekday][1] }} {{ slot.start_local }}, {{ slot.duration_hours }} h
-          {% else %}
-            <span class="rounded bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium mr-2">one-off</span>
-            {{ slot.starts_at_utc|local_window(slot.ends_at_utc, campaign.timezone) }}
-          {% endif %}
-          {% if slot.label %}<span class="text-muted ml-2">· {{ slot.label }}</span>{% endif %}
-        </span>
-        <form method="post" action="{{ admin_url }}/slots/{{ slot.id }}/delete">
-          <button class="text-xs rounded border border-line text-muted px-2 py-1 hover:bg-elevated"
-                  onclick="return confirm('Delete this time and all its availability?')">
-            Delete
-          </button>
-        </form>
-      </div>
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}
-  <p class="text-muted italic text-sm">No times yet. Add a recurring weekly time or a one-off below.</p>
-  {% endif %}
+  <div id="admin-slots-roster">
+    {% include "fragments/admin_times_roster.html" %}
+  </div>
 
-  <div class="grid gap-6 md:grid-cols-2 mt-5">
-    <form method="post" action="{{ admin_url }}/slots" class="border border-line rounded-md p-4">
+  <h3 class="font-medium mb-2">Schedule a time</h3>
+  <p class="text-sm text-muted mb-4">
+    Date and start time are in <strong>{{ campaign.timezone|pretty_tz }}</strong>. Duration may run past midnight (e.g. start 10:00 PM + 4 h &rarr; 2:00 AM next day).
+  </p>
+
+  <div class="grid gap-6 md:grid-cols-2">
+    <form method="post" action="{{ admin_url }}/slots" class="border border-line rounded-md p-4"
+          hx-post="{{ admin_url }}/slots" hx-swap="none"
+          hx-on::after-request="if (event.detail.successful) this.reset()">
       <h3 class="font-medium mb-3">Recurring weekly</h3>
       <input type="hidden" name="kind" value="recurring">
-      <label class="block text-sm font-medium text-ink" for="admin-slot-weekday">Weekday</label>
-      <select id="admin-slot-weekday" name="weekday" class="form-field">
+      <label class="block text-sm font-medium text-ink" for="admin-slot-weekday">Day</label>
+      <select id="admin-slot-weekday" name="weekday" class="form-field w-auto">
         {% for value, name in weekdays %}<option value="{{ value }}">{{ name }}</option>{% endfor %}
       </select>
-      <label class="block text-sm mt-2 font-medium text-ink" for="admin-slot-start-local">Start ({{ campaign.timezone|pretty_tz }})</label>
+      <label class="block text-sm mt-2 font-medium text-ink" for="admin-slot-start-local">Start time</label>
       <input id="admin-slot-start-local" type="time" name="start_local" required class="form-field">
       <label class="block text-sm mt-2 font-medium text-ink" for="admin-slot-duration-hours">Session duration (hours)</label>
       <input id="admin-slot-duration-hours" type="number" name="duration_hours" required min="0.25" max="48" step="0.25" value="3"
              class="form-field">
       <label class="block mt-2 text-sm font-medium text-ink" for="admin-slot-label">Label (optional)</label>
       <input id="admin-slot-label" name="label" placeholder="Friday game night" class="form-field">
-      <p class="text-xs text-muted mt-2">Meeting tempo for the public page and calendar is set under <strong>Settings</strong> above.</p>
+      <p class="text-xs text-muted mt-2">Meeting tempo for the Public Campaign page and calendar is set under <strong>Settings</strong> above.</p>
       <button class="mt-3 btn px-3 py-1.5 text-sm">
         Add recurring time
       </button>
     </form>
 
-    <form method="post" action="{{ admin_url }}/slots" class="border border-line rounded-md p-4">
+    <form method="post" action="{{ admin_url }}/slots" class="border border-line rounded-md p-4"
+          hx-post="{{ admin_url }}/slots" hx-swap="none"
+          hx-on::after-request="if (event.detail.successful) this.reset()">
       <h3 class="font-medium mb-3">One-off session</h3>
       <input type="hidden" name="kind" value="adhoc">
-      <p class="text-xs text-muted mb-2">Date and start time are in <strong>{{ campaign.timezone|pretty_tz }}</strong>. Duration may run past midnight (e.g. start 10:00 PM + 4 h &rarr; 2:00 AM next day).</p>
       <label class="block text-sm font-medium text-ink" for="admin-adhoc-date">Date</label>
       <input id="admin-adhoc-date" type="date" name="adhoc_date" required class="form-field">
       <label class="block text-sm mt-2 font-medium text-ink" for="admin-adhoc-start-time">Start time</label>
@@ -216,7 +185,7 @@
   </div>
 </section>
 
-<section class="bg-surface border border-line rounded-lg p-5 shadow-sm mb-6">
+<section id="exports" class="admin-anchor-target bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
   <h2 class="heading text-lg mb-2">Exports &amp; calendar feeds</h2>
   <p class="text-sm text-muted mb-3">
     JSON is a full backup of times, roster, availability, and per-date opt-outs (admin-only).
@@ -235,23 +204,33 @@
   </div>
 </section>
 
-<section class="bg-surface border border-red-300 dark:border-red-800 rounded-lg p-5 shadow-sm mb-6">
+<section id="delete" class="admin-anchor-target bg-surface border border-red-300 dark:border-red-800 rounded-lg p-6 shadow-sm mb-6">
   <h2 class="heading text-lg mb-2 text-red-800 dark:text-red-400">Delete campaign</h2>
   <p class="text-sm text-muted mb-3">
     Permanently removes this campaign, every player, time, saved answer, and per-date exception. Admin and player links will stop working.
   </p>
   <form method="post" action="{{ admin_url }}/delete">
-    <button type="submit"
+    <button type="button"
             class="rounded-md bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500"
-            onclick="return confirm('Delete this entire campaign and all of its data? This cannot be undone.')">
-      Delete campaign&hellip;
+            data-admin-confirm
+            data-confirm-title="Delete this campaign?"
+            data-confirm-body="Permanently removes this campaign, every player, time, saved answer, and per-date exception. Admin and player links will stop working.">
+      Delete campaign
     </button>
   </form>
 </section>
 
-<section class="text-xs text-muted">
-  <p>Bookmark this admin URL. Anyone with it can edit the campaign.</p>
-</section>
+<dialog id="admin-confirm-dialog" class="admin-confirm-dialog" aria-labelledby="admin-confirm-dialog-title" aria-describedby="admin-confirm-dialog-body">
+  <div class="rounded-lg border border-line bg-surface p-5 shadow-lg">
+    <h2 id="admin-confirm-dialog-title" class="heading text-lg text-ink"><span class="sr-only">Confirmation</span></h2>
+    <p id="admin-confirm-dialog-body" class="mt-2 text-sm text-muted leading-relaxed"><span class="sr-only">Details</span></p>
+    <div class="mt-6 flex flex-wrap justify-end gap-2">
+      <button type="button" id="admin-confirm-dialog-cancel" class="btn-secondary px-4 py-2 text-sm">Cancel</button>
+      <button type="button" id="admin-confirm-dialog-confirm" class="btn px-4 py-2 text-sm">Confirm</button>
+    </div>
+  </div>
+</dialog>
+</div>
 <script>
 (function () {
   var sel = document.getElementById("consensus-policy-select");
@@ -281,4 +260,9 @@
   });
 })();
 </script>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', path='js/created-page.js') }}"></script>
+<script src="{{ url_for('static', path='js/admin-confirm-dialog.js') }}"></script>
 {% endblock %}

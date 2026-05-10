@@ -1,0 +1,55 @@
+{% if slots %}
+<div class="overflow-x-auto rounded-lg border border-line mb-4">
+  <table class="w-full min-w-[36rem] border-collapse text-sm">
+    <caption class="sr-only">Scheduled times for this campaign</caption>
+    <thead>
+      <tr class="border-b border-line bg-elevated text-left text-xs font-medium uppercase tracking-wide text-muted">
+        <th scope="col" class="py-2.5 pl-3 pr-2 font-medium">Kind</th>
+        <th scope="col" class="py-2.5 px-2 font-medium">When</th>
+        <th scope="col" class="py-2.5 px-2 font-medium whitespace-nowrap">Duration</th>
+        <th scope="col" class="py-2.5 px-2 font-medium min-w-[8rem]">Label</th>
+        <th scope="col" class="py-2.5 pr-3 pl-2 text-right font-medium w-[1%]">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for slot in slots %}
+      <tr class="border-b border-line last:border-b-0">
+        <td class="py-2.5 pl-3 pr-2 align-middle whitespace-nowrap">
+          {% if slot.kind.value == "recurring" %}
+            <span class="inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200">recurring</span>
+          {% else %}
+            <span class="inline-block rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-100">one-off</span>
+          {% endif %}
+        </td>
+        <td class="max-w-[14rem] py-2.5 px-2 align-middle text-ink sm:max-w-none">
+          {% if slot.kind.value == "recurring" %}
+            {{ weekdays[slot.weekday][1] }} {{ slot.start_local }}
+          {% else %}
+            {{ slot.starts_at_utc|local_window(slot.ends_at_utc, campaign.timezone) }}
+          {% endif %}
+        </td>
+        <td class="py-2.5 px-2 align-middle whitespace-nowrap tabular-nums text-ink">{{ slot.duration_hours }} h</td>
+        <td class="py-2.5 px-2 align-middle text-muted">
+          {% if slot.label %}<span class="text-ink">{{ slot.label }}</span>{% else %}—{% endif %}
+        </td>
+        <td class="py-2.5 pr-3 pl-2 align-middle text-right whitespace-nowrap">
+          <form method="post" action="{{ admin_url }}/slots/{{ slot.id }}/delete" class="inline-block"
+                hx-post="{{ admin_url }}/slots/{{ slot.id }}/delete"
+                hx-swap="none">
+            <button type="button"
+                    class="text-xs rounded border border-line px-2 py-1 hover:bg-elevated text-ink"
+                    data-admin-confirm
+                    data-confirm-title="Delete this time?"
+                    data-confirm-body="Delete this time and all availability entered for it? This cannot be undone.">
+              Delete
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted italic text-sm mb-4">No times yet. Add a recurring weekly time or a one-off below.</p>
+{% endif %}

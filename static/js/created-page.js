@@ -85,8 +85,9 @@
 
   /**
    * @param {string} inputId
+   * @param {HTMLButtonElement | undefined} clickedBtn
    */
-  async function copyUrl(inputId) {
+  async function copyUrl(inputId, clickedBtn) {
     const input = document.getElementById(inputId);
     if (!input || !(input instanceof HTMLInputElement)) return;
     const url = input.value;
@@ -105,9 +106,12 @@
       }
     }
 
-    const btn = Array.from(document.querySelectorAll(".created-copy-btn")).find(
-      (b) => b.getAttribute("data-copy-target") === inputId
-    );
+    const btn =
+      clickedBtn instanceof HTMLButtonElement
+        ? clickedBtn
+        : Array.from(document.querySelectorAll(".created-copy-btn")).find(
+            (b) => b.getAttribute("data-copy-target") === inputId
+          );
     if (btn && btn instanceof HTMLButtonElement) {
       showCopyToast(btn);
 
@@ -168,11 +172,13 @@
     announce("CSV download started.");
   }
 
-  document.querySelectorAll(".created-copy-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-copy-target");
-      if (id) copyUrl(id);
-    });
+  document.body.addEventListener("click", (e) => {
+    const btn = e.target.closest(".created-copy-btn");
+    if (!(btn instanceof HTMLButtonElement)) return;
+    const id = btn.getAttribute("data-copy-target");
+    if (!id) return;
+    e.preventDefault();
+    void copyUrl(id, btn);
   });
 
   const dl = document.getElementById("created-download-csv");

@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.db import get_session
@@ -19,6 +20,26 @@ from app.services.opt_outs import delete_for_player, delete_for_slot
 from app.templates_setup import COMMON_TIMEZONES, templates
 
 router = APIRouter(prefix="/c/{public_id}/admin/{secret}")
+
+_ADMIN_WEEKDAY_CHOICES: list[tuple[int, str]] = [
+    (0, "Mon"),
+    (1, "Tue"),
+    (2, "Wed"),
+    (3, "Thu"),
+    (4, "Fri"),
+    (5, "Sat"),
+    (6, "Sun"),
+]
+
+
+def _players_ordered_for_admin(session: Session, campaign_id: int) -> list[Player]:
+    """Alphabetical by display name (case-insensitive) for admin roster and mandatory UI."""
+    return session.exec(
+        select(Player)
+        .where(Player.campaign_id == campaign_id)
+        .order_by(func.lower(Player.display_name))
+    ).all()
+
 
 _MIN_SESSION_HOURS = 1.0 / 60.0
 _MAX_SESSION_HOURS = 48.0
@@ -116,7 +137,7 @@ def admin_home(
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     campaign = require_admin(session, public_id, secret)
-    players = session.exec(select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)).all()
+    players = _players_ordered_for_admin(session, campaign.id)
     slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
     base_url = str(request.base_url).rstrip("/")
     return templates.TemplateResponse(
@@ -131,15 +152,7 @@ def admin_home(
             "secret": secret,
             "timezones": COMMON_TIMEZONES,
             "consensus_policy_choices": _CONSENSUS_POLICY_CHOICES,
-            "weekdays": [
-                (0, "Mon"),
-                (1, "Tue"),
-                (2, "Wed"),
-                (3, "Thu"),
-                (4, "Fri"),
-                (5, "Sat"),
-                (6, "Sun"),
-            ],
+            "weekdays": _ADMIN_WEEKDAY_CHOICES,
             "public_recurrence_mode_choices": _PUBLIC_RECURRENCE_MODE_CHOICES,
         },
     )
@@ -192,7 +205,7 @@ def set_campaign_mandatory_attendees(
     means no mandatory attendees.
     """
     campaign = require_admin(session, public_id, secret)
-    players = session.exec(select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)).all()
+    players = _players_ordered_for_admin(session, campaign.id)
     target_ids: set[int] = set()
     for raw in mandatory_player_ids:
         s = (raw or "").strip()
@@ -236,6 +249,8 @@ def add_player(
     session.commit()
     session.refresh(player)
     base_url = str(request.base_url).rstrip("/")
+    admin_url = f"{base_url}/c/{campaign.public_id}/admin/{secret}"
+    players = _players_ordered_for_admin(session, campaign.id)
     return templates.TemplateResponse(
         request,
         "fragments/new_player.html",
@@ -244,6 +259,8 @@ def add_player(
             "player_url": f"{base_url}/c/{campaign.public_id}/p/{token}",
             "secret": secret,
             "campaign": campaign,
+            "players": players,
+            "admin_url": admin_url,
         },
     )
 
@@ -266,6 +283,8 @@ def regenerate_player_token(
     session.commit()
     session.refresh(player)
     base_url = str(request.base_url).rstrip("/")
+    admin_url = f"{base_url}/c/{campaign.public_id}/admin/{secret}"
+    players = _players_ordered_for_admin(session, campaign.id)
     return templates.TemplateResponse(
         request,
         "fragments/new_player.html",
@@ -274,6 +293,8 @@ def regenerate_player_token(
             "player_url": f"{base_url}/c/{campaign.public_id}/p/{token}",
             "secret": secret,
             "campaign": campaign,
+            "players": players,
+            "admin_url": admin_url,
         },
     )
 
@@ -283,25 +304,35 @@ def delete_player(
     public_id: str,
     secret: str,
     player_id: int,
+    request: Request,
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     campaign = require_admin(session, public_id, secret)
     player = session.get(Player, player_id)
     if player is None or player.campaign_id != campaign.id:
         raise HTTPException(status_code=404, detail="Player not found")
+    removed_name = player.display_name
     avails = session.exec(select(Availability).where(Availability.player_id == player.id)).all()
     for a in avails:
         session.delete(a)
     delete_for_player(session, player_id)
     session.delete(player)
     session.commit()
-    return HTMLResponse("")
+    players = _players_ordered_for_admin(session, campaign.id)
+    base_url = str(request.base_url).rstrip("/")
+    admin_url = f"{base_url}/c/{campaign.public_id}/admin/{secret}"
+    return templates.TemplateResponse(
+        request,
+        "fragments/player_delete_response.html",
+        {"removed_name": removed_name, "players": players, "admin_url": admin_url},
+    )
 
 
-@router.post("/slots", response_class=RedirectResponse)
+@router.post("/slots", response_model=None)
 def add_slot(
     public_id: str,
     secret: str,
+    request: Request,
     kind: str = Form(...),
     label: str = Form(""),
     weekday: int | None = Form(None),
@@ -310,7 +341,7 @@ def add_slot(
     adhoc_date: str | None = Form(None),
     adhoc_start_time: str | None = Form(None),
     session: Session = Depends(get_session),
-) -> RedirectResponse:
+) -> HTMLResponse | RedirectResponse:
     campaign = require_admin(session, public_id, secret)
     label = label.strip() or None
 
@@ -356,16 +387,31 @@ def add_slot(
 
     session.add(slot)
     session.commit()
+
+    if request.headers.get("HX-Request"):
+        base_url = str(request.base_url).rstrip("/")
+        slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
+        return templates.TemplateResponse(
+            request,
+            "fragments/admin_slots_roster_oob.html",
+            {
+                "campaign": campaign,
+                "slots": slots,
+                "weekdays": _ADMIN_WEEKDAY_CHOICES,
+                "admin_url": f"{base_url}/c/{campaign.public_id}/admin/{secret}",
+            },
+        )
     return _redirect_to_admin(public_id, secret)
 
 
-@router.post("/slots/{slot_id}/delete", response_class=RedirectResponse)
+@router.post("/slots/{slot_id}/delete", response_model=None)
 def delete_slot(
     public_id: str,
     secret: str,
     slot_id: int,
+    request: Request,
     session: Session = Depends(get_session),
-) -> RedirectResponse:
+) -> HTMLResponse | RedirectResponse:
     campaign = require_admin(session, public_id, secret)
     slot = session.get(Slot, slot_id)
     if slot is None or slot.campaign_id != campaign.id:
@@ -376,6 +422,20 @@ def delete_slot(
     delete_for_slot(session, slot_id)
     session.delete(slot)
     session.commit()
+
+    if request.headers.get("HX-Request"):
+        base_url = str(request.base_url).rstrip("/")
+        slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
+        return templates.TemplateResponse(
+            request,
+            "fragments/admin_slots_roster_oob.html",
+            {
+                "campaign": campaign,
+                "slots": slots,
+                "weekdays": _ADMIN_WEEKDAY_CHOICES,
+                "admin_url": f"{base_url}/c/{campaign.public_id}/admin/{secret}",
+            },
+        )
     return _redirect_to_admin(public_id, secret)
 
 

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Campaign Created: {{ campaign.name }}{% endblock %}
+{% block title %}Campaign {% if campaign_origin == "imported" %}Restored{% else %}Created{% endif %}: {{ campaign.name }}{% endblock %}
 
 {% block content %}
 <div class="max-w-3xl mx-auto">
@@ -47,7 +47,7 @@
   </div>
 
   {% for row in ui_rows %}
-  <section class="mt-6 bg-surface border border-line rounded-lg p-5 shadow-sm" aria-labelledby="{{ row.input_id }}-heading">
+  <section class="mt-6 bg-surface border border-line rounded-lg p-6 shadow-sm" aria-labelledby="{{ row.input_id }}-heading">
     <div class="flex min-w-0 items-center justify-between gap-4 gap-y-1">
       <h2 class="heading min-w-0 flex-1 text-lg pr-2" id="{{ row.input_id }}-heading">{% if row.kind == "player" %}Player Link: {% endif %}{{ row.title }}</h2>
       {% if row.badge %}
