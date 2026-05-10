@@ -28,6 +28,7 @@ from app.models import (
     ConsensusPolicy,
     OccurrenceOptOut,
     Player,
+    PublicRecurrenceMode,
     Slot,
     SlotKind,
 )
@@ -84,6 +85,17 @@ def _parse_campaign(payload: dict) -> dict:
     return {"name": name, "timezone": tz, "horizon_weeks": horizon_weeks, "consensus_policy": policy}
 
 
+def _parse_public_recurrence_mode_import(raw: Any, *, field: str) -> PublicRecurrenceMode:
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return PublicRecurrenceMode.weekly
+    try:
+        return PublicRecurrenceMode(str(raw).strip())
+    except ValueError as exc:
+        raise CampaignImportError(
+            f"{field} must be 'weekly', 'twice_per_month', or 'once_per_month'",
+        ) from exc
+
+
 def _parse_player(raw: Any, *, index: int) -> dict:
     _require(isinstance(raw, dict), f"players[{index}] must be an object")
     name = str(raw.get("display_name", "")).strip()
@@ -121,6 +133,14 @@ def _parse_slot(raw: Any, *, index: int) -> dict:
         raise CampaignImportError(f"slots[{index}].duration_hours must be numeric") from exc
 
     if kind == SlotKind.recurring:
+        legacy_n = raw.get("every_n_weeks")
+        if raw.get("public_recurrence_mode") is None and legacy_n in (2, "2"):
+            pub_mode = PublicRecurrenceMode.twice_per_month
+        else:
+            pub_mode = _parse_public_recurrence_mode_import(
+                raw.get("public_recurrence_mode"),
+                field=f"slots[{index}].public_recurrence_mode",
+            )
         weekday_raw = raw.get("weekday")
         try:
             weekday = int(weekday_raw)
@@ -139,6 +159,7 @@ def _parse_slot(raw: Any, *, index: int) -> dict:
             "duration_hours": duration,
             "starts_at_utc": None,
             "ends_at_utc": None,
+            "public_recurrence_mode": pub_mode,
         }
 
     starts_at = _parse_iso_utc(raw.get("starts_at_utc"), field=f"slots[{index}].starts_at_utc")
@@ -153,6 +174,7 @@ def _parse_slot(raw: Any, *, index: int) -> dict:
         "duration_hours": duration,
         "starts_at_utc": starts_at,
         "ends_at_utc": ends_at,
+        "public_recurrence_mode": PublicRecurrenceMode.weekly,
     }
 
 
@@ -243,6 +265,7 @@ def import_campaign(session: Session, payload: Any) -> tuple[Campaign, str, list
             duration_hours=spec["duration_hours"],
             starts_at_utc=spec["starts_at_utc"],
             ends_at_utc=spec["ends_at_utc"],
+            public_recurrence_mode=spec["public_recurrence_mode"],
         )
         session.add(slot)
         session.flush()

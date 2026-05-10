@@ -20,6 +20,7 @@ from app.services.consensus import (
 )
 from app.services.ical import build_ics
 from app.services.opt_outs import load_opt_out_set
+from app.services.public_occurrence_filter import filter_occurrences_for_public_display
 from app.services.slots import expand_all
 from app.templates_setup import COMMON_TIMEZONES, templates
 from app.view_timezone import effective_display_timezone, set_viewer_timezone_on_response
@@ -40,13 +41,23 @@ def public_home(
     display_tz = effective_display_timezone(request, campaign.timezone)
 
     tz = ZoneInfo(campaign.timezone)
-    occurrences = expand_all(slots, tz=tz, horizon_weeks=campaign.horizon_weeks)
+    occurrences_full = expand_all(slots, tz=tz, horizon_weeks=campaign.horizon_weeks)
     availability = load_availability_map(session, players)
     player_ids = [p.id for p in players if p.id is not None]
     opt_outs = load_opt_out_set(session, player_ids)
 
+    occurrences_public = filter_occurrences_for_public_display(
+        occurrences_full,
+        slots,
+        tz=tz,
+        players=players,
+        availability=availability,
+        policy=campaign.consensus_policy,
+        opt_outs=opt_outs,
+    )
+
     upcoming_meets = find_next_meets(
-        occurrences,
+        occurrences_public,
         players,
         availability,
         policy=campaign.consensus_policy,
@@ -59,7 +70,7 @@ def public_home(
             "occ": occ,
             "yes_count": count_yes_for_occurrence(occ, players, availability, opt_outs),
         }
-        for occ in occurrences[:25]
+        for occ in occurrences_full[:25]
     ]
 
     player_lookup_map = player_lookup(players)
@@ -115,12 +126,21 @@ def calendar_consensus_ics(
     players = session.exec(select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)).all()
     slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
     tz = ZoneInfo(campaign.timezone)
-    occurrences = expand_all(slots, tz=tz, horizon_weeks=campaign.horizon_weeks)
+    occurrences_full = expand_all(slots, tz=tz, horizon_weeks=campaign.horizon_weeks)
     availability = load_availability_map(session, players)
     player_ids = [p.id for p in players if p.id is not None]
     opt_outs = load_opt_out_set(session, player_ids)
+    occurrences_public = filter_occurrences_for_public_display(
+        occurrences_full,
+        slots,
+        tz=tz,
+        players=players,
+        availability=availability,
+        policy=campaign.consensus_policy,
+        opt_outs=opt_outs,
+    )
     results = find_next_meets(
-        occurrences,
+        occurrences_public,
         players,
         availability,
         policy=campaign.consensus_policy,

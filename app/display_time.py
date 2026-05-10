@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
-from app.models import Slot, SlotKind
+from app.models import PublicRecurrenceMode, Slot, SlotKind
 from app.services.slots import upcoming_occurrences_for_slot
 
 _WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -49,3 +49,21 @@ def recurring_slot_primary_label(slot: Slot, campaign, display_tz: str) -> str:
     wn = _WEEKDAY_SHORT[slot.weekday]
     dh = slot.duration_hours if slot.duration_hours is not None else 0
     return f"{wn} {slot.start_local}, {dh} h ({campaign.timezone})"
+
+
+def player_slot_public_frequency_caption(slot: Slot) -> str:
+    """Short label for how this recurring slot is thinned on the public page and .ics."""
+    if slot.kind is not SlotKind.recurring:
+        return ""
+    raw = getattr(slot, "public_recurrence_mode", None)
+    try:
+        mode = raw if isinstance(raw, PublicRecurrenceMode) else PublicRecurrenceMode(str(raw))
+    except ValueError:
+        mode = PublicRecurrenceMode.weekly
+    if mode is PublicRecurrenceMode.weekly:
+        return "Tempo: weekly"
+    if mode is PublicRecurrenceMode.twice_per_month:
+        return "Tempo: biweekly / twice a month"
+    if mode is PublicRecurrenceMode.once_per_month:
+        return "Tempo: once a month"
+    return ""

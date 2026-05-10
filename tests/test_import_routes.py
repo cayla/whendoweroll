@@ -25,6 +25,7 @@ from app.models import (
     ConsensusPolicy,
     OccurrenceOptOut,
     Player,
+    PublicRecurrenceMode,
     Slot,
     SlotKind,
 )
@@ -64,6 +65,7 @@ def _seed(engine, *, public_id: str) -> dict:
             weekday=4,
             start_local="18:00",
             duration_hours=3.5,
+            public_recurrence_mode=PublicRecurrenceMode.twice_per_month,
         )
         s.add(recurring)
 
@@ -123,6 +125,8 @@ def test_export_then_import_roundtrips_full_campaign(client, engine):
     payload = export.json()
     assert payload["export_version"] == 3
     assert payload["campaign"]["consensus_policy"] == ConsensusPolicy.allow_one.value
+    recurring_export = next(s for s in payload["slots"] if s["kind"] == "recurring")
+    assert recurring_export["public_recurrence_mode"] == PublicRecurrenceMode.twice_per_month.value
 
     imported = _post_import(client, payload)
     assert imported.status_code == 200
@@ -151,6 +155,7 @@ def test_export_then_import_roundtrips_full_campaign(client, engine):
         assert recurring.start_local == "18:00"
         assert recurring.duration_hours == 3.5
         assert recurring.label == "Friday game"
+        assert recurring.public_recurrence_mode == PublicRecurrenceMode.twice_per_month
         assert adhoc.starts_at_utc.replace(tzinfo=UTC) == fixture["adhoc_starts_at_utc"]
         assert adhoc.duration_hours == 2.0
 

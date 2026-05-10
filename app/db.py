@@ -150,6 +150,50 @@ def migrate_sqlite_campaign_consensus_policy(eng) -> None:
             conn.execute(text("ALTER TABLE campaign ADD COLUMN consensus_policy TEXT NOT NULL DEFAULT 'no_two_nears'"))
 
 
+def migrate_sqlite_slot_max_sessions_per_month(eng) -> None:
+    """Legacy: add ``max_sessions_per_month`` if missing (superseded by cadence fields)."""
+    with eng.begin() as conn:
+        info = conn.execute(text("PRAGMA table_info(slot)")).fetchall()
+        if not info:
+            return
+        names = {row[1] for row in info}
+        if "max_sessions_per_month" not in names:
+            conn.execute(text("ALTER TABLE slot ADD COLUMN max_sessions_per_month INTEGER"))
+
+
+def migrate_sqlite_slot_recurrence_cadence(eng) -> None:
+    """Add ``every_n_weeks`` and ``recurrence_anchor_local_date`` to ``slot`` (SQLite)."""
+    with eng.begin() as conn:
+        info = conn.execute(text("PRAGMA table_info(slot)")).fetchall()
+        if not info:
+            return
+        names = {row[1] for row in info}
+        if "every_n_weeks" not in names:
+            conn.execute(text("ALTER TABLE slot ADD COLUMN every_n_weeks INTEGER NOT NULL DEFAULT 1"))
+        if "recurrence_anchor_local_date" not in names:
+            conn.execute(text("ALTER TABLE slot ADD COLUMN recurrence_anchor_local_date VARCHAR"))
+
+
+def migrate_sqlite_slot_public_recurrence_mode(eng) -> None:
+    """Add ``public_recurrence_mode``; map legacy ``every_n_weeks == 2`` to twice-per-month."""
+    with eng.begin() as conn:
+        info = conn.execute(text("PRAGMA table_info(slot)")).fetchall()
+        if not info:
+            return
+        names = {row[1] for row in info}
+        if "public_recurrence_mode" not in names:
+            conn.execute(text("ALTER TABLE slot ADD COLUMN public_recurrence_mode VARCHAR NOT NULL DEFAULT 'weekly'"))
+        names = {row[1] for row in conn.execute(text("PRAGMA table_info(slot)")).fetchall()}
+        if "every_n_weeks" in names:
+            conn.execute(
+                text(
+                    "UPDATE slot SET public_recurrence_mode = 'twice_per_month' "
+                    "WHERE kind = 'recurring' AND every_n_weeks = 2 "
+                    "AND public_recurrence_mode = 'weekly'"
+                )
+            )
+
+
 def init_db() -> None:
     # Importing models registers them on SQLModel.metadata before create_all.
     from app import models  # noqa: F401
@@ -159,6 +203,9 @@ def init_db() -> None:
         migrate_sqlite_slot_schema(engine)
         migrate_sqlite_player_is_mandatory(engine)
         migrate_sqlite_campaign_consensus_policy(engine)
+        migrate_sqlite_slot_max_sessions_per_month(engine)
+        migrate_sqlite_slot_recurrence_cadence(engine)
+        migrate_sqlite_slot_public_recurrence_mode(engine)
 
 
 def get_session() -> Iterator[Session]:

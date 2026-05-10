@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 
-from app.models import Availability, Campaign, OccurrenceOptOut, Player, Slot
+from app.models import Availability, Campaign, OccurrenceOptOut, Player, PublicRecurrenceMode, Slot
 
 
 def _iso(dt: datetime | None) -> str | None:
@@ -70,6 +70,11 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
                 "duration_hours": s.duration_hours,
                 "starts_at_utc": _iso(s.starts_at_utc),
                 "ends_at_utc": _iso(s.ends_at_utc),
+                "public_recurrence_mode": (
+                    s.public_recurrence_mode.value
+                    if isinstance(s.public_recurrence_mode, PublicRecurrenceMode)
+                    else str(s.public_recurrence_mode)
+                ),
             }
             for s in slots
         ],

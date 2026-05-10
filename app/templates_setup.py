@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
 
 from fastapi.templating import Jinja2Templates
 
-from app.display_time import format_local_window, recurring_slot_primary_label
+from app.display_time import format_local_window, player_slot_public_frequency_caption, recurring_slot_primary_label
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = BASE_DIR / "templates"
@@ -54,6 +54,7 @@ def _pretty_tz(tz_name: str) -> str:
 templates.env.filters["local_time"] = _format_local
 templates.env.filters["local_window"] = format_local_window
 templates.env.filters["recurring_slot_viewer"] = recurring_slot_primary_label
+templates.env.filters["player_public_frequency"] = player_slot_public_frequency_caption
 templates.env.filters["tz_abbrev"] = _tz_abbrev
 templates.env.filters["pretty_tz"] = _pretty_tz
 

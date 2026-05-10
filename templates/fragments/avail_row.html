@@ -10,6 +10,10 @@
         {% set cx, cy = can_make_pair %}
         <span class="block text-xs text-muted mt-0.5">({{ cx }}/{{ cy }} indicated this time generally works)</span>
         {% endif %}
+        {% set freq = slot|player_public_frequency %}
+        {% if freq %}
+        <span class="block text-xs text-muted mt-0.5">{{ freq }}</span>
+        {% endif %}
       </span>
     {% else %}
       <span class="rounded bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium mr-2 align-top">one-off</span>

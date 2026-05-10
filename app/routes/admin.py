@@ -11,7 +11,7 @@ from sqlmodel import Session, select
 
 from app.db import get_session
 from app.deps import require_admin
-from app.models import Availability, ConsensusPolicy, Player, Slot, SlotKind
+from app.models import Availability, ConsensusPolicy, Player, PublicRecurrenceMode, Slot, SlotKind
 from app.security import hash_token, new_token
 from app.services.campaign_delete import delete_campaign_cascade
 from app.services.campaign_export import build_export_payload
@@ -26,6 +26,31 @@ _MAX_SESSION_HOURS = 48.0
 # (value, short label, hint) for the Settings card dropdown. Order is the
 # spectrum from strictest to most permissive so organisers can scan it
 # top-to-bottom.
+_PUBLIC_RECURRENCE_MODE_CHOICES: tuple[tuple[PublicRecurrenceMode, str, str], ...] = (
+    (
+        PublicRecurrenceMode.weekly,
+        "Weekly",
+        "Public next-game cards and consensus calendar list every occurrence of this weekday.",
+    ),
+    (
+        PublicRecurrenceMode.twice_per_month,
+        "About twice a month",
+        (
+            "At most two of this weekday per calendar month on the public page and calendar "
+            "(flexible clumping). Player pages still list every date."
+        ),
+    ),
+    (
+        PublicRecurrenceMode.once_per_month,
+        "About once a month",
+        (
+            "Only the first date each calendar month that meets your consensus policy "
+            "(everyone, or all but one) appears publicly for this time; the next public pick is "
+            "in the following month."
+        ),
+    ),
+)
+
 _CONSENSUS_POLICY_CHOICES: tuple[tuple[ConsensusPolicy, str, str], ...] = (
     (
         ConsensusPolicy.strict,
@@ -67,6 +92,15 @@ def _parse_session_duration_hours(raw: str | None) -> float:
     return h
 
 
+def _parse_public_recurrence_mode(raw: str | None) -> PublicRecurrenceMode:
+    if raw is None or not str(raw).strip():
+        return PublicRecurrenceMode.weekly
+    try:
+        return PublicRecurrenceMode(str(raw).strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Unknown public recurrence mode") from exc
+
+
 def _redirect_to_admin(public_id: str, secret: str) -> RedirectResponse:
     return RedirectResponse(url=f"/c/{public_id}/admin/{secret}", status_code=303)
 
@@ -103,6 +137,7 @@ def admin_home(
                 (5, "Sat"),
                 (6, "Sun"),
             ],
+            "public_recurrence_mode_choices": _PUBLIC_RECURRENCE_MODE_CHOICES,
         },
     )
 
@@ -268,6 +303,7 @@ def add_slot(
     duration_hours: str | None = Form(None),
     adhoc_date: str | None = Form(None),
     adhoc_start_time: str | None = Form(None),
+    public_recurrence_mode: str | None = Form("weekly"),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     campaign = require_admin(session, public_id, secret)
@@ -279,6 +315,7 @@ def add_slot(
         if not (0 <= weekday <= 6):
             raise HTTPException(status_code=400, detail="Weekday out of range")
         dur_h = _parse_session_duration_hours(duration_hours)
+        mode = _parse_public_recurrence_mode(public_recurrence_mode)
         slot = Slot(
             campaign_id=campaign.id,  # type: ignore[arg-type]
             kind=SlotKind.recurring,
@@ -286,6 +323,7 @@ def add_slot(
             weekday=weekday,
             start_local=start_local,
             duration_hours=dur_h,
+            public_recurrence_mode=mode,
         )
     elif kind == SlotKind.adhoc.value:
         if not adhoc_date or not adhoc_start_time:
@@ -313,6 +351,26 @@ def add_slot(
     else:
         raise HTTPException(status_code=400, detail="Unknown slot kind")
 
+    session.add(slot)
+    session.commit()
+    return _redirect_to_admin(public_id, secret)
+
+
+@router.post("/slots/{slot_id}/recurrence", response_class=RedirectResponse)
+def update_slot_recurrence(
+    public_id: str,
+    secret: str,
+    slot_id: int,
+    public_recurrence_mode: str | None = Form("weekly"),
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    campaign = require_admin(session, public_id, secret)
+    slot = session.get(Slot, slot_id)
+    if slot is None or slot.campaign_id != campaign.id:
+        raise HTTPException(status_code=404, detail="Slot not found")
+    if slot.kind is not SlotKind.recurring:
+        raise HTTPException(status_code=400, detail="Public recurrence applies to recurring times only")
+    slot.public_recurrence_mode = _parse_public_recurrence_mode(public_recurrence_mode)
     session.add(slot)
     session.commit()
     return _redirect_to_admin(public_id, secret)

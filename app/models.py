@@ -12,6 +12,12 @@ Time conventions:
   - Ad-hoc slots: ``starts_at_utc`` / ``ends_at_utc`` in UTC, plus
     ``duration_hours`` mirroring the admin form. The UI collects campaign-local
     **date**, **start time**, and **duration (hours)**.
+  - Recurring **public cadence** (``public_recurrence_mode``): controls how
+    densely this slot's dates appear on the **public** next-game cards and
+    consensus calendar only. Player pages always list every occurrence.
+    ``weekly`` (default), ``twice_per_month`` (cap two per calendar month in
+    the campaign timezone), ``once_per_month`` (first consensus-eligible date
+    per month only).
   - ``OccurrenceOptOut``: for a recurring slot, a player can opt out of one
     concrete occurrence (identified by that occurrence's UTC start) while
     keeping their standing yes/no on the logical slot.
@@ -33,6 +39,14 @@ def _utcnow() -> datetime:
 class SlotKind(StrEnum):
     recurring = "recurring"
     adhoc = "adhoc"
+
+
+class PublicRecurrenceMode(StrEnum):
+    """How a recurring slot thins dates on the public page and consensus ICS."""
+
+    weekly = "weekly"
+    twice_per_month = "twice_per_month"
+    once_per_month = "once_per_month"
 
 
 class AvailabilityStatus(StrEnum):
@@ -102,6 +116,14 @@ class Slot(SQLModel, table=True):
 
     starts_at_utc: datetime | None = None  # adhoc only
     ends_at_utc: datetime | None = None  # adhoc only
+
+    public_recurrence_mode: PublicRecurrenceMode = Field(
+        default=PublicRecurrenceMode.weekly,
+        description=(
+            "Recurring only: thins which occurrences feed public consensus cards "
+            "and ICS. Player views always use full weekly expansion."
+        ),
+    )
 
     created_at: datetime = Field(default_factory=_utcnow)
 

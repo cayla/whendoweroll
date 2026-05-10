@@ -127,6 +127,26 @@ def _max_missing_for(policy: ConsensusPolicy) -> int:
     return 1
 
 
+def occurrence_qualifies_under_policy(
+    occ: Occurrence,
+    players: Sequence[Player],
+    availability: Mapping[tuple[int, int], AvailabilityStatus],
+    policy: ConsensusPolicy,
+    opt_outs: set[tuple[int, int, datetime]] | None = None,
+) -> bool:
+    """Whether this window meets the same bar as public consensus cards (per-window only).
+
+    Does not apply between-window guardrails from ``find_next_meets``; those
+    run after the occurrence list is built.
+    """
+    if not players:
+        return False
+    _yes_ids, missing_ids = _yes_set_for_occurrence(occ, players, availability, opt_outs or set())
+    if _mandatory_missing(players, missing_ids):
+        return False
+    return len(missing_ids) <= _max_missing_for(policy)
+
+
 def _guardrail_blocks(policy: ConsensusPolicy, prev: ConsensusResult, curr: ConsensusResult) -> bool:
     """Between-window guardrail: should ``curr`` be skipped given the previously picked ``prev``?
 
