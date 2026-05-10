@@ -400,6 +400,11 @@ def add_slot(
         except ValueError as exc:
             raise HTTPException(status_code=400, detail="Bad date or time") from exc
         starts_local_dt = datetime.combine(d, t_s, tzinfo=tz)
+        if starts_local_dt < datetime.now(tz):
+            raise HTTPException(
+                status_code=400,
+                detail="One-off start time is in the past (in the campaign timezone)",
+            )
         ends_local_dt = starts_local_dt + timedelta(hours=dur_h)
         slot = Slot(
             campaign_id=campaign.id,  # type: ignore[arg-type]

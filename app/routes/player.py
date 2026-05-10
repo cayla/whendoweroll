@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -11,6 +11,7 @@ from sqlmodel import Session, select
 
 from app.db import get_session
 from app.deps import require_player
+from app.display_time import ensure_utc
 from app.models import AvailabilityStatus, Player, Slot, SlotKind
 from app.services.availability import (
     load_availability_map,
@@ -122,6 +123,13 @@ def set_my_availability(
     slot = session.get(Slot, slot_id)
     if slot is None or slot.campaign_id != campaign.id:
         raise HTTPException(status_code=404, detail="Slot not found")
+
+    if (
+        slot.kind is SlotKind.adhoc
+        and slot.ends_at_utc is not None
+        and ensure_utc(slot.ends_at_utc) <= datetime.now(UTC)
+    ):
+        raise HTTPException(status_code=400, detail="That one-off session has already ended")
 
     if status == "yes":
         new_status: AvailabilityStatus | None = AvailabilityStatus.yes

@@ -25,7 +25,7 @@
           {% if slot.kind.value == "recurring" %}
             {{ weekdays[slot.weekday][1] }} {{ slot.start_local|hhmm_12h }}
           {% else %}
-            {{ slot.starts_at_utc|local_window(slot.ends_at_utc, campaign.timezone) }}
+            {{ slot.starts_at_utc|local_window_dated(slot.ends_at_utc, campaign.timezone) }}
           {% endif %}
         </td>
         <td class="py-2.5 px-2 align-middle whitespace-nowrap tabular-nums text-ink">{{ slot.duration_hours }} h</td>

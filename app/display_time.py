@@ -38,11 +38,16 @@ def ensure_utc(value: datetime) -> datetime:
     return value.astimezone(UTC)
 
 
-def format_local_window(starts_utc: datetime, ends_utc: datetime, tz_name: str) -> str:
-    """Wall-clock window in ``tz_name``, e.g. ``Thu 11:00 AM–2:00 PM``.
+def _format_local_date_time_line(local: datetime) -> str:
+    """One local instant: ``Sun May 10 2026, 6:00 PM`` (matches ``local_time`` filter)."""
+    return local.strftime("%a %b ") + str(local.day) + local.strftime(" %Y, ") + format_datetime_clock_12h(local)
 
-    The displayed zone is shown once per page (in the top-right TZ pill /
-    abbreviation chip) so we omit a per-row tz suffix to cut visual noise.
+
+def format_local_window(starts_utc: datetime, ends_utc: datetime, tz_name: str) -> str:
+    """Wall-clock window in ``tz_name`` by weekday + clock, e.g. ``Thu 11:00 AM–2:00 PM``.
+
+    Used for recurring rules (pattern, not a single calendar day). The
+    displayed zone is shown once per page so we omit a per-row tz suffix.
     """
     z = ZoneInfo(tz_name)
     a = ensure_utc(starts_utc).astimezone(z)
@@ -53,6 +58,18 @@ def format_local_window(starts_utc: datetime, ends_utc: datetime, tz_name: str) 
     if a.date() == b.date():
         return f"{day_a} {format_datetime_clock_12h(a)}–{format_datetime_clock_12h(b)}"
     return f"{day_a} {format_datetime_clock_12h(a)} – {day_b} {format_datetime_clock_12h(b)}"
+
+
+def format_local_window_dated(starts_utc: datetime, ends_utc: datetime, tz_name: str) -> str:
+    """Same as :func:`format_local_window` but with calendar dates (one-off sessions)."""
+    z = ZoneInfo(tz_name)
+    a = ensure_utc(starts_utc).astimezone(z)
+    b = ensure_utc(ends_utc).astimezone(z)
+
+    if a.date() == b.date():
+        head = a.strftime("%a %b ") + str(a.day) + a.strftime(" %Y, ")
+        return f"{head}{format_datetime_clock_12h(a)}–{format_datetime_clock_12h(b)}"
+    return f"{_format_local_date_time_line(a)} – {_format_local_date_time_line(b)}"
 
 
 def recurring_slot_primary_label(slot: Slot, campaign, display_tz: str) -> str:
