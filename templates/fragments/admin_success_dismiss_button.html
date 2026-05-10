@@ -1,0 +1,12 @@
+<button type="button"
+        class="absolute top-2 right-2 rounded-md p-1 text-emerald-800 hover:bg-emerald-100 dark:text-emerald-200 dark:hover:bg-emerald-900/50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        aria-label="Dismiss notification"
+        {% if dismiss_target is defined and dismiss_target == 'new-player-info' %}
+        onclick="var el=document.getElementById('new-player-info'); if(el) el.replaceChildren();"
+        {% else %}
+        onclick="this.closest('[aria-live=polite]').replaceChildren();"
+        {% endif %}>
+  <svg class="h-5 w-5 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+</button>

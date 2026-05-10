@@ -1,61 +1,79 @@
 {% extends "base.html" %}
 {% block title %}{{ player.display_name }} &middot; {{ campaign.name }}{% endblock %}
 
-{% block header_right %}
-{% with tz_prefix="player", tz_submit_url=("/c/" ~ campaign.public_id ~ "/p/" ~ token ~ "/viewer-timezone"), campaign_timezone=campaign.timezone %}
-  {% include "fragments/viewer_tz_modal.html" %}
-{% endwith %}
-{% endblock %}
-
 {% block content %}
+<div class="player-page">
 <header class="mb-6">
-  <h1 class="heading text-3xl">
-    <a href="/c/{{ campaign.public_id }}" class="text-brand-fg hover:text-brand-fg-hover underline decoration-muted underline-offset-4 hover:decoration-brand-fg-hover">{{ campaign.name }}</a>
-  </h1>
-  <p class="text-sm text-muted">
-    Hi <span class="font-medium text-ink">{{ player.display_name }}</span>,
-  </p>
-  <p class="mt-2 text-sm text-muted">
-    Use this page to indicate which gaming sessions you can attend. When you say yes to recurring options, a new table will appear giving you the opportunity to opt out of specific occurrences. Give it a try now. Changes display and save instantly!
-  </p>
-  <p class="mt-1 text-xs text-muted">
-    Public campaign view: <a class="underline text-brand-fg hover:text-brand-fg-hover" href="/c/{{ campaign.public_id }}">/c/{{ campaign.public_id }}</a>
-    &middot;
-    <a class="underline text-brand-fg hover:text-brand-fg-hover" href="/c/{{ campaign.public_id }}/calendar-consensus.ics">Subscribe to consensus calendar (.ics)</a>
-  </p>
+  <div class="min-w-0">
+    <h1 class="heading text-3xl text-brand-fg mb-4">Player: {{ player.display_name }}</h1>
+    <p class="text-sm mb-4">
+      This URL is your private edit link. Treat it like a password and do not share it publicly.
+    </p>
+    <p class="text-lg text-muted">{{ campaign.name }}</p>
+    <div class="mt-3 flex flex-wrap items-center gap-2">
+      <a href="/c/{{ campaign.public_id }}" class="btn-secondary px-3 py-1.5 text-sm">
+        View Public Campaign page
+      </a>
+      <a href="/c/{{ campaign.public_id }}/calendar-consensus.ics" class="btn-secondary px-3 py-1.5 text-sm">
+        Consensus calendar (.ics)
+      </a>
+    </div>
+    <div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+      <span class="text-sm font-medium text-muted">Display times in</span>
+      {% with tz_prefix="player", tz_submit_url=("/c/" ~ campaign.public_id ~ "/p/" ~ token ~ "/viewer-timezone"), campaign_timezone=campaign.timezone %}
+        {% include "fragments/viewer_tz_modal.html" %}
+      {% endwith %}
+    </div>
+  </div>
 </header>
 
-{% if not slots %}
-<p class="text-muted italic">No times have been added yet.</p>
-{% else %}
-<p class="text-xs text-muted mb-2">{{ campaign|player_tempo }}</p>
-<div class="bg-surface border border-line rounded-lg shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="text-left bg-elevated text-xs uppercase tracking-wide text-muted">
-      <tr><th class="px-4 py-2">Time</th><th class="py-2">Status</th></tr>
-    </thead>
-    <tbody>
-      {% for slot in slots %}
-        {% with current = availability.get(slot.id), can_make_pair = slot_can_make_pairs.get(slot.id) %}
-          {% include "fragments/avail_row.html" %}
-        {% endwith %}
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+<nav class="player-subnav" aria-label="Page sections">
+  <a href="#availability">Availability</a>
+  <a href="#exceptions">Exceptions</a>
+</nav>
 
-{% if has_recurring %}
-<div id="player-recurring-exceptions"
-     hx-get="/c/{{ campaign.public_id }}/p/{{ token }}/_recurring-exceptions"
-     hx-trigger="refreshExceptions from:body"
-     hx-swap="innerHTML">{%- include "fragments/player_recurring_exceptions_inner.html" -%}
-</div>
-{% endif %}
-{% endif %}
-
-<section class="mt-6 text-xs text-muted">
-  <p>This link is your edit credential. Treat it like a password and don't share publicly.</p>
+<section id="availability" class="player-anchor-target bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
+  <h2 class="heading text-lg mb-3">Availability</h2>
+  <p class="text-sm text-muted mb-4">
+    Mark which sessions you can attend. Changes save as soon as you click.
+  </p>
+  {% if not slots %}
+  <p class="text-sm text-muted italic">No times have been added yet. Ask your organizer to add session options on the admin dashboard.</p>
+  {% else %}
+  <p class="text-sm text-muted mb-4">{{ campaign|player_tempo }}</p>
+  <div class="overflow-x-auto rounded-lg border border-line -mx-2 sm:mx-0">
+    <table class="player-avail-table w-full min-w-[min(100%,36rem)] border-collapse text-sm">
+      <caption class="sr-only">Your availability for each scheduled time</caption>
+      <thead class="text-left bg-elevated text-xs font-medium uppercase tracking-wide text-muted">
+        <tr>
+          <th scope="col" class="py-2.5 pl-3 pr-2 font-medium align-middle whitespace-nowrap">Kind</th>
+          <th scope="col" class="py-2.5 px-2 font-medium align-middle">Time</th>
+          <th scope="col" class="py-2.5 pr-3 pl-2 font-medium align-middle">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for slot in slots %}
+          {% with current = availability.get(slot.id), can_make_pair = slot_can_make_pairs.get(slot.id) %}
+            {% include "fragments/avail_row.html" %}
+          {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
 </section>
+
+<section id="exceptions" class="player-anchor-target bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
+  <h2 class="heading text-lg mb-4">Exceptions</h2>
+  <div id="player-recurring-exceptions"
+       {% if has_recurring %}
+       hx-get="/c/{{ campaign.public_id }}/p/{{ token }}/_recurring-exceptions"
+       hx-trigger="refreshExceptions from:body"
+       hx-swap="innerHTML"
+       {% endif %}>{%- include "fragments/player_recurring_exceptions_inner.html" -%}
+  </div>
+</section>
+
 <script>
 (function () {
   try {
@@ -67,4 +85,5 @@
   } catch (e) {}
 })();
 </script>
+</div>
 {% endblock %}

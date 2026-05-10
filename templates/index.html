@@ -14,10 +14,10 @@
       <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
         {% if not new_campaigns_disabled %}
         <button type="button" id="home-open-create" class="home-hero-btn home-hero-btn-secondary px-5 py-2.5 text-base font-medium">
-          Create campaign
+          Create Campaign
         </button>
         <button type="button" id="home-open-restore" class="home-hero-btn home-hero-btn-secondary px-5 py-2.5 text-base font-medium">
-          Restore campaign
+          Restore Campaign
         </button>
         {% endif %}
       </div>
@@ -117,7 +117,7 @@
       <div class="pt-2 flex flex-wrap gap-2 justify-end">
         <button type="button" class="btn-secondary px-4 py-2" data-dialog-close>Cancel</button>
         <button type="submit" class="btn px-4 py-2">
-          Create campaign
+          Create Campaign
         </button>
       </div>
     </form>
@@ -134,8 +134,9 @@
       <div>
         <p class="font-medium text-ink m-0">Import from JSON</p>
         <p class="mt-1 text-sm text-muted">
-          Upload an <code class="text-xs bg-[color:var(--color-code-bg)] px-1 rounded">export.json</code> from a previous
-          admin page. You'll get a new admin link and new player links. The originals aren't stored in the backup, so they can't be reused.
+          Import the JSON file you downloaded from your campaign&rsquo;s Admin Dashboard. This will create a
+          <strong class="font-medium text-ink">new</strong> campaign with regenerated links.
+          The JSON file does not include your old links. The previous links will be invalid after you restore your campaign.
         </p>
       </div>
       <div>
@@ -146,7 +147,7 @@
       <div class="flex flex-wrap gap-2 justify-end pt-2">
         <button type="button" class="btn-secondary px-4 py-2 font-medium" data-dialog-close>Cancel</button>
         <button type="submit" class="btn px-4 py-2 font-medium">
-          Restore campaign
+          Restore Campaign
         </button>
       </div>
     </form>

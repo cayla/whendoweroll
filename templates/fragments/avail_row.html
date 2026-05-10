@@ -1,57 +1,62 @@
 {# Renders one slot row. Use real <form> posts (not hx-vals) for Safari/Firefox reliability. #}
 {% set status_value = current.value if current else "" %}
 <tr id="slot-row-{{ slot.id }}" class="border-t border-line">
-  <td class="px-4 py-2">
+  <td class="py-2.5 pl-3 pr-2 whitespace-nowrap align-middle">
     {% if slot.kind.value == "recurring" %}
-      <span class="rounded bg-indigo-100 text-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200 px-1.5 py-0.5 text-xs font-medium mr-2 align-top">recurring</span>
-      <span class="inline-block">
-        <span class="font-medium text-ink">{{ slot|recurring_slot_viewer(campaign, display_tz) }}</span>
-        {% if can_make_pair is not none %}
-        {% set cx, cy = can_make_pair %}
-        <span class="block text-xs text-muted mt-0.5">({{ cx }}/{{ cy }} indicated this time generally works)</span>
-        {% endif %}
-      </span>
+      <span class="inline-block rounded bg-indigo-100 text-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200 px-1.5 py-0.5 text-xs font-medium">recurring</span>
     {% else %}
-      <span class="rounded bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium mr-2 align-top">one-off</span>
-      <span class="inline-block">
-        <span class="font-medium text-ink">{{ slot.starts_at_utc|local_window(slot.ends_at_utc, display_tz) }}</span>
-        <span class="block text-xs text-muted mt-0.5">{{ slot.duration_hours }} h &middot; {{ display_tz|pretty_tz }}</span>
-        {% if can_make_pair is not none %}
-        {% set cx, cy = can_make_pair %}
-        <span class="block text-xs text-muted mt-0.5">({{ cx }}/{{ cy }} indicated this time generally works)</span>
-        {% endif %}
-      </span>
+      <span class="inline-block rounded bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium">one-off</span>
     {% endif %}
-    {% if slot.label %}<span class="text-muted ml-1">· {{ slot.label }}</span>{% endif %}
   </td>
-  <td class="py-2">
-    <div class="inline-flex rounded-md border border-line overflow-hidden text-xs divide-x divide-line">
-      <form class="inline m-0"
-            hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/availability/{{ slot.id }}"
-            hx-target="#slot-row-{{ slot.id }}"
-            hx-swap="outerHTML">
-        <input type="hidden" name="status" value="{% if status_value == 'yes' %}clear{% else %}yes{% endif %}">
-        <button type="submit"
-                class="px-3 py-1 {% if status_value == 'yes' %}bg-emerald-600 text-white dark:bg-emerald-600{% else %}hover:bg-emerald-50 text-emerald-800 dark:hover:bg-emerald-950/40 dark:text-emerald-300{% endif %}">
-          Yes
-        </button>
-      </form>
-      <form class="inline m-0"
-            hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/availability/{{ slot.id }}"
-            hx-target="#slot-row-{{ slot.id }}"
-            hx-swap="outerHTML">
-        <input type="hidden" name="status" value="{% if status_value == 'no' %}clear{% else %}no{% endif %}">
-        <button type="submit"
-                class="px-3 py-1 {% if status_value == 'no' %}bg-neutral-600 text-white dark:bg-neutral-700{% else %}hover:bg-elevated text-muted{% endif %}">
-          No
-        </button>
-      </form>
+  <td class="py-2.5 px-2 min-w-0 align-middle">
+    {% if slot.kind.value == "recurring" %}
+      <span class="font-medium text-ink">{{ slot|recurring_slot_viewer(campaign, display_tz) }}</span>
+      {% if can_make_pair is not none %}
+      {% set cx, cy = can_make_pair %}
+      <span class="block text-xs text-muted mt-0.5">({{ cx }}/{{ cy }} indicated this time generally works)</span>
+      {% endif %}
+    {% else %}
+      <span class="font-medium text-ink">{{ slot.starts_at_utc|local_window(slot.ends_at_utc, display_tz) }}</span>
+      <span class="block text-xs text-muted mt-0.5">{{ slot.duration_hours }} h &middot; {{ display_tz|pretty_tz }}</span>
+      {% if can_make_pair is not none %}
+      {% set cx, cy = can_make_pair %}
+      <span class="block text-xs text-muted mt-0.5">({{ cx }}/{{ cy }} indicated this time generally works)</span>
+      {% endif %}
+    {% endif %}
+    {% if slot.label %}<span class="text-muted"> · {{ slot.label }}</span>{% endif %}
+  </td>
+  <td class="py-2.5 pr-3 pl-2 align-middle">
+    <div class="flex flex-col gap-1.5 justify-center">
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div class="inline-flex rounded-md border border-line overflow-hidden text-xs divide-x divide-line shrink-0">
+          <form class="inline m-0"
+                hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/availability/{{ slot.id }}"
+                hx-target="#slot-row-{{ slot.id }}"
+                hx-swap="outerHTML">
+            <input type="hidden" name="status" value="{% if status_value == 'yes' %}clear{% else %}yes{% endif %}">
+            <button type="submit"
+                    class="px-3 py-1 {% if status_value == 'yes' %}bg-[var(--color-btn-primary)] text-[var(--color-on-btn-primary)]{% else %}hover:bg-emerald-50 text-emerald-800 dark:hover:bg-emerald-950/40 dark:text-emerald-300{% endif %}">
+              Yes
+            </button>
+          </form>
+          <form class="inline m-0"
+                hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/availability/{{ slot.id }}"
+                hx-target="#slot-row-{{ slot.id }}"
+                hx-swap="outerHTML">
+            <input type="hidden" name="status" value="{% if status_value == 'no' %}clear{% else %}no{% endif %}">
+            <button type="submit"
+                    class="px-3 py-1 {% if status_value == 'no' %}bg-neutral-600 text-white dark:bg-neutral-700{% else %}hover:bg-elevated text-muted{% endif %}">
+              No
+            </button>
+          </form>
+        </div>
+        {% if not status_value %}
+          <span class="text-xs text-subtle italic">no answer yet</span>
+        {% endif %}
+      </div>
+      {% if slot.kind.value == "recurring" and status_value == 'yes' %}
+        <p class="text-xs text-subtle max-w-xs m-0">Scroll down to block specific dates.</p>
+      {% endif %}
     </div>
-    {% if not status_value %}
-      <span class="ml-2 text-xs text-subtle italic">no answer yet</span>
-    {% endif %}
-    {% if slot.kind.value == "recurring" and status_value == 'yes' %}
-      <p class="mt-1 text-xs text-subtle max-w-xs">Scroll down to block specific dates.</p>
-    {% endif %}
   </td>
 </tr>
