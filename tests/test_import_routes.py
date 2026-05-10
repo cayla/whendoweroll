@@ -2,11 +2,13 @@
 
 Round-trip integrity:
 - ``POST /import`` accepts the JSON downloaded from
-  ``GET /c/{public_id}/admin/{secret}/export.json``.
+  ``GET /c/{public_id}/admin/{secret}/export`` (``/export.json`` is an alias).
 - The new campaign gets a fresh ``public_id``, fresh admin secret, and fresh
   per-player tokens (none of those are stored in the backup).
 - Roster, slots, availability, opt-outs, and the consensus policy are all
   carried across.
+- When the JSON includes ``campaign.public_id`` (exports from this app do),
+  that prior campaign row is removed after a successful import.
 """
 
 from __future__ import annotations
@@ -120,7 +122,7 @@ def test_export_then_import_roundtrips_full_campaign(client, engine):
     public_id, secret = _create_campaign(client, ["Alice", "Bob"])
     fixture = _seed(engine, public_id=public_id)
 
-    export = client.get(f"/c/{public_id}/admin/{secret}/export.json")
+    export = client.get(f"/c/{public_id}/admin/{secret}/export")
     assert export.status_code == 200
     payload = export.json()
     assert payload["export_version"] == 3
@@ -171,10 +173,39 @@ def test_export_then_import_roundtrips_full_campaign(client, engine):
         assert opts[0].starts_at_utc.replace(tzinfo=UTC) == fixture["opt_out_starts_at_utc"]
         assert opts[0].player_id == next(p.id for p in roster if p.display_name == "Alice")
 
+        assert s.exec(select(Campaign).where(Campaign.public_id == public_id)).first() is None
+
+
+def test_import_without_public_id_leaves_existing_campaigns(client, engine):
+    """Hand-built backups with no ``campaign.public_id`` must not delete anything."""
+    public_id_a, _ = _create_campaign(client, ["X"])
+    public_id_b, _ = _create_campaign(client, ["Y"])
+    payload = {
+        "export_version": 3,
+        "campaign": {"name": "Fresh", "timezone": "UTC"},
+        "players": [{"id": 1, "display_name": "Only", "sort_order": 0}],
+        "slots": [
+            {
+                "id": 1,
+                "kind": "recurring",
+                "weekday": 0,
+                "start_local": "18:00",
+                "duration_hours": 2,
+            }
+        ],
+        "availability": [{"player_id": 1, "slot_id": 1, "status": "yes"}],
+        "occurrence_opt_outs": [],
+    }
+    r = _post_import(client, payload)
+    assert r.status_code == 200
+    with Session(engine) as s:
+        assert s.exec(select(Campaign).where(Campaign.public_id == public_id_a)).first() is not None
+        assert s.exec(select(Campaign).where(Campaign.public_id == public_id_b)).first() is not None
+
 
 def test_import_links_in_response_open_admin_dashboard(client):
     public_id, secret = _create_campaign(client, ["Solo"])
-    payload = client.get(f"/c/{public_id}/admin/{secret}/export.json").json()
+    payload = client.get(f"/c/{public_id}/admin/{secret}/export").json()
 
     imported = _post_import(client, payload)
     assert imported.status_code == 200
@@ -189,7 +220,7 @@ def test_import_links_in_response_open_admin_dashboard(client):
 
 def test_import_v2_payload_without_consensus_policy_uses_default(client, engine):
     public_id, secret = _create_campaign(client, ["A"])
-    payload = client.get(f"/c/{public_id}/admin/{secret}/export.json").json()
+    payload = client.get(f"/c/{public_id}/admin/{secret}/export").json()
     payload["export_version"] = 2
     payload["campaign"].pop("consensus_policy", None)
 
@@ -298,7 +329,7 @@ def test_import_rejects_dangling_availability_reference(client):
 
 def test_import_blocked_when_new_campaigns_disabled(client, monkeypatch):
     public_id, secret = _create_campaign(client, [])
-    payload = client.get(f"/c/{public_id}/admin/{secret}/export.json").json()
+    payload = client.get(f"/c/{public_id}/admin/{secret}/export").json()
     monkeypatch.setenv("WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS", "1")
     r = _post_import(client, payload)
     assert r.status_code == 403

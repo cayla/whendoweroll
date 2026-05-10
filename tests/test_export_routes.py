@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from sqlmodel import Session, select
 
 from app.models import Availability, AvailabilityStatus, Campaign, Player, Slot, SlotKind
+from app.services.campaign_export import campaign_export_download_filename
 
 
 def _create_campaign_with_players(client, names: list[str], horizon_weeks: int = 12):
@@ -74,14 +75,24 @@ def test_export_json_requires_admin_secret(client):
     m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
     assert m
     public_id, secret = m.groups()
-    ok = client.get(f"/c/{public_id}/admin/{secret}/export.json")
+    ok = client.get(f"/c/{public_id}/admin/{secret}/export")
     assert ok.status_code == 200
+    cd = ok.headers.get("content-disposition", "")
+    assert re.search(
+        r'attachment;\s*filename="whendoweroll-export-test-\d{8}\.json"',
+        cd,
+        re.IGNORECASE,
+    ), cd
     data = json.loads(ok.text)
     assert data["campaign"]["public_id"] == public_id
     assert "availability" in data
     assert "occurrence_opt_outs" in data
-    bad = client.get(f"/c/{public_id}/admin/wrong-secret/export.json")
+    bad = client.get(f"/c/{public_id}/admin/wrong-secret/export")
     assert bad.status_code == 404
+
+    legacy = client.get(f"/c/{public_id}/admin/{secret}/export.json")
+    assert legacy.status_code == 200
+    assert json.loads(legacy.text)["campaign"]["public_id"] == public_id
 
 
 def test_consensus_ics_is_public_no_secret_required(client):
@@ -178,3 +189,15 @@ def test_player_calendar_ics_route_removed(client):
     token = m.group(1)
     r = client.get(f"/c/{public_id}/p/{token}/calendar.ics")
     assert r.status_code == 404
+
+
+def test_campaign_export_download_filename_uses_utc_date_and_slug():
+    c = Campaign(public_id="abc", name="My Friday Game", timezone="UTC", admin_secret_hash="x")
+    fixed = datetime(2026, 5, 10, 23, tzinfo=UTC)
+    assert campaign_export_download_filename(c, as_of=fixed) == "whendoweroll-my-friday-game-20260510.json"
+
+
+def test_campaign_export_download_filename_blank_name():
+    c = Campaign(public_id="abc", name="   ", timezone="UTC", admin_secret_hash="x")
+    fixed = datetime(2026, 1, 1, tzinfo=UTC)
+    assert campaign_export_download_filename(c, as_of=fixed) == "whendoweroll-campaign-20260101.json"

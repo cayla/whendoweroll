@@ -15,7 +15,7 @@ from app.deps import require_admin
 from app.models import Availability, ConsensusPolicy, Player, PublicRecurrenceMode, Slot, SlotKind
 from app.security import hash_token, new_token
 from app.services.campaign_delete import delete_campaign_cascade
-from app.services.campaign_export import build_export_payload
+from app.services.campaign_export import build_export_payload, campaign_export_download_filename
 from app.services.opt_outs import delete_for_player, delete_for_slot
 from app.templates_setup import COMMON_TIMEZONES, templates
 
@@ -147,6 +147,7 @@ def admin_home(
             "slots": slots,
             "admin_url": f"{base_url}/c/{campaign.public_id}/admin/{secret}",
             "public_url": f"{base_url}/c/{campaign.public_id}",
+            "export_json_filename": campaign_export_download_filename(campaign),
             "secret": secret,
             "timezones": COMMON_TIMEZONES,
             "consensus_policy_choices": _CONSENSUS_POLICY_CHOICES,
@@ -454,11 +455,21 @@ def delete_campaign(
     return RedirectResponse(url="/", status_code=303)
 
 
+def _export_campaign_json_response(session: Session, public_id: str, secret: str) -> JSONResponse:
+    campaign = require_admin(session, public_id, secret)
+    fn = campaign_export_download_filename(campaign)
+    return JSONResponse(
+        build_export_payload(session, campaign),
+        headers={"Content-Disposition": f'attachment; filename="{fn}"'},
+    )
+
+
+@router.get("/export")
 @router.get("/export.json")
-def export_json(
+def export_campaign_json(
     public_id: str,
     secret: str,
     session: Session = Depends(get_session),
 ) -> JSONResponse:
-    campaign = require_admin(session, public_id, secret)
-    return JSONResponse(build_export_payload(session, campaign))
+    """Full JSON backup. ``/export`` is the preferred URL; ``/export.json`` is kept as an alias."""
+    return _export_campaign_json_response(session, public_id, secret)

@@ -194,8 +194,9 @@
     The consensus <code class="text-xs bg-[color:var(--color-code-bg)] px-1 rounded">.ics</code> lives at the public URL and lists upcoming windows where everyone is available, plus near-consensus ones (one player missing) prefixed with <code class="text-xs bg-[color:var(--color-code-bg)] px-1 rounded">[missing: &hellip;]</code>. Share this single feed with the group. The same link is on every player's page too.
   </p>
   <div class="flex flex-wrap gap-3">
-    <a href="{{ admin_url }}/export.json" download
-       class="btn-secondary px-3 py-1.5 text-sm">
+    <a href="{{ admin_url }}/export" download="{{ export_json_filename }}"
+       class="btn-secondary px-3 py-1.5 text-sm"
+       title="{{ export_json_filename }}">
       Download JSON
     </a>
     <a href="{{ public_url }}/calendar-consensus.ics"

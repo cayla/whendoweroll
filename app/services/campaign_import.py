@@ -5,6 +5,9 @@ a backup is to materialize it into a *fresh* campaign with a new admin link
 and brand-new per-player links. That matches what users would have to do
 manually anyway and keeps every URL in the system unguessable.
 
+Exports include ``campaign.public_id`` so that, after a successful import, the
+prior campaign row can be deleted and old URLs stop resolving.
+
 Old player/slot ids in the export are remapped to the freshly-assigned ids
 during insert; availability and per-occurrence opt-outs are then rewritten
 against the new ids. References to ids that don't appear in the file are
@@ -19,7 +22,7 @@ from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.models import (
     Availability,
@@ -33,6 +36,7 @@ from app.models import (
     SlotKind,
 )
 from app.security import hash_token, new_token
+from app.services.campaign_delete import delete_campaign_cascade
 
 SUPPORTED_VERSIONS = {1, 2, 3}
 
@@ -248,6 +252,43 @@ def _validate_payload(payload: Any) -> tuple[dict, list[dict], list[dict], list[
     return campaign_fields, players, slots, availability, opt_outs
 
 
+def _export_source_public_id(payload: Any) -> str | None:
+    """Return normalized ``public_id`` from an export's ``campaign`` object, if present and well-formed."""
+    if not isinstance(payload, dict):
+        return None
+    c = payload.get("campaign")
+    if not isinstance(c, dict):
+        return None
+    raw = c.get("public_id")
+    if not isinstance(raw, str):
+        return None
+    s = raw.strip().lower()
+    if len(s) != 32:
+        return None
+    try:
+        int(s, 16)
+    except ValueError:
+        return None
+    return s
+
+
+def delete_export_source_campaign_if_present(session: Session, payload: Any, *, new_campaign_public_id: str) -> None:
+    """If the backup names a prior campaign still in the DB, delete it (full cascade).
+
+    Exports from this app include ``campaign.public_id`` (unguessable, non-secret).
+    After a successful restore into a fresh campaign, removing the old row avoids
+    leaving a duplicate campaign with dead links. No-op when the field is absent,
+    malformed, unknown, or matches the new campaign (should never happen).
+    """
+    old = _export_source_public_id(payload)
+    if old is None or old == new_campaign_public_id.strip().lower():
+        return
+    prior = session.exec(select(Campaign).where(Campaign.public_id == old)).first()
+    if prior is None:
+        return
+    delete_campaign_cascade(session, prior)
+
+
 def import_campaign(session: Session, payload: Any) -> tuple[Campaign, str, list[tuple[Player, str]]]:
     """Validate ``payload`` and materialize a brand-new campaign from it.
 
@@ -334,4 +375,5 @@ def import_campaign(session: Session, payload: Any) -> tuple[Campaign, str, list
 
     session.commit()
     session.refresh(campaign)
+    delete_export_source_campaign_if_present(session, payload, new_campaign_public_id=campaign.public_id)
     return campaign, admin_secret, created_players
