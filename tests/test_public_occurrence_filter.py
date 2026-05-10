@@ -81,6 +81,67 @@ def test_twice_per_month_caps_globally_across_two_slots():
     assert len(jan) == 2
 
 
+def test_public_min_gap_days_thins_clustered_weekly_slots():
+    wed = Slot(
+        id=1,
+        campaign_id=1,
+        kind=SlotKind.recurring,
+        weekday=2,
+        start_local="12:00",
+        duration_hours=1.0,
+    )
+    sat = Slot(
+        id=2,
+        campaign_id=1,
+        kind=SlotKind.recurring,
+        weekday=5,
+        start_local="12:00",
+        duration_hours=1.0,
+    )
+    sun = Slot(
+        id=3,
+        campaign_id=1,
+        kind=SlotKind.recurring,
+        weekday=6,
+        start_local="12:00",
+        duration_hours=1.0,
+    )
+    slots = [wed, sat, sun]
+    tz = ZoneInfo("UTC")
+    now = datetime(2025, 1, 1, 0, 0, tzinfo=UTC)
+    full = expand_all(slots, tz=tz, horizon_weeks=5, now=now)
+    avail = {(1, 1): AvailabilityStatus.yes, (1, 2): AvailabilityStatus.yes, (1, 3): AvailabilityStatus.yes}
+    players = [_player(1, "A")]
+    base = filter_occurrences_for_public_display(
+        full,
+        slots,
+        tz=tz,
+        players=players,
+        availability=avail,
+        policy=ConsensusPolicy.strict,
+        opt_outs=set(),
+        public_recurrence_mode=PublicRecurrenceMode.weekly,
+        public_min_gap_days=0,
+    )
+    spaced = filter_occurrences_for_public_display(
+        full,
+        slots,
+        tz=tz,
+        players=players,
+        availability=avail,
+        policy=ConsensusPolicy.strict,
+        opt_outs=set(),
+        public_recurrence_mode=PublicRecurrenceMode.weekly,
+        public_min_gap_days=4,
+    )
+    tz_jan = lambda rows: [o for o in rows if o.starts_at_utc.astimezone(tz).month == 1]
+    jan_base = tz_jan(base)
+    jan_spaced = tz_jan(spaced)
+    assert len(jan_base) >= 10
+    assert len(jan_spaced) < len(jan_base)
+    assert len(jan_spaced) >= 3
+
+
 def test_once_per_month_keeps_first_policy_qualifying_date():
     slot = Slot(
         id=1,

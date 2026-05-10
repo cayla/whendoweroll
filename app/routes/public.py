@@ -55,6 +55,7 @@ def public_home(
         policy=campaign.consensus_policy,
         opt_outs=opt_outs,
         public_recurrence_mode=campaign.public_recurrence_mode,
+        public_min_gap_days=campaign.public_min_gap_days,
     )
 
     upcoming_meets = find_next_meets(
@@ -140,6 +141,7 @@ def calendar_consensus_ics(
         policy=campaign.consensus_policy,
         opt_outs=opt_outs,
         public_recurrence_mode=campaign.public_recurrence_mode,
+        public_min_gap_days=campaign.public_min_gap_days,
     )
     results = find_next_meets(
         occurrences_public,

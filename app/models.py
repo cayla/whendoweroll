@@ -19,6 +19,10 @@ Time conventions:
     ``twice_per_month`` (at most two sessions per calendar month in the campaign
     timezone), ``once_per_month`` (first consensus-eligible session per month
     only).
+  - **Public spacing** (``Campaign.public_min_gap_days``): optional minimum
+    whole calendar days (in the campaign timezone) between *starts* of rows
+    that appear on the public page and calendar—reduces clustered listings when
+    several weekly options all line up. ``0`` disables.
   - ``OccurrenceOptOut``: for a recurring slot, a player can opt out of one
     concrete occurrence (identified by that occurrence's UTC start) while
     keeping their standing yes/no on the logical slot.
@@ -89,6 +93,15 @@ class Campaign(SQLModel, table=True):
         description=(
             "Thins which recurring occurrences feed public cards and ICS; "
             "player views always use full weekly expansion."
+        ),
+    )
+    public_min_gap_days: int = Field(
+        default=0,
+        ge=0,
+        le=30,
+        description=(
+            "Minimum calendar days between public-listed session starts "
+            "(campaign-local dates); 0 = no extra thinning."
         ),
     )
     created_at: datetime = Field(default_factory=_utcnow)

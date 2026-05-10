@@ -73,3 +73,28 @@ def player_campaign_tempo_caption(campaign: Campaign) -> str:
             "(you still see every date here)."
         )
     return ""
+
+
+def public_campaign_tempo_caption(campaign: Campaign) -> str:
+    """One-line tempo for the anonymous public campaign page."""
+    raw = getattr(campaign, "public_recurrence_mode", None)
+    try:
+        mode = raw if isinstance(raw, PublicRecurrenceMode) else PublicRecurrenceMode(str(raw))
+    except ValueError:
+        mode = PublicRecurrenceMode.weekly
+    if mode is PublicRecurrenceMode.weekly:
+        return (
+            "Tempo: weekly — this page and the consensus calendar list every "
+            "qualifying session. Player links list every occurrence."
+        )
+    if mode is PublicRecurrenceMode.twice_per_month:
+        return (
+            "Tempo: about twice a month — at most two sessions per calendar month "
+            "appear here and on the calendar. Player links list every occurrence."
+        )
+    if mode is PublicRecurrenceMode.once_per_month:
+        return (
+            "Tempo: about once a month — only the first qualifying session each "
+            "month appears here and on the calendar. Player links list every occurrence."
+        )
+    return ""

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from app.display_time import format_local_window, player_campaign_tempo_caption
+from app.display_time import format_local_window, player_campaign_tempo_caption, public_campaign_tempo_caption
 from app.models import Campaign, PublicRecurrenceMode
 
 
@@ -42,3 +42,14 @@ def test_player_campaign_tempo_caption():
         public_recurrence_mode=PublicRecurrenceMode.twice_per_month,
     )
     assert "twice a month" in player_campaign_tempo_caption(c)
+
+
+def test_public_campaign_tempo_caption():
+    c = Campaign(
+        public_id="x",
+        name="n",
+        timezone="UTC",
+        admin_secret_hash="h",
+        public_recurrence_mode=PublicRecurrenceMode.weekly,
+    )
+    assert "this page" in public_campaign_tempo_caption(c)

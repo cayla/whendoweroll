@@ -90,12 +90,22 @@ def _parse_campaign(payload: dict) -> dict:
             pub_raw,
             field="campaign.public_recurrence_mode",
         )
+    gap_raw = c.get("public_min_gap_days", 0)
+    if gap_raw is None or (isinstance(gap_raw, str) and not str(gap_raw).strip()):
+        public_min_gap_days = 0
+    else:
+        try:
+            public_min_gap_days = int(gap_raw)
+        except (TypeError, ValueError) as exc:
+            raise CampaignImportError("campaign.public_min_gap_days must be an integer") from exc
+    public_min_gap_days = max(0, min(public_min_gap_days, 30))
     return {
         "name": name,
         "timezone": tz,
         "horizon_weeks": horizon_weeks,
         "consensus_policy": policy,
         "public_recurrence_mode": public_recurrence_mode,
+        "public_min_gap_days": public_min_gap_days,
     }
 
 
@@ -265,6 +275,7 @@ def import_campaign(session: Session, payload: Any) -> tuple[Campaign, str, list
         horizon_weeks=campaign_fields["horizon_weeks"],
         consensus_policy=campaign_fields["consensus_policy"],
         public_recurrence_mode=campaign_fields["public_recurrence_mode"],
+        public_min_gap_days=campaign_fields["public_min_gap_days"],
     )
     session.add(campaign)
     session.flush()  # need campaign.id
