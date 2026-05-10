@@ -79,3 +79,20 @@ def test_admin_oneoff_duration_crosses_midnight(client, engine):
     assert (a.hour, a.minute) == (22, 0)
     assert b.date() == date(2026, 7, 5)
     assert (b.hour, b.minute) == (2, 0)
+
+
+def test_admin_recurring_times_display_as_12_hour(client):
+    public_id, secret = _new_campaign(client)
+    r = client.post(
+        f"/c/{public_id}/admin/{secret}/slots",
+        data={
+            "kind": "recurring",
+            "weekday": "1",
+            "start_local": "14:05",
+            "duration_hours": "3",
+        },
+    )
+
+    assert r.status_code == 200
+    assert "Tue 2:05 PM" in r.text
+    assert "Tue 14:05" not in r.text

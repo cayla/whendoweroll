@@ -9,6 +9,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
 from fastapi.templating import Jinja2Templates
 
 from app.display_time import (
+    format_datetime_clock_12h,
+    format_hhmm_12h,
     format_local_window,
     player_campaign_tempo_caption,
     public_campaign_tempo_caption,
@@ -31,7 +33,11 @@ def _format_local(value: datetime, tz_name: str) -> str:
     if value.tzinfo is None:
         value = value.replace(tzinfo=UTC)
     local = value.astimezone(ZoneInfo(tz_name))
-    return local.strftime("%a %b ") + str(local.day) + local.strftime(" %Y, %-I:%M %p")
+    return local.strftime("%a %b ") + str(local.day) + local.strftime(" %Y, ") + format_datetime_clock_12h(local)
+
+
+def _format_datetime_12h(value: datetime) -> str:
+    return value.strftime("%Y-%m-%d ") + format_datetime_clock_12h(value)
 
 
 def _tz_abbrev(tz_name: str) -> str:
@@ -58,6 +64,8 @@ def _pretty_tz(tz_name: str) -> str:
 
 templates.env.filters["local_time"] = _format_local
 templates.env.filters["local_window"] = format_local_window
+templates.env.filters["datetime_12h"] = _format_datetime_12h
+templates.env.filters["hhmm_12h"] = format_hhmm_12h
 templates.env.filters["recurring_slot_viewer"] = recurring_slot_primary_label
 templates.env.filters["player_tempo"] = player_campaign_tempo_caption
 templates.env.filters["public_tempo"] = public_campaign_tempo_caption

@@ -11,6 +11,27 @@ from app.services.slots import upcoming_occurrences_for_slot
 _WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
+def format_clock_12h(hour: int, minute: int) -> str:
+    suffix = "AM" if hour < 12 else "PM"
+    hour_12 = hour % 12 or 12
+    return f"{hour_12}:{minute:02d} {suffix}"
+
+
+def format_datetime_clock_12h(value: datetime) -> str:
+    return format_clock_12h(value.hour, value.minute)
+
+
+def format_hhmm_12h(value: str | None) -> str:
+    """Convert stored ``HH:MM`` strings to display-friendly ``h:MM AM/PM``."""
+    if not value:
+        return ""
+    try:
+        hour_s, minute_s = value.strip().split(":", 1)
+        return format_clock_12h(int(hour_s), int(minute_s[:2]))
+    except TypeError, ValueError:
+        return value
+
+
 def ensure_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=UTC)
@@ -27,14 +48,11 @@ def format_local_window(starts_utc: datetime, ends_utc: datetime, tz_name: str) 
     a = ensure_utc(starts_utc).astimezone(z)
     b = ensure_utc(ends_utc).astimezone(z)
 
-    def fmt_t(dt: datetime) -> str:
-        return dt.strftime("%-I:%M %p")
-
     day_a = a.strftime("%a")
     day_b = b.strftime("%a")
     if a.date() == b.date():
-        return f"{day_a} {fmt_t(a)}–{fmt_t(b)}"
-    return f"{day_a} {fmt_t(a)} – {day_b} {fmt_t(b)}"
+        return f"{day_a} {format_datetime_clock_12h(a)}–{format_datetime_clock_12h(b)}"
+    return f"{day_a} {format_datetime_clock_12h(a)} – {day_b} {format_datetime_clock_12h(b)}"
 
 
 def recurring_slot_primary_label(slot: Slot, campaign, display_tz: str) -> str:
@@ -48,7 +66,7 @@ def recurring_slot_primary_label(slot: Slot, campaign, display_tz: str) -> str:
         return format_local_window(occs[0].starts_at_utc, occs[0].ends_at_utc, display_tz)
     wn = _WEEKDAY_SHORT[slot.weekday]
     dh = slot.duration_hours if slot.duration_hours is not None else 0
-    return f"{wn} {slot.start_local}, {dh} h ({campaign.timezone})"
+    return f"{wn} {format_hhmm_12h(slot.start_local)}, {dh} h ({campaign.timezone})"
 
 
 def player_campaign_tempo_caption(campaign: Campaign) -> str:

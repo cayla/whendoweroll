@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from app.display_time import format_local_window, player_campaign_tempo_caption, public_campaign_tempo_caption
+from app.display_time import (
+    format_hhmm_12h,
+    format_local_window,
+    player_campaign_tempo_caption,
+    public_campaign_tempo_caption,
+)
 from app.models import Campaign, PublicRecurrenceMode
 
 
@@ -31,6 +36,12 @@ def test_format_local_window_cross_day():
     assert "Fri" in s
     assert "EDT" not in s
     assert "EST" not in s
+
+
+def test_format_hhmm_12h():
+    assert format_hhmm_12h("00:00") == "12:00 AM"
+    assert format_hhmm_12h("12:00") == "12:00 PM"
+    assert format_hhmm_12h("14:05") == "2:05 PM"
 
 
 def test_player_campaign_tempo_caption():
