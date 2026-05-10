@@ -391,6 +391,9 @@ def add_slot(
     if request.headers.get("HX-Request"):
         base_url = str(request.base_url).rstrip("/")
         slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
+        times_status_message = (
+            "Recurring time added." if kind == SlotKind.recurring.value else "One-off session added."
+        )
         return templates.TemplateResponse(
             request,
             "fragments/admin_slots_roster_oob.html",
@@ -399,6 +402,7 @@ def add_slot(
                 "slots": slots,
                 "weekdays": _ADMIN_WEEKDAY_CHOICES,
                 "admin_url": f"{base_url}/c/{campaign.public_id}/admin/{secret}",
+                "times_status_message": times_status_message,
             },
         )
     return _redirect_to_admin(public_id, secret)
@@ -434,6 +438,7 @@ def delete_slot(
                 "slots": slots,
                 "weekdays": _ADMIN_WEEKDAY_CHOICES,
                 "admin_url": f"{base_url}/c/{campaign.public_id}/admin/{secret}",
+                "times_status_message": "Time removed.",
             },
         )
     return _redirect_to_admin(public_id, secret)
