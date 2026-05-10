@@ -35,9 +35,7 @@ _ADMIN_WEEKDAY_CHOICES: list[tuple[int, str]] = [
 def _players_ordered_for_admin(session: Session, campaign_id: int) -> list[Player]:
     """Alphabetical by display name (case-insensitive) for admin roster and mandatory UI."""
     return session.exec(
-        select(Player)
-        .where(Player.campaign_id == campaign_id)
-        .order_by(func.lower(Player.display_name))
+        select(Player).where(Player.campaign_id == campaign_id).order_by(func.lower(Player.display_name))
     ).all()
 
 
