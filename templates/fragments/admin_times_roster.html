@@ -33,8 +33,8 @@
           {% if slot.label %}<span class="text-ink">{{ slot.label }}</span>{% else %}—{% endif %}
         </td>
         <td class="py-2.5 pr-3 pl-2 align-middle text-right whitespace-nowrap">
-          <form method="post" action="{{ admin_url }}/slots/{{ slot.id }}/delete" class="inline-block"
-                hx-post="{{ admin_url }}/slots/{{ slot.id }}/delete"
+          <form method="post" action="{{ admin_path }}/slots/{{ slot.id }}/delete" class="inline-block"
+                hx-post="{{ admin_path }}/slots/{{ slot.id }}/delete"
                 hx-swap="none">
             <button type="button"
                     class="text-xs rounded border border-line px-2 py-1 hover:bg-elevated text-ink"
