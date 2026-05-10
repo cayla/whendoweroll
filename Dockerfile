@@ -35,4 +35,9 @@ COPY static ./static
 RUN mkdir -p /data && chown -R appuser:appuser /data /app
 USER appuser
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# `--forwarded-allow-ips "*"` makes uvicorn honour `X-Forwarded-Proto` from
+# fly-proxy (its default trusts only 127.0.0.1, which fly-proxy is not). Without
+# this `request.base_url` reports `http://...` for HTTPS visitors, every
+# absolute URL we render is mis-schemed, and htmx 2.x refuses cross-origin
+# (mixed-scheme) requests with `htmx:invalidPath`.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--forwarded-allow-ips", "*"]
