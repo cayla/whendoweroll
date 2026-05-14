@@ -2,13 +2,59 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 
 from app.models import Availability, AvailabilityStatus, Player
 from app.services.timeutil import normalize_occurrence_start
+
+
+def count_standing_no_for_slot(
+    availability: Mapping[tuple[int, int], AvailabilityStatus],
+    players: Iterable[Player],
+    slot_id: int,
+) -> int:
+    """Players who chose **Never** (standing ``no``) for this slot."""
+    n = 0
+    for p in players:
+        pid = p.id
+        if pid is None:
+            continue
+        if availability.get((pid, slot_id)) is AvailabilityStatus.no:
+            n += 1
+    return n
+
+
+def eligible_not_never_count_for_slot(
+    availability: Mapping[tuple[int, int], AvailabilityStatus],
+    players: Iterable[Player],
+    slot_id: int,
+) -> int:
+    """Roster size minus standing **no** for this slot (yes + unset still count here)."""
+    roster = [p for p in players if p.id is not None]
+    return len(roster) - count_standing_no_for_slot(availability, players, slot_id)
+
+
+def count_standing_yes_and_no_for_slot(
+    availability: Mapping[tuple[int, int], AvailabilityStatus],
+    players: Iterable[Player],
+    slot_id: int,
+) -> tuple[int, int]:
+    """Standing votes for a slot: ``(yes_count, never_no_count)`` (unset excluded)."""
+    yes = 0
+    no = 0
+    for p in players:
+        pid = p.id
+        if pid is None:
+            continue
+        st = availability.get((pid, slot_id))
+        if st is AvailabilityStatus.yes:
+            yes += 1
+        elif st is AvailabilityStatus.no:
+            no += 1
+    return yes, no
 
 
 def roster_can_make_occurrence(
@@ -19,13 +65,17 @@ def roster_can_make_occurrence(
     slot_id: int,
     starts_at_utc: datetime,
 ) -> tuple[int, int]:
-    """How many roster members can attend this occurrence vs roster size.
+    """How many roster members can attend this occurrence vs an adjusted roster.
 
     Counts players with standing *yes* on the slot who have not opted out of
-    this concrete start. ``(can_make, roster_n)``.
+    this concrete start. The second value is **not** raw roster size: each
+    player who marked this slot **Never** (standing ``no``) is excluded from
+    the denominator so ``0/0`` means everyone ruled the time out.
+
+    ``(can_make, eligible_not_never)``.
     """
     roster = [p for p in players if p.id is not None]
-    n = len(roster)
+    eligible = eligible_not_never_count_for_slot(availability, players, slot_id)
     key_start = normalize_occurrence_start(starts_at_utc)
     can = 0
     for p in roster:
@@ -34,7 +84,7 @@ def roster_can_make_occurrence(
         if (p.id, slot_id, key_start) in opt_outs:
             continue
         can += 1
-    return can, n
+    return can, eligible
 
 
 def load_availability_map(

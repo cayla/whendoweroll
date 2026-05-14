@@ -80,7 +80,7 @@ def slot_can_make_pairs(
     all_players: list[Player],
     opt_outs: set[tuple[int, int, datetime]],
 ) -> dict[int, tuple[int, int]]:
-    """``slot_id -> (can_make, roster_n)`` for the window shown on that row."""
+    """``slot_id -> (can_make, eligible_not_never)`` for the window shown on that row."""
     out: dict[int, tuple[int, int]] = {}
     for slot in slots:
         sid = slot.id

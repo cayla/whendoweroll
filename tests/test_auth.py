@@ -76,3 +76,17 @@ def test_player_route_404_when_token_belongs_to_different_campaign(client):
     _, _, a_tokens = _create_campaign(client)
     b_public, _, _ = _create_campaign(client)
     assert client.get(f"/c/{b_public}/p/{a_tokens[0]}").status_code == 404
+
+
+def test_admin_recurring_slot_shows_yes_no_vote_column(client):
+    public_id, secret, tokens = _create_campaign(client)
+    client.post(
+        f"/c/{public_id}/admin/{secret}/slots",
+        data={"kind": "recurring", "weekday": "4", "start_local": "18:00", "duration_hours": "3"},
+    )
+    client.post(f"/c/{public_id}/p/{tokens[0]}/availability/1", data={"status": "yes"})
+    client.post(f"/c/{public_id}/p/{tokens[1]}/availability/1", data={"status": "no"})
+    admin = client.get(f"/c/{public_id}/admin/{secret}")
+    assert admin.status_code == 200
+    assert "Yes / no" in admin.text
+    assert "1 / 1" in admin.text

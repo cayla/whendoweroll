@@ -237,3 +237,35 @@ def count_yes_for_occurrence(
 ) -> int:
     yes, _missing = _yes_set_for_occurrence(occ, players, availability, opt_outs or set())
     return len(yes)
+
+
+def count_availability_buckets_for_occurrence(
+    occ: Occurrence,
+    players: Sequence[Player],
+    availability: Mapping[tuple[int, int], AvailabilityStatus],
+    opt_outs: set[tuple[int, int, datetime]] | None = None,
+) -> tuple[int, int, int]:
+    """Roster counts for one concrete session: ``(can_make, cant_make, no_answer)``.
+
+    * **can_make** — standing *yes* on the slot and not opted out of this start.
+    * **cant_make** — standing *no*, or *yes* but opted out for this occurrence.
+    * **no_answer** — no saved answer yet for this slot (unset for consensus).
+    """
+    oo = opt_outs or set()
+    occ_key_start = normalize_occurrence_start(occ.starts_at_utc)
+    can_make = 0
+    cant_make = 0
+    no_answer = 0
+    for player in players:
+        pid = player.id  # type: ignore[assignment]
+        if pid is None:
+            continue
+        status = availability.get((pid, occ.slot_id))
+        key = (pid, occ.slot_id, occ_key_start)
+        if status is AvailabilityStatus.yes and key not in oo:
+            can_make += 1
+        elif status is AvailabilityStatus.no or (status is AvailabilityStatus.yes and key in oo):
+            cant_make += 1
+        else:
+            no_answer += 1
+    return can_make, cant_make, no_answer

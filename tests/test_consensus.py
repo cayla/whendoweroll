@@ -248,3 +248,32 @@ def test_next_meets_mandatory_blocks_earlier_nears_so_first_pick_is_full_consens
     assert normalize_occurrence_start(out[1].occurrence.starts_at_utc) == normalize_occurrence_start(
         occs[2].starts_at_utc
     )
+
+
+def test_bucket_counts_full_yes():
+    from app.services.consensus import count_availability_buckets_for_occurrence
+
+    occ = _occ(1, 24)
+    players = [_player(1, "A"), _player(2, "B")]
+    av = {(1, 1): AvailabilityStatus.yes, (2, 1): AvailabilityStatus.yes}
+    assert count_availability_buckets_for_occurrence(occ, players, av, set()) == (2, 0, 0)
+
+
+def test_bucket_counts_never_cant_and_unset():
+    from app.services.consensus import count_availability_buckets_for_occurrence
+
+    occ = _occ(3, 48)
+    players = [_player(1, "A"), _player(2, "B"), _player(3, "C")]
+    av = {(1, 3): AvailabilityStatus.yes, (2, 3): AvailabilityStatus.no}
+    assert count_availability_buckets_for_occurrence(occ, players, av, set()) == (1, 1, 1)
+
+
+def test_bucket_yes_with_opt_out_counts_as_cant():
+    from app.services.consensus import count_availability_buckets_for_occurrence
+
+    occ = _occ(5, 72)
+    players = [_player(1, "A"), _player(2, "B")]
+    av = {(1, 5): AvailabilityStatus.yes, (2, 5): AvailabilityStatus.yes}
+    key = normalize_occurrence_start(occ.starts_at_utc)
+    opt = {(1, 5, key)}
+    assert count_availability_buckets_for_occurrence(occ, players, av, opt) == (1, 1, 0)

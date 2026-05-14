@@ -12,8 +12,9 @@ from sqlmodel import Session, select
 
 from app.db import get_session
 from app.deps import require_admin
-from app.models import Availability, ConsensusPolicy, Player, PublicRecurrenceMode, Slot, SlotKind
+from app.models import Availability, AvailabilityStatus, ConsensusPolicy, Player, PublicRecurrenceMode, Slot, SlotKind
 from app.security import hash_token, new_token
+from app.services.availability import count_standing_yes_and_no_for_slot, load_availability_map
 from app.services.campaign_delete import delete_campaign_cascade
 from app.services.campaign_export import build_export_payload, campaign_export_download_filename
 from app.services.opt_outs import delete_for_player, delete_for_slot
@@ -37,6 +38,20 @@ def _players_ordered_for_admin(session: Session, campaign_id: int) -> list[Playe
     return session.exec(
         select(Player).where(Player.campaign_id == campaign_id).order_by(func.lower(Player.display_name))
     ).all()
+
+
+def _recurring_slot_vote_counts(
+    slots: list[Slot],
+    availability: dict[tuple[int, int], AvailabilityStatus],
+    players: list[Player],
+) -> dict[int, tuple[int, int]]:
+    """Standing yes / never counts per recurring slot id (for admin times table)."""
+    out: dict[int, tuple[int, int]] = {}
+    for s in slots:
+        if s.id is None or s.kind is not SlotKind.recurring:
+            continue
+        out[s.id] = count_standing_yes_and_no_for_slot(availability, players, s.id)
+    return out
 
 
 def _slots_ordered_for_admin(session: Session, campaign_id: int) -> list[Slot]:
@@ -157,6 +172,8 @@ def admin_home(
     campaign = require_admin(session, public_id, secret)
     players = _players_ordered_for_admin(session, campaign.id)
     slots = _slots_ordered_for_admin(session, campaign.id)
+    availability = load_availability_map(session, players)
+    slot_vote_counts = _recurring_slot_vote_counts(slots, availability, players)
     base_url = str(request.base_url).rstrip("/")
     return templates.TemplateResponse(
         request,
@@ -165,6 +182,7 @@ def admin_home(
             "campaign": campaign,
             "players": players,
             "slots": slots,
+            "slot_vote_counts": slot_vote_counts,
             "admin_url": f"{base_url}/c/{campaign.public_id}/admin/{secret}",
             "admin_path": _admin_path(campaign.public_id, secret),
             "public_url": f"{base_url}/c/{campaign.public_id}",
@@ -423,6 +441,9 @@ def add_slot(
     if request.headers.get("HX-Request"):
         base_url = str(request.base_url).rstrip("/")
         slots = _slots_ordered_for_admin(session, campaign.id)
+        players = _players_ordered_for_admin(session, campaign.id)
+        availability = load_availability_map(session, players)
+        slot_vote_counts = _recurring_slot_vote_counts(slots, availability, players)
         times_status_message = (
             "Recurring time added." if kind == SlotKind.recurring.value else "One-off session added."
         )
@@ -432,6 +453,7 @@ def add_slot(
             {
                 "campaign": campaign,
                 "slots": slots,
+                "slot_vote_counts": slot_vote_counts,
                 "weekdays": _ADMIN_WEEKDAY_CHOICES,
                 "admin_url": f"{base_url}/c/{campaign.public_id}/admin/{secret}",
                 "admin_path": _admin_path(campaign.public_id, secret),
@@ -463,12 +485,16 @@ def delete_slot(
     if request.headers.get("HX-Request"):
         base_url = str(request.base_url).rstrip("/")
         slots = _slots_ordered_for_admin(session, campaign.id)
+        players = _players_ordered_for_admin(session, campaign.id)
+        availability = load_availability_map(session, players)
+        slot_vote_counts = _recurring_slot_vote_counts(slots, availability, players)
         return templates.TemplateResponse(
             request,
             "fragments/admin_slots_roster_oob.html",
             {
                 "campaign": campaign,
                 "slots": slots,
+                "slot_vote_counts": slot_vote_counts,
                 "weekdays": _ADMIN_WEEKDAY_CHOICES,
                 "admin_url": f"{base_url}/c/{campaign.public_id}/admin/{secret}",
                 "admin_path": _admin_path(campaign.public_id, secret),
