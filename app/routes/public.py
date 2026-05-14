@@ -66,14 +66,20 @@ def public_home(
         limit=2,
     )
 
-    occurrence_rows = [
-        {
-            "occ": occ,
-            "yes_count": count_yes_for_occurrence(occ, players, availability, opt_outs),
-            "yes_denom": eligible_not_never_count_for_slot(availability, players, occ.slot_id),
-        }
-        for occ in occurrences_full[:25]
-    ]
+    horizon_preview = occurrences_full[:25]
+    occurrence_rows: list[dict] = []
+    for occ in horizon_preview:
+        yes_denom = eligible_not_never_count_for_slot(availability, players, occ.slot_id)
+        if yes_denom == 0:
+            continue
+        occurrence_rows.append(
+            {
+                "occ": occ,
+                "yes_count": count_yes_for_occurrence(occ, players, availability, opt_outs),
+                "yes_denom": yes_denom,
+            }
+        )
+    occurrence_rows_were_filtered = bool(horizon_preview) and not occurrence_rows
 
     player_lookup_map = player_lookup(players)
     mandatory_attendees = [p for p in players if p.is_mandatory]
@@ -89,6 +95,7 @@ def public_home(
             "display_tz": display_tz,
             "upcoming_meets": upcoming_meets,
             "occurrence_rows": occurrence_rows,
+            "occurrence_rows_were_filtered": occurrence_rows_were_filtered,
             "player_lookup": player_lookup_map,
             "total_players": len(players),
             "has_mandatory": has_mandatory,

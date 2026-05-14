@@ -170,7 +170,9 @@ def test_public_yes_column_excludes_never_from_denominator(client):
         client.post(f"/c/{public_id}/p/{t}/availability/1", data={"status": "no"})
     pub = client.get(f"/c/{public_id}")
     assert pub.status_code == 200
-    assert "0 / 0" in pub.text
+    assert "0 / 0" not in pub.text
+    assert "No upcoming windows listed" in pub.text
+    assert "public-windows-table" not in pub.text
 
     client.post(f"/c/{public_id}/p/{tokens[0]}/availability/1", data={"status": "yes"})
     client.post(f"/c/{public_id}/p/{tokens[1]}/availability/1", data={"status": "yes"})

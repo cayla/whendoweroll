@@ -128,6 +128,11 @@
 
 <section id="windows" class="bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
   <h2 class="heading text-lg mb-3">Upcoming windows</h2>
+  {% if slots %}
+  <p class="text-sm text-muted mb-3 leading-relaxed">
+    If everyone explicitly declines a particular window, it is not shown here at all.
+  </p>
+  {% endif %}
   {% if occurrence_rows %}
   <div class="overflow-x-auto rounded-lg border border-line -mx-2 sm:mx-0">
     <table class="public-windows-table w-full min-w-[min(100%,24rem)] border-collapse text-sm">
@@ -152,16 +157,36 @@
             {% endif %}
           </td>
           <td class="py-2.5 pr-3 pl-2 text-right align-middle">
+            {# Color bands use missing-from-full-party: total_players − yes_count (not vs. yes_denom). #}
+            {% set miss_party = total_players - row.yes_count %}
+            {% if miss_party == 0 %}
             <span class="rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200 px-1.5 py-0.5 text-xs font-medium"
-                  title="Yes for this session, out of players who have not marked this time as Never for this slot.">
+                  title="Everyone on the roster can make this session (standing yes, not opted out for this date).">
               {{ row.yes_count }} / {{ row.yes_denom }}
             </span>
+            {% elif miss_party == 1 %}
+            <span class="rounded bg-amber-100 text-amber-900 dark:bg-amber-950/55 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium"
+                  title="Exactly one roster member is missing for this session (unset, no, Never for this slot, or date opt-out).">
+              {{ row.yes_count }} / {{ row.yes_denom }}
+            </span>
+            {% else %}
+            <span class="rounded bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-200 px-1.5 py-0.5 text-xs font-medium"
+                  title="Two or more roster members are missing for this session.">
+              {{ row.yes_count }} / {{ row.yes_denom }}
+            </span>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  {% elif occurrence_rows_were_filtered %}
+  <p class="mt-2 text-sm text-muted italic">
+    No upcoming windows listed &mdash; everyone marked <strong class="font-medium text-ink">Never</strong> for every scheduled time in this view.
+  </p>
+  {% elif slots %}
+  <p class="mt-2 text-sm text-muted italic">No upcoming windows fall within the {{ campaign.horizon_weeks }}-week horizon yet.</p>
   {% else %}
   <p class="mt-2 text-sm text-muted italic">No times have been added yet.</p>
   {% endif %}
