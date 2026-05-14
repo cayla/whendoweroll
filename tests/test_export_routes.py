@@ -180,6 +180,9 @@ def test_consensus_ics_link_appears_on_admin_public_and_player_pages(client):
     player_page = client.get(f"/c/{public_id}/p/{token}")
     assert player_page.status_code == 200
     assert expected_link in player_page.text
+    for html in (admin.text, public.text, player_page.text):
+        assert "Add to Google Calendar" in html
+        assert "From URL" in html
 
 
 def test_player_calendar_ics_route_removed(client):

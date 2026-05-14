@@ -1,0 +1,118 @@
+{# Expects: gcal_modal_prefix (unique per page). campaign.public_id in outer scope. #}
+{% set _feed_path = "/c/" ~ campaign.public_id ~ "/calendar-consensus.ics" %}
+<style>
+#gcal-{{ gcal_modal_prefix }}-dlg::backdrop { background: var(--color-backdrop); }
+#gcal-{{ gcal_modal_prefix }}-dlg {
+  position: fixed;
+  top: max(1rem, env(safe-area-inset-top));
+  margin: 0;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  max-height: min(calc(100vh - 2rem), 90vh);
+  overflow-y: auto;
+}
+</style>
+<button type="button"
+        id="gcal-{{ gcal_modal_prefix }}-open"
+        class="btn-secondary px-3 py-1.5 text-sm shrink-0 inline-flex items-center gap-1.5"
+        aria-haspopup="dialog"
+        aria-controls="gcal-{{ gcal_modal_prefix }}-dlg">
+  <svg class="h-4 w-4 shrink-0 opacity-90" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+    <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+  </svg>
+  <span>Add to Google Calendar</span>
+</button>
+<dialog id="gcal-{{ gcal_modal_prefix }}-dlg"
+        class="gcal-consensus-dialog max-w-lg w-[calc(100%-2rem)] rounded-lg border border-line bg-surface p-5 shadow-xl text-sm text-ink"
+        aria-labelledby="gcal-{{ gcal_modal_prefix }}-title">
+  <div class="flex justify-between items-start gap-2 mb-3">
+    <h2 id="gcal-{{ gcal_modal_prefix }}-title" class="text-sm font-semibold text-ink m-0 pr-2">
+      Add this feed in Google Calendar
+    </h2>
+    <button type="button" id="gcal-{{ gcal_modal_prefix }}-close"
+            class="rounded p-1 text-muted hover:bg-elevated text-lg leading-none -mt-1 -mr-1 shrink-0" aria-label="Close">&times;</button>
+  </div>
+  <p class="text-xs text-muted leading-relaxed mb-3">
+    Google Calendar does not use the <code class="text-[0.65rem] bg-[color:var(--color-code-bg)] px-1 rounded">.ics</code> download the same way Apple or Outlook might.
+    Subscribe <strong>by URL</strong> instead so your calendar stays in sync when consensus updates.
+  </p>
+  <ol class="list-decimal pl-4 space-y-1.5 text-xs text-muted mb-4">
+    <li>Open <a class="text-brand-fg hover:text-brand-fg-hover underline" href="https://calendar.google.com/calendar" target="_blank" rel="noopener noreferrer">Google Calendar</a> in a desktop web browser.</li>
+    <li>On the left, next to <strong class="text-ink">Other calendars</strong>, click the <strong class="text-ink">+</strong> button.</li>
+    <li>Choose <strong class="text-ink">From URL</strong> (sometimes labeled like &ldquo;Subscribe to calendar&rdquo; with a URL field).</li>
+    <li>Paste the link below and confirm / add the calendar.</li>
+  </ol>
+  <label class="block text-xs font-medium text-muted mb-1" for="gcal-{{ gcal_modal_prefix }}-url">Calendar feed URL</label>
+  <div class="flex flex-wrap gap-2 items-stretch">
+    <input id="gcal-{{ gcal_modal_prefix }}-url" type="text" readonly
+           class="form-field text-xs font-mono min-w-0 flex-1 bg-elevated"
+           autocomplete="off" spellcheck="false">
+    <button type="button" id="gcal-{{ gcal_modal_prefix }}-copy"
+            class="btn px-3 py-1.5 text-sm shrink-0">
+      Copy link
+    </button>
+  </div>
+  <p id="gcal-{{ gcal_modal_prefix }}-copy-status" class="mt-2 text-xs text-emerald-700 dark:text-emerald-400 min-h-[1.25rem]" role="status" aria-live="polite"></p>
+</dialog>
+<script>
+(function () {
+  var prefix = "{{ gcal_modal_prefix }}";
+  var feedPath = {{ _feed_path|tojson }};
+  var d = document.getElementById("gcal-" + prefix + "-dlg");
+  var o = document.getElementById("gcal-" + prefix + "-open");
+  var c = document.getElementById("gcal-" + prefix + "-close");
+  var input = document.getElementById("gcal-" + prefix + "-url");
+  var copyBtn = document.getElementById("gcal-" + prefix + "-copy");
+  var statusEl = document.getElementById("gcal-" + prefix + "-copy-status");
+  if (!d || !o || !input) return;
+
+  function fullFeedUrl() {
+    try {
+      return new URL(feedPath, window.location.origin).href;
+    } catch (e) {
+      return window.location.origin + feedPath;
+    }
+  }
+  function clearStatus() {
+    if (statusEl) statusEl.textContent = "";
+  }
+  o.addEventListener("click", function () {
+    input.value = fullFeedUrl();
+    clearStatus();
+    d.showModal();
+    setTimeout(function () { try { input.select(); } catch (e) {} }, 0);
+  });
+  if (c) c.addEventListener("click", function () { d.close(); });
+  d.addEventListener("click", function (ev) { if (ev.target === d) d.close(); });
+  d.addEventListener("close", clearStatus);
+
+  function showCopied() {
+    if (statusEl) statusEl.textContent = "Copied to clipboard.";
+  }
+  function copyUrl() {
+    var text = input.value || fullFeedUrl();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showCopied).catch(function () {
+        fallbackCopy(text);
+      });
+      return;
+    }
+    fallbackCopy(text);
+  }
+  function fallbackCopy(text) {
+    try {
+      input.value = text;
+      input.removeAttribute("readonly");
+      input.focus();
+      input.select();
+      document.execCommand("copy");
+      input.setAttribute("readonly", "readonly");
+      showCopied();
+    } catch (e) {
+      if (statusEl) statusEl.textContent = "Select the link and copy manually (⌘C / Ctrl+C).";
+    }
+  }
+  if (copyBtn) copyBtn.addEventListener("click", copyUrl);
+})();
+</script>
