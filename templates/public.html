@@ -130,8 +130,11 @@
   <h2 class="heading text-lg mb-3">Upcoming windows</h2>
   {% if slots %}
   <p class="text-sm text-muted mb-3 leading-relaxed">
-    <strong class="font-medium text-ink">Can&rsquo;t make</strong> includes anyone who chose <strong class="font-medium text-ink">Never</strong> for that time, said <strong class="font-medium text-ink">No</strong>, or can&rsquo;t make that specific date after saying yes to the series.
-    If everyone has marked <strong class="font-medium text-ink">Never</strong> for a session time, those windows are not listed.
+    <strong class="font-medium text-ink">Can&rsquo;t make</strong> includes anyone who either said <strong class="font-medium text-ink">no</strong> to an entire recurring time proposal or has a conflict with a specific occurrence.
+    If everyone has marked <strong class="font-medium text-ink">No</strong> / <strong class="font-medium text-ink">Can&rsquo;t make it</strong> for a session time, those windows are not listed at all.
+  </p>
+  <p class="text-sm text-muted mb-3 leading-relaxed">
+    Please note, these future times are speculative! Someone could change their availability. The calendar will only lock in the next two sessions at most!
   </p>
   {% endif %}
   {% if occurrence_rows %}
