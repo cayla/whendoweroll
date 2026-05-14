@@ -152,8 +152,9 @@
             {% endif %}
           </td>
           <td class="py-2.5 pr-3 pl-2 text-right align-middle">
-            <span class="rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200 px-1.5 py-0.5 text-xs font-medium">
-              {{ row.yes_count }} / {{ total_players }}
+            <span class="rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200 px-1.5 py-0.5 text-xs font-medium"
+                  title="Yes for this session, out of players who have not marked this time as Never for this slot.">
+              {{ row.yes_count }} / {{ row.yes_denom }}
             </span>
           </td>
         </tr>

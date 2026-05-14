@@ -12,7 +12,7 @@ from sqlmodel import Session, select
 from app.db import get_session
 from app.deps import get_campaign_or_404
 from app.models import Player, Slot
-from app.services.availability import load_availability_map
+from app.services.availability import eligible_not_never_count_for_slot, load_availability_map
 from app.services.consensus import (
     count_yes_for_occurrence,
     find_next_meets,
@@ -70,6 +70,7 @@ def public_home(
         {
             "occ": occ,
             "yes_count": count_yes_for_occurrence(occ, players, availability, opt_outs),
+            "yes_denom": eligible_not_never_count_for_slot(availability, players, occ.slot_id),
         }
         for occ in occurrences_full[:25]
     ]
