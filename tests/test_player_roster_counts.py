@@ -148,7 +148,7 @@ def test_player_cannot_change_availability_on_ended_oneoff(client, engine):
     assert resp.status_code == 400
 
 
-def test_public_yes_column_excludes_never_from_denominator(client):
+def test_public_windows_table_hides_all_never_shows_buckets(client):
     r = client.post(
         "/",
         data={
@@ -170,13 +170,19 @@ def test_public_yes_column_excludes_never_from_denominator(client):
         client.post(f"/c/{public_id}/p/{t}/availability/1", data={"status": "no"})
     pub = client.get(f"/c/{public_id}")
     assert pub.status_code == 200
-    assert "0 / 0" not in pub.text
-    assert "No upcoming windows listed" in pub.text
     assert "public-windows-table" not in pub.text
+    assert "No upcoming windows listed" in pub.text
 
     client.post(f"/c/{public_id}/p/{tokens[0]}/availability/1", data={"status": "yes"})
     client.post(f"/c/{public_id}/p/{tokens[1]}/availability/1", data={"status": "yes"})
     pub2 = client.get(f"/c/{public_id}")
     assert pub2.status_code == 200
-    assert "2 / 2" in pub2.text
-    assert "2 / 3" not in pub2.text
+    assert "public-windows-table" in pub2.text
+    assert "Can make" in pub2.text
+    assert "No answer" in pub2.text
+    assert "public-window-row-near" in pub2.text
+
+    client.post(f"/c/{public_id}/p/{tokens[2]}/availability/1", data={"status": "yes"})
+    pub3 = client.get(f"/c/{public_id}")
+    assert pub3.status_code == 200
+    assert "public-window-row-full" in pub3.text

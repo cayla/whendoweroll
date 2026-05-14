@@ -130,23 +130,34 @@
   <h2 class="heading text-lg mb-3">Upcoming windows</h2>
   {% if slots %}
   <p class="text-sm text-muted mb-3 leading-relaxed">
-    If everyone explicitly declines a particular window, it is not shown here at all.
+    <strong class="font-medium text-ink">Can&rsquo;t make</strong> includes anyone who chose <strong class="font-medium text-ink">Never</strong> for that time, said <strong class="font-medium text-ink">No</strong>, or can&rsquo;t make that specific date after saying yes to the series.
+    If everyone has marked <strong class="font-medium text-ink">Never</strong> for a session time, those windows are not listed.
   </p>
   {% endif %}
   {% if occurrence_rows %}
   <div class="overflow-x-auto rounded-lg border border-line -mx-2 sm:mx-0">
-    <table class="public-windows-table w-full min-w-[min(100%,24rem)] border-collapse text-sm">
-      <caption class="sr-only">Upcoming session windows and yes counts</caption>
+    <table class="public-windows-table w-full min-w-[min(100%,36rem)] border-collapse text-sm">
+      <caption class="sr-only">Upcoming session windows: who can make it, who cannot, and who has not answered</caption>
       <thead class="text-left bg-elevated text-xs font-medium uppercase tracking-wide text-muted">
         <tr>
           <th scope="col" class="py-2.5 pl-3 pr-2 font-medium align-middle">When</th>
-          <th scope="col" class="py-2.5 pr-3 pl-2 font-medium align-middle text-right">Yes</th>
+          <th scope="col" class="py-2.5 px-2 font-medium align-middle text-right">Can make</th>
+          <th scope="col" class="py-2.5 px-2 font-medium align-middle text-right">Can&rsquo;t make</th>
+          <th scope="col" class="py-2.5 pr-3 pl-2 font-medium align-middle text-right">No answer</th>
         </tr>
       </thead>
       <tbody>
         {% for row in occurrence_rows %}
         {% set occ = row.occ %}
-        <tr class="border-t border-line">
+        {% set missing_count = total_players - row.can_make %}
+        {% if missing_count == 0 %}
+          {% set row_style = "public-window-row-full" %}
+        {% elif missing_count == 1 %}
+          {% set row_style = "public-window-row-near" %}
+        {% else %}
+          {% set row_style = "" %}
+        {% endif %}
+        <tr class="border-t border-line {{ row_style }}">
           <td class="py-2.5 pl-3 pr-2">
             {% if occ.kind.value == "adhoc" %}
               <span class="rounded bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium mr-2 align-middle">one-off</span>
@@ -156,26 +167,9 @@
               <span class="block sm:inline sm:ml-2 text-xs text-muted">· {{ occ.user_label }}</span>
             {% endif %}
           </td>
-          <td class="py-2.5 pr-3 pl-2 text-right align-middle">
-            {# Color bands use missing-from-full-party: total_players − yes_count (not vs. yes_denom). #}
-            {% set miss_party = total_players - row.yes_count %}
-            {% if miss_party == 0 %}
-            <span class="rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200 px-1.5 py-0.5 text-xs font-medium"
-                  title="Everyone on the roster can make this session (standing yes, not opted out for this date).">
-              {{ row.yes_count }} / {{ row.yes_denom }}
-            </span>
-            {% elif miss_party == 1 %}
-            <span class="rounded bg-amber-100 text-amber-900 dark:bg-amber-950/55 dark:text-amber-100 px-1.5 py-0.5 text-xs font-medium"
-                  title="Exactly one roster member is missing for this session (unset, no, Never for this slot, or date opt-out).">
-              {{ row.yes_count }} / {{ row.yes_denom }}
-            </span>
-            {% else %}
-            <span class="rounded bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-200 px-1.5 py-0.5 text-xs font-medium"
-                  title="Two or more roster members are missing for this session.">
-              {{ row.yes_count }} / {{ row.yes_denom }}
-            </span>
-            {% endif %}
-          </td>
+          <td class="py-2.5 px-2 text-right align-middle tabular-nums text-ink">{{ row.can_make }}</td>
+          <td class="py-2.5 px-2 text-right align-middle tabular-nums text-ink">{{ row.cant_make }}</td>
+          <td class="py-2.5 pr-3 pl-2 text-right align-middle tabular-nums text-ink">{{ row.no_answer }}</td>
         </tr>
         {% endfor %}
       </tbody>

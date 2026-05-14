@@ -14,7 +14,7 @@ from app.deps import get_campaign_or_404
 from app.models import Player, Slot
 from app.services.availability import eligible_not_never_count_for_slot, load_availability_map
 from app.services.consensus import (
-    count_yes_for_occurrence,
+    count_availability_buckets_for_occurrence,
     find_next_meets,
     player_lookup,
 )
@@ -72,11 +72,15 @@ def public_home(
         yes_denom = eligible_not_never_count_for_slot(availability, players, occ.slot_id)
         if yes_denom == 0:
             continue
+        can_make, cant_make, no_answer = count_availability_buckets_for_occurrence(
+            occ, players, availability, opt_outs
+        )
         occurrence_rows.append(
             {
                 "occ": occ,
-                "yes_count": count_yes_for_occurrence(occ, players, availability, opt_outs),
-                "yes_denom": yes_denom,
+                "can_make": can_make,
+                "cant_make": cant_make,
+                "no_answer": no_answer,
             }
         )
     occurrence_rows_were_filtered = bool(horizon_preview) and not occurrence_rows

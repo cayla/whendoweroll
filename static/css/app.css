@@ -918,6 +918,32 @@ html:has(.public-page) {
   vertical-align: middle;
 }
 
+/* Upcoming windows rows: echo consensus cards (full = green + solid stripe, one out = amber + dotted). */
+.public-windows-table tbody tr.public-window-row-full {
+  background: color-mix(in srgb, rgb(16 185 129) 9%, var(--color-surface));
+}
+html.dark .public-windows-table tbody tr.public-window-row-full {
+  background: color-mix(in srgb, rgb(52 211 153) 11%, var(--color-surface));
+}
+.public-windows-table tbody tr.public-window-row-full td:first-child {
+  border-left: 4px solid rgb(16 185 129);
+}
+html.dark .public-windows-table tbody tr.public-window-row-full td:first-child {
+  border-left-color: rgb(52 211 153);
+}
+.public-windows-table tbody tr.public-window-row-near {
+  background: color-mix(in srgb, rgb(245 158 11) 10%, var(--color-surface));
+}
+html.dark .public-windows-table tbody tr.public-window-row-near {
+  background: color-mix(in srgb, rgb(251 191 36) 9%, var(--color-surface));
+}
+.public-windows-table tbody tr.public-window-row-near td:first-child {
+  border-left: 4px dotted rgb(217 119 6);
+}
+html.dark .public-windows-table tbody tr.public-window-row-near td:first-child {
+  border-left-color: rgb(251 191 36);
+}
+
 /* Shared admin confirmation modal (<dialog>) */
 .admin-confirm-dialog {
   border: none;

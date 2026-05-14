@@ -37,6 +37,26 @@ def eligible_not_never_count_for_slot(
     return len(roster) - count_standing_no_for_slot(availability, players, slot_id)
 
 
+def count_standing_yes_and_no_for_slot(
+    availability: Mapping[tuple[int, int], AvailabilityStatus],
+    players: Iterable[Player],
+    slot_id: int,
+) -> tuple[int, int]:
+    """Standing votes for a slot: ``(yes_count, never_no_count)`` (unset excluded)."""
+    yes = 0
+    no = 0
+    for p in players:
+        pid = p.id
+        if pid is None:
+            continue
+        st = availability.get((pid, slot_id))
+        if st is AvailabilityStatus.yes:
+            yes += 1
+        elif st is AvailabilityStatus.no:
+            no += 1
+    return yes, no
+
+
 def roster_can_make_occurrence(
     availability: dict[tuple[int, int], AvailabilityStatus],
     players: Iterable[Player],
