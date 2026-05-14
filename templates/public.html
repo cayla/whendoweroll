@@ -37,9 +37,14 @@
       {% with tz_prefix="public", tz_submit_url=("/c/" ~ campaign.public_id ~ "/display-timezone"), campaign_timezone=campaign.timezone %}
         {% include "fragments/viewer_tz_modal.html" %}
       {% endwith %}
-      <a href="/c/{{ campaign.public_id }}/calendar-consensus.ics" class="btn-secondary px-3 py-1.5 text-sm shrink-0">
-        Subscribe to consensus calendar (.ics)
-      </a>
+      <span class="flex flex-wrap items-center gap-2 shrink-0">
+        <a href="/c/{{ campaign.public_id }}/calendar-consensus.ics" class="btn-secondary px-3 py-1.5 text-sm shrink-0">
+          Subscribe to consensus calendar (.ics)
+        </a>
+        {% with gcal_modal_prefix="public" %}
+          {% include "fragments/gcal_consensus_modal.html" %}
+        {% endwith %}
+      </span>
     </div>
 
     <p class="text-sm">
