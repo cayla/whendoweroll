@@ -103,14 +103,17 @@ reloads once so times match the browser without opening the dropdown.
 
 ## Run it
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
+You need **[uv](https://docs.astral.sh/uv/getting-started/installation/)** (Python) and **[Node.js](https://nodejs.org/)** (npm) for local development — Node is only used to compile CSS, not at runtime.
 
 ```bash
+npm ci && npm run build:css   # compile Tailwind → static/css/tailwind.css
 uv sync --group dev
 uv run uvicorn app.main:app --reload
 ```
 
 Then open <http://127.0.0.1:8000> and create a campaign.
+
+If styles look unstyled or layout is broken, run `npm run build:css` again (see [Frontend (Tailwind CSS)](#frontend-tailwind-css)).
 
 To skip the by-hand setup on a fresh dev DB,
 [`test-campaign-export.json`](test-campaign-export.json) is a checked-in
@@ -118,13 +121,38 @@ backup with a few players and recurring slots. Upload it via the **Restore
 a backup** form on the home page and you'll land on a created-campaign
 page with a fresh admin link and per-player links.
 
+## Frontend (Tailwind CSS)
+
+Templates use **Tailwind CSS v3** utility classes. Shared component styling and theme tokens live in [`static/css/app.css`](static/css/app.css) (plain CSS variables — not `@apply`). The compiled utility bundle is [`static/css/tailwind.css`](static/css/tailwind.css); **do not edit that file by hand**.
+
+| File | Role |
+| --- | --- |
+| [`package.json`](package.json) / [`package-lock.json`](package-lock.json) | npm scripts and Tailwind dev dependency. |
+| [`tailwind.config.js`](tailwind.config.js) | Scans `templates/` and `static/js/`; theme colors map to CSS variables from `app.css`. |
+| [`static/css/tailwind-src.css`](static/css/tailwind-src.css) | Tailwind entry (`@tailwind` directives). |
+| [`static/css/tailwind.css`](static/css/tailwind.css) | **Build output** — linked from [`templates/base.html`](templates/base.html) before `app.css`. |
+
+Build (required after changing classes in templates or JS):
+
+```bash
+npm ci              # first time, or when package-lock.json changes
+npm run build:css   # writes static/css/tailwind.css (minified)
+```
+
+**htmx** is still loaded from jsDelivr in `base.html`; only Tailwind moved off the CDN (which logged a production warning in the browser).
+
+**Docker / CI:** The [`Dockerfile`](Dockerfile) `assets` stage runs `npm run build:css` and copies the result into the `test` and `production` images. Deployed environments do not need Node installed.
+
+**`docker compose up` with a bind mount:** The repo directory is mounted over `/app`, so the container uses your host's `static/css/tailwind.css`. Run `npm run build:css` on the host after pulling or editing templates, or styles will be missing even though the image built successfully.
+
 ## Docker (ECS / Fargate-friendly)
 
 The image runs **uvicorn** as a non-root user and stores SQLite at
-`/data/whendoweroll.sqlite3` by default. Dependencies are installed with
+`/data/whendoweroll.sqlite3` by default. Python dependencies are installed with
 **uv** from [`pyproject.toml`](pyproject.toml) and a frozen
 [`uv.lock`](uv.lock) (production images use `uv sync --frozen` without dev
-groups). Mount an **EFS**
+groups). A **Node** build stage compiles Tailwind before the final image is
+assembled — no Node runtime in production. Mount an **EFS**
 (or EBS) volume on
 `/data` so the file survives task restarts. Use **one task** (or one worker)
 per SQLite file — SQLite is not a multi-writer cluster store. For horizontal
@@ -133,6 +161,9 @@ scale, point `WHENDOWEROLL_DB_URL` at Postgres instead.
 ```bash
 docker compose up --build
 ```
+
+With the default bind mount, also run `npm run build:css` on the host so
+`static/css/tailwind.css` exists under the mounted tree (see above).
 
 Build only:
 
@@ -150,6 +181,12 @@ SQLite on `/data`, and **GitHub Actions** deploy on push to `main`.
 
 ```bash
 uv run pytest
+```
+
+Or via Docker (builds Tailwind inside the image; no host `npm` required):
+
+```bash
+docker compose --profile test run --build --rm test
 ```
 
 The suite covers consensus math (including per-occurrence opt-outs and
@@ -184,7 +221,11 @@ and the capability URL boundaries.
 | [app/services/campaign_import.py](app/services/campaign_import.py) | Restore an export into a brand-new campaign. |
 | [app/services/campaign_delete.py](app/services/campaign_delete.py) | Cascade delete a campaign and all its dependent rows. |
 | [app/routes/](app/routes) | Index, public, admin, player, and super-admin route modules. |
-| [templates/](templates) | Jinja templates (Tailwind via CDN, htmx for partial updates). |
+| [templates/](templates) | Jinja templates + htmx partial updates. |
+| [static/css/app.css](static/css/app.css) | Theme tokens and component classes (buttons, tables, home page, …). |
+| [static/css/tailwind.css](static/css/tailwind.css) | Compiled Tailwind utilities (generated; run `npm run build:css`). |
+| [static/js/](static/js/) | Small page scripts (theme, modals, admin confirm dialog). |
+| [package.json](package.json) | `npm run build:css` — Tailwind CLI for local dev and Docker `assets` stage. |
 
 ## Security model
 

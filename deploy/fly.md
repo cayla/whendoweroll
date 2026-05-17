@@ -61,7 +61,7 @@
 fly deploy
 ```
 
-By default that builds the `production` stage from this repo’s `Dockerfile` on Fly’s builders.
+By default that builds the `production` stage from this repo’s `Dockerfile` on Fly’s builders. The Dockerfile’s Node **`assets`** stage runs `npm run build:css` before the Python image is assembled — you do not run npm on Fly separately.
 
 To deploy the same image CI pushed to GitHub Container Registry (after a **`main`** workflow run):
 
@@ -78,7 +78,7 @@ Use the **commit SHA** tag from the Actions run (immutable). The workflow also u
 1. Create a deploy token: [Fly.io tokens](https://fly.io/dashboard/personal/tokens) or `fly tokens create deploy -x 8760h`.
 2. In the GitHub repo: **Settings → Secrets and variables → Actions** → add **`FLY_API_TOKEN`**.
 
-Pushes to **`main`** run `.github/workflows/ci.yml`: build the **test** Docker stage and run pytest, then build **production**, push **`ghcr.io/<repo-owner>/<repo>:<sha>`** and **`:latest`**, then **`fly deploy --image`** with the SHA tag. Pull requests run build + tests only (no push, no deploy).
+Pushes to **`main`** run `.github/workflows/ci.yml`: build the **test** Docker stage (including the Tailwind compile step) and run pytest, then build **production**, push **`ghcr.io/<repo-owner>/<repo>:<sha>`** and **`:latest`**, then **`fly deploy --image`** with the SHA tag. Pull requests run build + tests only (no push, no deploy).
 
 ## Notes
 
