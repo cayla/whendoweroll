@@ -2,6 +2,16 @@
 
 FROM ghcr.io/astral-sh/uv:0.11.14 AS uv
 
+FROM node:22-bookworm-slim AS assets
+WORKDIR /build
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY tailwind.config.js ./
+COPY static/css/tailwind-src.css ./static/css/tailwind-src.css
+COPY templates ./templates
+COPY static/js ./static/js
+RUN npm run build:css
+
 # Test image: pytest + dev deps (CI and `docker compose --profile test run test`).
 FROM python:3.14-slim-trixie AS test
 ENV UV_LINK_MODE=copy
@@ -15,6 +25,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY app ./app
 COPY templates ./templates
 COPY static ./static
+COPY --from=assets /build/static/css/tailwind.css ./static/css/tailwind.css
 COPY tests ./tests
 CMD ["pytest"]
 
@@ -32,6 +43,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY app ./app
 COPY templates ./templates
 COPY static ./static
+COPY --from=assets /build/static/css/tailwind.css ./static/css/tailwind.css
 RUN mkdir -p /data && chown -R appuser:appuser /data /app
 USER appuser
 EXPOSE 8000

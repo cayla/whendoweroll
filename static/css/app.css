@@ -137,8 +137,7 @@ body {
 }
 
 /*
- * Tailwind CDN does not reliably compile @apply inside <style> blocks,
- * so component classes use plain CSS + theme variables (same tokens as tailwind.config).
+ * Component classes use plain CSS + theme variables (same tokens as tailwind.config.js).
  */
 .btn {
   display: inline-flex;
@@ -908,7 +907,7 @@ html:has(.public-page) {
   line-height: 1.6;
 }
 
-/* Player tables: vertical-align middle (Tailwind align-middle can miss on cells via CDN). */
+/* Player tables: vertical-align middle (align-middle can miss on cells in some layouts). */
 .player-avail-table th,
 .player-avail-table td,
 .player-exceptions-table th,

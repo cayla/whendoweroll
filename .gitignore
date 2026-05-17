@@ -8,3 +8,4 @@ venv/
 .DS_Store
 *.egg-info/
 .coverage
+node_modules/
