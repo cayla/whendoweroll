@@ -14,12 +14,14 @@
       <a href="/c/{{ campaign.public_id }}" class="btn-secondary px-3 py-1.5 text-sm">
         View Public Campaign page
       </a>
-      <a href="/c/{{ campaign.public_id }}/calendar-consensus.ics" class="btn-secondary px-3 py-1.5 text-sm">
-        Consensus calendar (.ics)
-      </a>
-      {% with gcal_modal_prefix="player" %}
-        {% include "fragments/gcal_consensus_modal.html" %}
-      {% endwith %}
+      <span class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 min-w-0 basis-full sm:basis-auto">
+        <a href="/c/{{ campaign.public_id }}/calendar-consensus.ics" class="btn-secondary px-3 py-1.5 text-sm text-center">
+          Download Calendar (ics)
+        </a>
+        {% with gcal_modal_prefix="player" %}
+          {% include "fragments/gcal_consensus_modal.html" %}
+        {% endwith %}
+      </span>
     </div>
     <div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
       <span class="text-sm font-medium text-muted">Display times in</span>
