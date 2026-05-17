@@ -21,28 +21,21 @@
   <svg class="h-4 w-4 shrink-0 opacity-90" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
     <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
   </svg>
-  <span>Add to Google Calendar</span>
+  <span>Subscribe to Calendar</span>
 </button>
 <dialog id="gcal-{{ gcal_modal_prefix }}-dlg"
         class="gcal-consensus-dialog max-w-lg w-[calc(100%-2rem)] rounded-lg border border-line bg-surface p-5 shadow-xl text-sm text-ink"
         aria-labelledby="gcal-{{ gcal_modal_prefix }}-title">
   <div class="flex justify-between items-start gap-2 mb-3">
     <h2 id="gcal-{{ gcal_modal_prefix }}-title" class="text-sm font-semibold text-ink m-0 pr-2">
-      Add this feed in Google Calendar
+      Subscribe to calendar
     </h2>
     <button type="button" id="gcal-{{ gcal_modal_prefix }}-close"
             class="rounded p-1 text-muted hover:bg-elevated text-lg leading-none -mt-1 -mr-1 shrink-0" aria-label="Close">&times;</button>
   </div>
-  <p class="text-xs text-muted leading-relaxed mb-3">
-    Google Calendar does not use the <code class="text-[0.65rem] bg-[color:var(--color-code-bg)] px-1 rounded">.ics</code> download the same way Apple or Outlook might.
-    Subscribe <strong>by URL</strong> instead so your calendar stays in sync when consensus updates.
+  <p class="text-xs text-muted leading-relaxed mb-4">
+    Subscribe <strong class="text-ink">by URL</strong> (not a one-time file import) so sessions stay in sync when group consensus changes.
   </p>
-  <ol class="list-decimal pl-4 space-y-1.5 text-xs text-muted mb-4">
-    <li>Open <a class="text-brand-fg hover:text-brand-fg-hover underline" href="https://calendar.google.com/calendar" target="_blank" rel="noopener noreferrer">Google Calendar</a> in a desktop web browser.</li>
-    <li>On the left, next to <strong class="text-ink">Other calendars</strong>, click the <strong class="text-ink">+</strong> button.</li>
-    <li>Choose <strong class="text-ink">From URL</strong> (sometimes labeled like &ldquo;Subscribe to calendar&rdquo; with a URL field).</li>
-    <li>Paste the link below and confirm / add the calendar.</li>
-  </ol>
   <label class="block text-xs font-medium text-muted mb-1" for="gcal-{{ gcal_modal_prefix }}-url">Calendar feed URL</label>
   <div class="flex flex-wrap gap-2 items-stretch">
     <input id="gcal-{{ gcal_modal_prefix }}-url" type="text" readonly
@@ -54,6 +47,39 @@
     </button>
   </div>
   <p id="gcal-{{ gcal_modal_prefix }}-copy-status" class="mt-2 text-xs text-emerald-700 dark:text-emerald-400 min-h-[1.25rem]" role="status" aria-live="polite"></p>
+
+  <div class="mt-5 pt-4 border-t border-line space-y-4">
+    <h3 class="text-xs font-semibold text-ink m-0">How to subscribe</h3>
+
+    <div>
+      <p class="text-xs font-medium text-ink mb-1">Google Calendar</p>
+      <ol class="list-decimal pl-4 space-y-1 text-xs text-muted">
+        <li>Open <a class="text-brand-fg hover:text-brand-fg-hover underline" href="https://calendar.google.com/calendar" target="_blank" rel="noopener noreferrer">Google Calendar</a> on the web.</li>
+        <li>Next to <strong class="text-ink">Other calendars</strong>, click <strong class="text-ink">+</strong> &rarr; <strong class="text-ink">From URL</strong>.</li>
+        <li>Paste the feed URL above and add the calendar.</li>
+      </ol>
+    </div>
+
+    <div>
+      <p class="text-xs font-medium text-ink mb-1">Apple Calendar</p>
+      <ol class="list-decimal pl-4 space-y-1 text-xs text-muted">
+        <li>On Mac: <strong class="text-ink">File</strong> &rarr; <strong class="text-ink">New Calendar Subscription</strong>. On iPhone/iPad: <strong class="text-ink">Calendars</strong> &rarr; <strong class="text-ink">Add Calendar</strong> &rarr; <strong class="text-ink">Add Subscription</strong>.</li>
+        <li>Paste the feed URL above and subscribe.</li>
+      </ol>
+    </div>
+
+    <div>
+      <p class="text-xs font-medium text-ink mb-1">Outlook</p>
+      <ol class="list-decimal pl-4 space-y-1 text-xs text-muted">
+        <li>In Outlook on the web: <strong class="text-ink">Add calendar</strong> &rarr; <strong class="text-ink">Subscribe from web</strong>.</li>
+        <li>Paste the feed URL above and import.</li>
+      </ol>
+    </div>
+  </div>
+
+  <p class="mt-4 text-xs text-muted">
+    <a href="{{ _feed_path }}" class="text-brand-fg hover:text-brand-fg-hover underline">Alternately, download the .ics file</a>
+  </p>
 </dialog>
 <script>
 (function () {

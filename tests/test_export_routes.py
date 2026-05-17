@@ -200,8 +200,9 @@ def test_consensus_ics_link_appears_on_admin_public_and_player_pages(client):
     assert player_page.status_code == 200
     assert expected_link in player_page.text
     for html in (admin.text, public.text, player_page.text):
-        assert "Add to Google Calendar" in html
-        assert "From URL" in html
+        assert "Subscribe to Calendar" in html
+        assert "Alternately, download the .ics file" in html
+        assert "Download Calendar (ics)" not in html
 
 
 def test_player_calendar_ics_route_removed(client):
