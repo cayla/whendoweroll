@@ -199,10 +199,6 @@
        title="{{ export_json_filename }}">
       Download JSON
     </a>
-    <a href="{{ public_url }}/calendar-consensus.ics"
-       class="btn-secondary px-3 py-1.5 text-sm">
-      Consensus calendar (.ics)
-    </a>
     {% with gcal_modal_prefix="admin" %}
       {% include "fragments/gcal_consensus_modal.html" %}
     {% endwith %}
