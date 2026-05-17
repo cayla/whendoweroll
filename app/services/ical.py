@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
 
 def _ics_escape(text: str) -> str:
@@ -24,9 +25,34 @@ def _ics_dt(dt: datetime) -> str:
 # emit both for maximum client coverage.
 _REFRESH_INTERVAL = "PT1H"
 
+# Far-past anchor so placeholder events stay out of "upcoming" views.
+_PLACEHOLDER_START = datetime(2000, 1, 1, 0, 0, tzinfo=UTC)
 
-def build_ics(events: list[tuple[str, datetime, datetime, str]]) -> bytes:
-    """Each tuple is ``(uid, dtstart, dtend, summary)``."""
+
+@dataclass(frozen=True)
+class IcsEvent:
+    uid: str
+    start: datetime
+    end: datetime
+    summary: str
+    cancelled: bool = False
+    transparent: bool = False
+
+
+def placeholder_consensus_event(public_id: str, campaign_name: str) -> IcsEvent:
+    """Shadow event for empty consensus feeds — keeps picky clients (e.g. Apple) happy."""
+    start = _PLACEHOLDER_START
+    return IcsEvent(
+        uid=f"{public_id}-placeholder@whendoweroll.com",
+        start=start,
+        end=start + timedelta(minutes=1),
+        summary=f"{campaign_name} — waiting for consensus (placeholder)",
+        cancelled=True,
+        transparent=True,
+    )
+
+
+def build_ics(events: list[IcsEvent]) -> bytes:
     stamp = _ics_dt(datetime.now(UTC))
     lines: list[str] = [
         "BEGIN:VCALENDAR",
@@ -36,17 +62,20 @@ def build_ics(events: list[tuple[str, datetime, datetime, str]]) -> bytes:
         f"X-PUBLISHED-TTL:{_REFRESH_INTERVAL}",
         f"REFRESH-INTERVAL;VALUE=DURATION:{_REFRESH_INTERVAL}",
     ]
-    for uid, start, end, summary in events:
-        lines.extend(
-            [
-                "BEGIN:VEVENT",
-                f"UID:{uid}",
-                f"DTSTAMP:{stamp}",
-                f"DTSTART:{_ics_dt(start)}",
-                f"DTEND:{_ics_dt(end)}",
-                f"SUMMARY:{_ics_escape(summary)}",
-                "END:VEVENT",
-            ]
-        )
+    for event in events:
+        vevent = [
+            "BEGIN:VEVENT",
+            f"UID:{event.uid}",
+            f"DTSTAMP:{stamp}",
+            f"DTSTART:{_ics_dt(event.start)}",
+            f"DTEND:{_ics_dt(event.end)}",
+            f"SUMMARY:{_ics_escape(event.summary)}",
+        ]
+        if event.transparent:
+            vevent.append("TRANSP:TRANSPARENT")
+        if event.cancelled:
+            vevent.append("STATUS:CANCELLED")
+        vevent.append("END:VEVENT")
+        lines.extend(vevent)
     lines.append("END:VCALENDAR")
     return "\r\n".join(lines).encode("utf-8")
