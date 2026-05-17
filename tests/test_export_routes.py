@@ -101,6 +101,10 @@ def test_consensus_ics_is_public_no_secret_required(client):
     assert ok.status_code == 200
     assert ok.headers["content-type"].startswith("text/calendar")
     assert b"VCALENDAR" in ok.content
+    body = ok.content.decode("utf-8")
+    assert f"UID:{public_id}-placeholder@whendoweroll.com" in body
+    assert "STATUS:CANCELLED" in body
+    assert "waiting for consensus" in body
 
 
 def test_consensus_ics_admin_path_removed(client):
@@ -131,6 +135,20 @@ def test_consensus_ics_marks_near_consensus_with_missing_prefix(client, engine):
     assert "everyone available" not in summary
 
 
+def test_consensus_ics_with_real_events_has_no_placeholder(client, engine):
+    public_id, _secret, _ = _create_campaign_with_players(client, ["Alice", "Bob"])
+    _seed_adhoc_slot_with_availability(
+        engine,
+        public_id=public_id,
+        days_ahead=5,
+        statuses={"Alice": AvailabilityStatus.yes, "Bob": AvailabilityStatus.yes},
+    )
+    r = client.get(f"/c/{public_id}/calendar-consensus.ics")
+    assert r.status_code == 200
+    body = r.content.decode("utf-8")
+    assert "-placeholder@" not in body
+
+
 def test_consensus_ics_full_consensus_has_no_missing_prefix(client, engine):
     public_id, _secret, _ = _create_campaign_with_players(client, ["Alice", "Bob"])
     _seed_adhoc_slot_with_availability(
@@ -159,7 +177,8 @@ def test_consensus_ics_skips_occurrences_with_too_many_missing(client, engine):
     r = client.get(f"/c/{public_id}/calendar-consensus.ics")
     assert r.status_code == 200
     body = r.content.decode("utf-8")
-    assert "BEGIN:VEVENT" not in body
+    assert "everyone available" not in body
+    assert f"UID:{public_id}-placeholder@whendoweroll.com" in body
 
 
 def test_consensus_ics_link_appears_on_admin_public_and_player_pages(client):

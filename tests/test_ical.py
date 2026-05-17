@@ -4,22 +4,36 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from app.services.ical import build_ics
+from app.services.ical import IcsEvent, build_ics, placeholder_consensus_event
 
 
 def test_build_ics_contains_calendar_wrappers():
     body = build_ics([])
     assert b"BEGIN:VCALENDAR" in body
     assert b"END:VCALENDAR" in body
+    assert b"BEGIN:VEVENT" not in body
 
 
 def test_build_ics_single_event():
     start = datetime(2026, 5, 29, 22, 0, tzinfo=UTC)
     end = start + timedelta(hours=3)
-    body = build_ics([("uid-test@whendoweroll.com", start, end, "Game night")])
+    body = build_ics([IcsEvent("uid-test@whendoweroll.com", start, end, "Game night")])
     assert b"BEGIN:VEVENT" in body
     assert b"DTSTART:20260529T220000Z" in body
     assert b"SUMMARY:Game night" in body
+
+
+def test_placeholder_consensus_event_is_cancelled_transparent_far_past():
+    ev = placeholder_consensus_event("abc123", "Friday Game")
+    assert ev.uid == "abc123-placeholder@whendoweroll.com"
+    assert ev.cancelled
+    assert ev.transparent
+    assert "waiting for consensus" in ev.summary
+    body = build_ics([ev])
+    text = body.decode("utf-8")
+    assert "STATUS:CANCELLED" in text
+    assert "TRANSP:TRANSPARENT" in text
+    assert "DTSTART:20000101T000000Z" in text
 
 
 def test_build_ics_emits_refresh_hints_for_subscribed_clients():

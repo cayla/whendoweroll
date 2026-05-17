@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -18,7 +17,7 @@ from app.services.consensus import (
     find_next_meets,
     player_lookup,
 )
-from app.services.ical import build_ics
+from app.services.ical import IcsEvent, build_ics, placeholder_consensus_event
 from app.services.opt_outs import load_opt_out_set
 from app.services.public_occurrence_filter import filter_occurrences_for_public_display
 from app.services.slots import expand_all
@@ -162,7 +161,7 @@ def calendar_consensus_ics(
         limit=50,
     )
     name_by_id = {p.id: p.display_name for p in players if p.id is not None}
-    events: list[tuple[str, datetime, datetime, str]] = []
+    events: list[IcsEvent] = []
     for res in results:
         occ = res.occurrence
         uid = f"{campaign.public_id}-s{occ.slot_id}-{int(occ.starts_at_utc.timestamp())}@whendoweroll.com"
@@ -171,7 +170,9 @@ def calendar_consensus_ics(
             summary = f"[missing: {missing_names}] {campaign.name} — {occ.label}"
         else:
             summary = f"{campaign.name} — everyone available ({occ.label})"
-        events.append((uid, occ.starts_at_utc, occ.ends_at_utc, summary))
+        events.append(IcsEvent(uid=uid, start=occ.starts_at_utc, end=occ.ends_at_utc, summary=summary))
+    if not events:
+        events = [placeholder_consensus_event(campaign.public_id, campaign.name)]
     body = build_ics(events)
     return Response(
         content=body,

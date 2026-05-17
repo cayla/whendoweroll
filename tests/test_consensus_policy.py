@@ -119,7 +119,9 @@ def test_ics_under_strict_drops_near_consensus_windows(client, engine):
     _set_policy(engine, public_id, ConsensusPolicy.strict)
     r = client.get(f"/c/{public_id}/calendar-consensus.ics")
     assert r.status_code == 200
-    assert "BEGIN:VEVENT" not in r.content.decode("utf-8")
+    body = r.content.decode("utf-8")
+    assert f"UID:{public_id}-placeholder@whendoweroll.com" in body
+    assert "[missing:" not in body
 
 
 def test_ics_under_allow_one_keeps_back_to_back_nears(client, engine):
