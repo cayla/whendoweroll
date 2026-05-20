@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 from sqlmodel import Session, select
 
 from app.models import AvailabilityStatus, Campaign, Player, Slot, SlotKind
-from app.services.availability import roster_can_make_occurrence
+from app.services.availability import roster_can_make_occurrence, slot_standing_yes_pair
 from app.services.timeutil import normalize_occurrence_start
 
 
@@ -35,6 +35,18 @@ def test_roster_denominator_excludes_standing_never():
     start = datetime(2030, 6, 7, 22, 0, tzinfo=UTC)
     can, denom = roster_can_make_occurrence(av, [a, b, c], set(), slot_id=5, starts_at_utc=start)
     assert (can, denom) == (2, 2)
+
+
+def test_slot_standing_yes_pair_uses_full_roster():
+    a = Player(id=1, campaign_id=1, display_name="A", token_hash="ta", sort_order=0)
+    b = Player(id=2, campaign_id=1, display_name="B", token_hash="tb", sort_order=1)
+    c = Player(id=3, campaign_id=1, display_name="C", token_hash="tc", sort_order=2)
+    av = {
+        (1, 5): AvailabilityStatus.yes,
+        (2, 5): AvailabilityStatus.yes,
+        (3, 5): AvailabilityStatus.no,
+    }
+    assert slot_standing_yes_pair(av, [a, b, c], 5) == (2, 3)
 
 
 def test_roster_all_never_is_zero_of_zero():
@@ -73,6 +85,16 @@ def test_player_slot_row_shows_can_make_pair(client):
     page2 = client.get(f"/c/{public_id}/p/{tokens[0]}")
     assert "(2/2 indicated yes for this time)" in page2.text
     assert "(2/2 can make it)" in page2.text
+
+
+def test_player_slot_row_counts_never_against_full_roster(client):
+    public_id, _, tokens = _three_player_campaign_with_slot(client)
+    client.post(f"/c/{public_id}/p/{tokens[0]}/availability/1", data={"status": "yes"})
+    client.post(f"/c/{public_id}/p/{tokens[1]}/availability/1", data={"status": "yes"})
+    client.post(f"/c/{public_id}/p/{tokens[2]}/availability/1", data={"status": "no"})
+    page = client.get(f"/c/{public_id}/p/{tokens[0]}")
+    assert page.status_code == 200
+    assert "(2/3 indicated yes for this time)" in page.text
 
 
 def test_three_players_all_yes_shows_three_of_three(client):
