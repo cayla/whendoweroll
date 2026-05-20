@@ -57,6 +57,21 @@ def count_standing_yes_and_no_for_slot(
     return yes, no
 
 
+def roster_player_count(players: Iterable[Player]) -> int:
+    """Number of players on the roster (ids required)."""
+    return sum(1 for p in players if p.id is not None)
+
+
+def slot_standing_yes_pair(
+    availability: Mapping[tuple[int, int], AvailabilityStatus],
+    players: Iterable[Player],
+    slot_id: int,
+) -> tuple[int, int]:
+    """Standing *yes* votes for a slot vs full roster size: ``(yes_count, roster_total)``."""
+    yes, _no = count_standing_yes_and_no_for_slot(availability, players, slot_id)
+    return yes, roster_player_count(players)
+
+
 def roster_can_make_occurrence(
     availability: dict[tuple[int, int], AvailabilityStatus],
     players: Iterable[Player],

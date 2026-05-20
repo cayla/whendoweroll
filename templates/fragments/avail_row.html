@@ -13,12 +13,10 @@
       <span class="font-medium text-ink">{{ slot|recurring_slot_viewer(campaign, display_tz) }}</span>
       {% if can_make_pair is not none %}
       {% set cx, cy = can_make_pair %}
-      {% if cy == 0 %}
-      <span class="block text-xs text-muted mt-0.5" title="Everyone chose Never for this slot.">(0/0) Everyone marked Never for this time.</span>
-      {% elif cx == 0 %}
-      <span class="block text-xs text-muted mt-0.5" title="Total excludes players who chose Never for this slot.">(0/{{ cy }} nobody has said yes yet among players who have not chosen Never)</span>
+      {% if cx == 0 %}
+      <span class="block text-xs text-muted mt-0.5" title="Players who said Yes for this time, out of everyone on the roster.">(0/{{ cy }} nobody has said yes yet)</span>
       {% else %}
-      <span class="block text-xs text-muted mt-0.5" title="Total excludes players who chose Never for this slot.">({{ cx }}/{{ cy }} indicated yes for this time)</span>
+      <span class="block text-xs text-muted mt-0.5" title="Players who said Yes for this time, out of everyone on the roster.">({{ cx }}/{{ cy }} indicated yes for this time)</span>
       {% endif %}
       {% endif %}
     {% else %}
@@ -26,12 +24,10 @@
       <span class="block text-xs text-muted mt-0.5">{{ slot.duration_hours }} h &middot; {{ display_tz|pretty_tz }}</span>
       {% if can_make_pair is not none %}
       {% set cx, cy = can_make_pair %}
-      {% if cy == 0 %}
-      <span class="block text-xs text-muted mt-0.5" title="Everyone chose Never for this slot.">(0/0) Everyone marked Never for this time.</span>
-      {% elif cx == 0 %}
-      <span class="block text-xs text-muted mt-0.5" title="Total excludes players who chose Never for this slot.">(0/{{ cy }} nobody has said yes yet among players who have not chosen Never)</span>
+      {% if cx == 0 %}
+      <span class="block text-xs text-muted mt-0.5" title="Players who said Yes for this time, out of everyone on the roster.">(0/{{ cy }} nobody has said yes yet)</span>
       {% else %}
-      <span class="block text-xs text-muted mt-0.5" title="Total excludes players who chose Never for this slot.">({{ cx }}/{{ cy }} indicated yes for this time)</span>
+      <span class="block text-xs text-muted mt-0.5" title="Players who said Yes for this time, out of everyone on the roster.">({{ cx }}/{{ cy }} indicated yes for this time)</span>
       {% endif %}
       {% endif %}
     {% endif %}

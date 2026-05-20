@@ -13,11 +13,7 @@ from app.db import get_session
 from app.deps import require_player
 from app.display_time import ensure_utc
 from app.models import AvailabilityStatus, Player, Slot, SlotKind
-from app.services.availability import (
-    load_availability_map,
-    roster_can_make_occurrence,
-    set_availability,
-)
+from app.services.availability import load_availability_map, set_availability, slot_standing_yes_pair
 from app.services.occurrence_match import resolve_occurrence
 from app.services.opt_outs import (
     add_opt_out,
@@ -26,9 +22,8 @@ from app.services.opt_outs import (
 )
 from app.services.player_view import (
     has_recurring_slot,
-    primary_occurrence_start_for_counts,
     roster_availability_context,
-    slot_can_make_pairs,
+    slot_standing_yes_pairs,
     unified_recurring_opt_out_rows,
 )
 from app.templates_setup import COMMON_TIMEZONES, templates
@@ -63,7 +58,7 @@ def player_home(
         can_make_pairs: dict[int, tuple[int, int]] = {}
     else:
         all_players, full_map, opt_outs = roster_availability_context(session, cid)
-        can_make_pairs = slot_can_make_pairs(slots, campaign, full_map, all_players, opt_outs)
+        can_make_pairs = slot_standing_yes_pairs(slots, full_map, all_players)
     unified_rows = unified_recurring_opt_out_rows(
         campaign,
         player,
@@ -154,12 +149,8 @@ def set_my_availability(
     cid = campaign.id
     can_make_pair: tuple[int, int] | None = None
     if cid is not None and slot.id is not None:
-        all_players, full_map, opt_outs = roster_availability_context(session, cid)
-        start = primary_occurrence_start_for_counts(slot, campaign)
-        if start is not None:
-            can_make_pair = roster_can_make_occurrence(
-                full_map, all_players, opt_outs, slot_id=slot.id, starts_at_utc=start
-            )
+        all_players, full_map, _opt_outs = roster_availability_context(session, cid)
+        can_make_pair = slot_standing_yes_pair(full_map, all_players, slot.id)
     resp = templates.TemplateResponse(
         request,
         "fragments/avail_row.html",

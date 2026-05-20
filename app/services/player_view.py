@@ -22,6 +22,8 @@ from app.models import (
 from app.services.availability import (
     load_availability_map,
     roster_can_make_occurrence,
+    roster_player_count,
+    slot_standing_yes_pair,
 )
 from app.services.opt_outs import load_opt_out_set
 from app.services.slots import upcoming_occurrences_for_slot
@@ -73,23 +75,18 @@ def primary_occurrence_start_for_counts(slot: Slot, campaign: Campaign) -> datet
     return None
 
 
-def slot_can_make_pairs(
+def slot_standing_yes_pairs(
     slots: list[Slot],
-    campaign: Campaign,
     full_map: dict[tuple[int, int], AvailabilityStatus],
     all_players: list[Player],
-    opt_outs: set[tuple[int, int, datetime]],
 ) -> dict[int, tuple[int, int]]:
-    """``slot_id -> (can_make, eligible_not_never)`` for the window shown on that row."""
+    """``slot_id -> (yes_count, roster_total)`` for the availability table."""
     out: dict[int, tuple[int, int]] = {}
     for slot in slots:
         sid = slot.id
         if sid is None:
             continue
-        start = primary_occurrence_start_for_counts(slot, campaign)
-        if start is None:
-            continue
-        out[sid] = roster_can_make_occurrence(full_map, all_players, opt_outs, slot_id=sid, starts_at_utc=start)
+        out[sid] = slot_standing_yes_pair(full_map, all_players, sid)
     return out
 
 
@@ -128,7 +125,7 @@ def unified_recurring_opt_out_rows(
         if sid is None:
             continue
         for o in upcoming_occurrences_for_slot(slot, tz=campaign_tz, horizon_weeks=horizon):
-            can_make, roster_n = roster_can_make_occurrence(
+            can_make, _eligible = roster_can_make_occurrence(
                 full_availability,
                 all_players,
                 opt_outs,
@@ -143,7 +140,7 @@ def unified_recurring_opt_out_rows(
                     "start_iso": iso,
                     "busy": (sid, iso) in iso_keys,
                     "can_make": can_make,
-                    "roster_n": roster_n,
+                    "roster_n": roster_player_count(all_players),
                 }
             )
     rows.sort(key=lambda r: r["occ"].starts_at_utc)
