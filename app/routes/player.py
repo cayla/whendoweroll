@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -12,9 +12,15 @@ from sqlmodel import Session, select
 from app.db import get_session
 from app.deps import require_player
 from app.display_time import ensure_utc
-from app.models import AvailabilityStatus, Player, Slot, SlotKind
+from app.models import AvailabilityStatus, Campaign, Player, Slot, SlotKind
 from app.services.availability import load_availability_map, set_availability, slot_standing_yes_pair
 from app.services.occurrence_match import resolve_occurrence
+from app.services.opt_out_bulk import (
+    add_opt_outs_in_calendar_range,
+    calendar_week_range,
+    clear_all_opt_outs_for_standing_yes,
+    remove_opt_outs_in_calendar_range,
+)
 from app.services.opt_outs import (
     add_opt_out,
     delete_opt_outs_for_player_slot,
@@ -40,6 +46,69 @@ def _empty_roster_context() -> tuple[
     return [], {}, set()
 
 
+def _bulk_date_defaults(campaign: Campaign) -> tuple[str, str]:
+    """Default range spans this week through next week (covers common quick presets)."""
+    this_start, _ = calendar_week_range(campaign, offset_weeks=0)
+    _, next_end = calendar_week_range(campaign, offset_weeks=1)
+    return this_start.isoformat(), next_end.isoformat()
+
+
+def _recurring_exceptions_context(
+    session: Session,
+    campaign: Campaign,
+    player: Player,
+    slots: list[Slot],
+    *,
+    bulk_message: str | None = None,
+    bulk_error: str | None = None,
+    bulk_open: bool = False,
+    bulk_start_default: str | None = None,
+    bulk_end_default: str | None = None,
+) -> dict:
+    has_recurring = has_recurring_slot(slots)
+    bulk_start, bulk_end = _bulk_date_defaults(campaign)
+    if bulk_start_default is not None:
+        bulk_start = bulk_start_default
+    if bulk_end_default is not None:
+        bulk_end = bulk_end_default
+    if not has_recurring:
+        return {
+            "has_recurring": False,
+            "unified_rows": [],
+            "bulk_start_default": bulk_start,
+            "bulk_end_default": bulk_end,
+            "bulk_message": bulk_message,
+            "bulk_error": bulk_error,
+            "bulk_open": bulk_open,
+        }
+    availability = load_availability_map(session, [player])
+    avail_by_slot = {sid: st for (_pid, sid), st in availability.items()}
+    cid = campaign.id
+    if cid is None:
+        all_players, full_map, opt_outs = _empty_roster_context()
+    else:
+        all_players, full_map, opt_outs = roster_availability_context(session, cid)
+    unified_rows = unified_recurring_opt_out_rows(
+        campaign,
+        player,
+        slots,
+        session,
+        avail_by_slot,
+        all_players=all_players,
+        full_availability=full_map,
+        opt_outs=opt_outs,
+    )
+    return {
+        "has_recurring": True,
+        "unified_rows": unified_rows,
+        "bulk_start_default": bulk_start,
+        "bulk_end_default": bulk_end,
+        "bulk_message": bulk_message,
+        "bulk_error": bulk_error,
+        "bulk_open": bulk_open,
+    }
+
+
 @router.get("", response_class=HTMLResponse)
 def player_home(
     public_id: str,
@@ -59,16 +128,7 @@ def player_home(
     else:
         all_players, full_map, opt_outs = roster_availability_context(session, cid)
         can_make_pairs = slot_standing_yes_pairs(slots, full_map, all_players)
-    unified_rows = unified_recurring_opt_out_rows(
-        campaign,
-        player,
-        slots,
-        session,
-        avail_by_slot,
-        all_players=all_players,
-        full_availability=full_map,
-        opt_outs=opt_outs,
-    )
+    exc_ctx = _recurring_exceptions_context(session, campaign, player, slots)
     return templates.TemplateResponse(
         request,
         "player.html",
@@ -78,11 +138,10 @@ def player_home(
             "slots": slots,
             "availability": avail_by_slot,
             "token": token,
-            "unified_rows": unified_rows,
-            "has_recurring": has_recurring_slot(slots),
             "display_tz": display_tz,
             "timezones": COMMON_TIMEZONES,
             "slot_can_make_pairs": can_make_pairs,
+            **exc_ctx,
         },
     )
 
@@ -178,47 +237,154 @@ def player_recurring_exceptions_fragment(
     campaign, player = require_player(session, public_id, token)
     slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
     display_tz = effective_display_timezone(request, campaign.timezone)
-    has_recurring = has_recurring_slot(slots)
-    if not has_recurring:
-        return templates.TemplateResponse(
-            request,
-            "fragments/player_recurring_exceptions_inner.html",
-            {
-                "has_recurring": False,
-                "unified_rows": [],
-                "campaign": campaign,
-                "player": player,
-                "token": token,
-                "display_tz": display_tz,
-            },
-        )
-    availability = load_availability_map(session, [player])
-    avail_by_slot = {sid: st for (_pid, sid), st in availability.items()}
-    cid = campaign.id
-    if cid is None:
-        all_players, full_map, opt_outs = _empty_roster_context()
-    else:
-        all_players, full_map, opt_outs = roster_availability_context(session, cid)
-    unified_rows = unified_recurring_opt_out_rows(
-        campaign,
-        player,
-        slots,
-        session,
-        avail_by_slot,
-        all_players=all_players,
-        full_availability=full_map,
-        opt_outs=opt_outs,
-    )
+    exc_ctx = _recurring_exceptions_context(session, campaign, player, slots)
     return templates.TemplateResponse(
         request,
         "fragments/player_recurring_exceptions_inner.html",
         {
-            "has_recurring": True,
-            "unified_rows": unified_rows,
             "campaign": campaign,
             "player": player,
             "token": token,
             "display_tz": display_tz,
+            **exc_ctx,
+        },
+    )
+
+
+def _apply_bulk_exceptions(
+    session: Session,
+    campaign: Campaign,
+    player: Player,
+    slots: list[Slot],
+    action: str,
+    calendar_start_day: str,
+    calendar_end_day: str,
+) -> tuple[str | None, str | None, str | None, str | None]:
+    """Return (message, error, start_default, end_default) after a bulk action."""
+    bulk_message: str | None = None
+    bulk_error: str | None = None
+    start_default: str | None = None
+    end_default: str | None = None
+
+    if action == "clear_all":
+        availability = load_availability_map(session, [player])
+        avail_by_slot = {sid: st for (_pid, sid), st in availability.items()}
+        removed = clear_all_opt_outs_for_standing_yes(
+            session,
+            player=player,
+            slots=slots,
+            availability_by_slot=avail_by_slot,
+        )
+        if removed:
+            bulk_message = f"Cleared {removed} conflict{'s' if removed != 1 else ''}."
+        else:
+            bulk_message = "No conflicts to clear."
+        return bulk_message, bulk_error, start_default, end_default
+
+    if action == "mark_this_week":
+        start_day, end_day = calendar_week_range(campaign, offset_weeks=0)
+    elif action == "mark_next_week":
+        start_day, end_day = calendar_week_range(campaign, offset_weeks=1)
+    elif action in ("mark_range", "clear_range"):
+        try:
+            start_day = date.fromisoformat(calendar_start_day.strip())
+            end_day = date.fromisoformat(calendar_end_day.strip())
+        except ValueError:
+            bulk_error = "Enter valid calendar dates."
+            return bulk_message, bulk_error, start_default, end_default
+        start_default = calendar_start_day.strip()
+        end_default = calendar_end_day.strip()
+        if start_day > end_day:
+            bulk_error = "The last day must be on or after the first day."
+            return bulk_message, bulk_error, start_default, end_default
+    else:
+        bulk_error = "Unknown bulk action."
+        return bulk_message, bulk_error, start_default, end_default
+
+    availability = load_availability_map(session, [player])
+    avail_by_slot = {sid: st for (_pid, sid), st in availability.items()}
+    range_label = f"{start_day.isoformat()} through {end_day.isoformat()}"
+
+    if action in ("mark_this_week", "mark_next_week", "mark_range"):
+        added = add_opt_outs_in_calendar_range(
+            session,
+            campaign=campaign,
+            player=player,
+            slots=slots,
+            availability_by_slot=avail_by_slot,
+            start_day=start_day,
+            end_day=end_day,
+        )
+        if added:
+            bulk_message = f"Marked {added} session{'s' if added != 1 else ''} as conflicts ({range_label})."
+        else:
+            bulk_message = (
+                "No new conflicts in that range. "
+                "Mark Yes on a recurring time first, or pick dates with upcoming sessions."
+            )
+    else:
+        removed = remove_opt_outs_in_calendar_range(
+            session,
+            campaign=campaign,
+            player=player,
+            slots=slots,
+            availability_by_slot=avail_by_slot,
+            start_day=start_day,
+            end_day=end_day,
+        )
+        if removed:
+            bulk_message = f"Cleared {removed} conflict{'s' if removed != 1 else ''} ({range_label})."
+        else:
+            bulk_message = "No conflicts to clear in that range."
+
+    return bulk_message, bulk_error, start_default, end_default
+
+
+@router.post("/bulk-exceptions", response_class=HTMLResponse)
+def apply_bulk_exceptions(
+    public_id: str,
+    token: str,
+    request: Request,
+    action: str = Form(...),
+    calendar_start_day: str = Form(""),
+    calendar_end_day: str = Form(""),
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    campaign, player = require_player(session, public_id, token)
+    display_tz = effective_display_timezone(request, campaign.timezone)
+    slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
+
+    bulk_message, bulk_error, start_default, end_default = _apply_bulk_exceptions(
+        session,
+        campaign,
+        player,
+        slots,
+        action.strip(),
+        calendar_start_day,
+        calendar_end_day,
+    )
+
+    exc_ctx = _recurring_exceptions_context(
+        session,
+        campaign,
+        player,
+        slots,
+        bulk_message=bulk_message,
+        bulk_error=bulk_error,
+        bulk_open=True,
+        bulk_start_default=start_default,
+        bulk_end_default=end_default,
+    )
+
+    return templates.TemplateResponse(
+        request,
+        "fragments/player_recurring_exceptions_inner.html",
+        {
+            "campaign": campaign,
+            "player": player,
+            "token": token,
+            "display_tz": display_tz,
+            **exc_ctx,
         },
     )
 
@@ -263,31 +429,15 @@ def toggle_occurrence_opt_out(
         )
 
     slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
-    availability = load_availability_map(session, [player])
-    avail_by_slot = {sid: st for (_pid, sid), st in availability.items()}
-    cid = campaign.id
-    if cid is None:
-        all_players, full_map, opt_outs = _empty_roster_context()
-    else:
-        all_players, full_map, opt_outs = roster_availability_context(session, cid)
-    unified_rows = unified_recurring_opt_out_rows(
-        campaign,
-        player,
-        slots,
-        session,
-        avail_by_slot,
-        all_players=all_players,
-        full_availability=full_map,
-        opt_outs=opt_outs,
-    )
+    exc_ctx = _recurring_exceptions_context(session, campaign, player, slots)
     return templates.TemplateResponse(
         request,
-        "fragments/recurring_opt_outs_unified.html",
+        "fragments/player_recurring_exceptions_inner.html",
         {
             "campaign": campaign,
             "player": player,
             "token": token,
-            "unified_rows": unified_rows,
             "display_tz": display_tz,
+            **exc_ctx,
         },
     )

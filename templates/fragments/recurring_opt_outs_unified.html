@@ -1,4 +1,4 @@
-<div id="opt-outs-unified" class="overflow-hidden rounded-md border border-line">
+<div id="opt-outs-unified" class="rounded-md border border-line border-t-0 rounded-t-none">
   <table class="player-exceptions-table w-full text-xs border-collapse">
     <thead class="bg-elevated text-left text-muted uppercase tracking-wide">
       <tr>
@@ -16,7 +16,8 @@
         </td>
         <td class="py-2 pr-3 pl-2 align-middle">
           <form hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/opt-out"
-                hx-target="#opt-outs-unified" hx-swap="outerHTML"
+                hx-target="#player-recurring-exceptions"
+                hx-swap="innerHTML"
                 class="inline">
             <input type="hidden" name="slot_id" value="{{ row.slot.id }}">
             <input type="hidden" name="occurrence_start" value="{{ row.start_iso }}">

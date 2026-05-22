@@ -1,0 +1,113 @@
+<div
+  id="player-bulk-exceptions"
+  class="player-bulk-dropdown relative shrink-0"
+  data-bulk-dropdown
+  {% if bulk_open %}data-bulk-dropdown-open="true"{% endif %}
+>
+  <button
+    type="button"
+    id="player-bulk-dropdown-toggle"
+    data-bulk-dropdown-toggle
+    class="btn-secondary px-3 py-1.5 text-sm inline-flex items-center gap-1.5"
+    aria-expanded="false"
+    aria-controls="player-bulk-dropdown-menu"
+  >
+    Bulk date changes
+    <svg class="player-bulk-dropdown-chevron w-4 h-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+    </svg>
+  </button>
+  <div
+    id="player-bulk-dropdown-menu"
+    data-bulk-dropdown-menu
+    hidden
+    class="player-bulk-dropdown-menu z-20 rounded-md border border-line bg-surface p-4 shadow-lg"
+    role="region"
+    aria-labelledby="player-bulk-dropdown-toggle"
+  >
+    <p class="text-sm text-muted mb-3 m-0">
+      Mark or clear conflicts for recurring sessions you said <strong class="font-medium text-ink">Yes</strong> to
+      ({{ campaign.timezone|pretty_tz }} calendar).
+    </p>
+
+    <fieldset class="mb-4 border-0 p-0 m-0">
+      <legend class="text-xs font-medium uppercase tracking-wide text-muted mb-2">Quick</legend>
+      <div class="flex flex-col gap-2">
+        <form
+          hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/bulk-exceptions"
+          hx-target="#player-recurring-exceptions"
+          hx-swap="innerHTML"
+          class="m-0"
+        >
+          <input type="hidden" name="action" value="mark_this_week">
+          <button type="submit" class="btn-secondary w-full px-3 py-1.5 text-sm text-left">
+            Can&rsquo;t make this week
+          </button>
+        </form>
+        <form
+          hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/bulk-exceptions"
+          hx-target="#player-recurring-exceptions"
+          hx-swap="innerHTML"
+          class="m-0"
+        >
+          <input type="hidden" name="action" value="mark_next_week">
+          <button type="submit" class="btn-secondary w-full px-3 py-1.5 text-sm text-left">
+            Can&rsquo;t make next week
+          </button>
+        </form>
+        <form
+          hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/bulk-exceptions"
+          hx-target="#player-recurring-exceptions"
+          hx-swap="innerHTML"
+          class="m-0 pt-1 border-t border-line"
+        >
+          <input type="hidden" name="action" value="clear_all">
+          <button type="submit" class="w-full rounded border border-emerald-400 px-3 py-1.5 text-sm text-center text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950/40">
+            Clear all conflicts
+          </button>
+        </form>
+      </div>
+    </fieldset>
+
+    <fieldset class="border-0 p-0 m-0">
+      <legend class="text-xs font-medium uppercase tracking-wide text-muted mb-2">Date range</legend>
+      <form
+        hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/bulk-exceptions"
+        hx-target="#player-recurring-exceptions"
+        hx-swap="innerHTML"
+        class="space-y-3"
+      >
+        <div>
+          <label class="block text-sm font-medium text-ink" for="bulk-calendar-start">First day</label>
+          <input
+            id="bulk-calendar-start"
+            type="date"
+            name="calendar_start_day"
+            required
+            class="form-field w-full mt-1"
+            value="{{ bulk_start_default }}"
+          >
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-ink" for="bulk-calendar-end">Last day</label>
+          <input
+            id="bulk-calendar-end"
+            type="date"
+            name="calendar_end_day"
+            required
+            class="form-field w-full mt-1"
+            value="{{ bulk_end_default }}"
+          >
+        </div>
+        <div class="flex flex-col gap-2">
+          <button type="submit" name="action" value="mark_range" class="btn w-full px-3 py-1.5 text-sm">
+            Mark conflicts
+          </button>
+          <button type="submit" name="action" value="clear_range" class="btn-secondary w-full px-3 py-1.5 text-sm">
+            Clear conflicts
+          </button>
+        </div>
+      </form>
+    </fieldset>
+  </div>
+</div>

@@ -34,6 +34,11 @@ from app.services.timeutil import normalize_occurrence_start
 _EXCEPTION_HORIZON_WEEKS_CAP = 26
 
 
+def exception_horizon_weeks(campaign: Campaign) -> int:
+    """Horizon for per-date exception rows and bulk mark (matches table cap)."""
+    return min(campaign.horizon_weeks, _EXCEPTION_HORIZON_WEEKS_CAP)
+
+
 def has_recurring_slot(slots: list[Slot]) -> bool:
     return any(s.kind is SlotKind.recurring for s in slots)
 
@@ -65,7 +70,7 @@ def primary_occurrence_start_for_counts(slot: Slot, campaign: Campaign) -> datet
     """
     if slot.kind is SlotKind.recurring:
         z = ZoneInfo(campaign.timezone)
-        horizon = min(campaign.horizon_weeks, _EXCEPTION_HORIZON_WEEKS_CAP)
+        horizon = exception_horizon_weeks(campaign)
         occs = upcoming_occurrences_for_slot(slot, tz=z, horizon_weeks=horizon)
         if not occs:
             return None
@@ -114,7 +119,7 @@ def unified_recurring_opt_out_rows(
     for row in session.exec(select(OccurrenceOptOut).where(OccurrenceOptOut.player_id == pid)).all():
         iso_keys.add((row.slot_id, normalize_occurrence_start(row.starts_at_utc).isoformat()))
 
-    horizon = min(campaign.horizon_weeks, _EXCEPTION_HORIZON_WEEKS_CAP)
+    horizon = exception_horizon_weeks(campaign)
     rows: list[dict] = []
     for slot in slots:
         if slot.kind is not SlotKind.recurring:

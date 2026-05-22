@@ -907,6 +907,58 @@ html:has(.public-page) {
   line-height: 1.6;
 }
 
+/* Player exceptions: sticky section title + bulk dropdown (top-right). */
+.player-exceptions-section {
+  position: relative;
+}
+
+.player-exceptions-sticky-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  position: sticky;
+  /* Sit flush under .player-subnav (4.75rem + subnav height). */
+  top: calc(4.75rem + var(--player-subnav-h, 2.75rem));
+  z-index: 8;
+  margin: 0 -1.5rem 0;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid color-mix(in srgb, rgb(245 158 11) 42%, var(--color-line));
+  background: color-mix(in srgb, rgb(245 158 11) 18%, var(--color-surface));
+}
+
+html.dark .player-exceptions-sticky-head {
+  background: color-mix(in srgb, rgb(245 158 11) 11%, var(--color-surface));
+  border-bottom-color: color-mix(in srgb, rgb(245 158 11) 32%, var(--color-line));
+}
+
+.player-exceptions-sticky-head .heading {
+  color: rgb(120 53 15);
+}
+
+html.dark .player-exceptions-sticky-head .heading {
+  color: rgb(253 230 138);
+}
+
+.player-bulk-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  left: auto;
+  width: min(37.5vw, 30rem);
+  min-width: 15rem;
+  max-width: calc(100vw - 1rem);
+  transform-origin: top right;
+}
+
+.player-bulk-dropdown.is-open .player-bulk-dropdown-chevron {
+  transform: rotate(180deg);
+}
+
+.player-bulk-dropdown-chevron {
+  transition: transform 0.15s ease;
+}
+
 /* Player tables: vertical-align middle (align-middle can miss on cells in some layouts). */
 .player-avail-table th,
 .player-avail-table td,

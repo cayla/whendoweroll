@@ -63,8 +63,7 @@
   {% endif %}
 </section>
 
-<section id="exceptions" class="player-anchor-target bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
-  <h2 class="heading text-lg mb-4">Exceptions</h2>
+<section id="exceptions" class="player-exceptions-section player-anchor-target bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
   <div id="player-recurring-exceptions"
        {% if has_recurring %}
        hx-get="/c/{{ campaign.public_id }}/p/{{ token }}/_recurring-exceptions"
@@ -74,6 +73,7 @@
   </div>
 </section>
 
+<script src="{{ url_for('static', path='js/player-bulk-dropdown.js') }}"></script>
 <script>
 (function () {
   try {
