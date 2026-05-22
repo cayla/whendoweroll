@@ -17,11 +17,13 @@ from app.display_time import (
     public_campaign_tempo_caption,
     recurring_slot_primary_label,
 )
+from app.static_version import static_asset_version
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = BASE_DIR / "templates"
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+templates.env.globals["static_version"] = static_asset_version()
 
 
 def _format_local(value: datetime, tz_name: str) -> str:

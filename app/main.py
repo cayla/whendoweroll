@@ -12,6 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app import settings as settings_module
 from app import super_admin_auth
 from app.db import init_db
+from app.middleware.static_cache import StaticCacheControlMiddleware
 from app.routes import admin, index, player, public, super_admin
 from app.templates_setup import templates
 
@@ -29,6 +30,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="When Do We Roll", lifespan=lifespan)
+app.add_middleware(StaticCacheControlMiddleware)
 
 
 @app.exception_handler(404)

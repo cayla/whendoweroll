@@ -84,3 +84,4 @@ Pushes to **`main`** run `.github/workflows/ci.yml`: build the **test** Docker s
 
 - **Single Machine + volume**: SQLite is fine for a small single-tenant workload; scale-out would need a different datastore.
 - **Cold starts**: This repo's `fly.toml` ships with `min_machines_running = 1` so the Machine stays warm. Drop it to `0` if you'd rather pay nothing while idle and accept a wake-up delay on the first request.
+- **Cloudflare in front of Fly**: Static CSS/JS can be cached at the edge for hours. A browser hard refresh does not bypass that cache. After deploys that change `static/css` or `static/js`, either wait for the edge TTL to expire or **Purge Cache** in the Cloudflare dashboard (e.g. purge `/static/css/app.css` and `/static/js/*.js`, or purge everything). New deploys append a `?v=<hash>` query to static URLs so the next release fetches fresh files automatically.
