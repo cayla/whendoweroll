@@ -81,7 +81,6 @@ def test_bulk_mark_range_marks_conflicts_after_standing_yes(client):
     assert b"Marked" in resp.content
     assert b"conflict" in resp.content
     assert b"Remove conflict" in resp.content
-    assert b'data-bulk-dropdown-open="true"' in resp.content
 
 
 def test_bulk_clear_range_after_this_and_next_week_quick_marks(client):
@@ -197,5 +196,5 @@ def test_single_opt_out_refreshes_full_exceptions_block(client):
         headers={"HX-Request": "true"},
     )
     assert resp.status_code == 200
-    assert b"player-exceptions-sticky-head" in resp.content
     assert b"Remove conflict" in resp.content
+    assert b"player-exceptions-toolbar" not in resp.content

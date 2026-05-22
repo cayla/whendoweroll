@@ -64,13 +64,16 @@
 </section>
 
 <section id="exceptions" class="player-exceptions-section player-anchor-target bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
-  <div id="player-recurring-exceptions"
-       {% if has_recurring %}
-       hx-get="/c/{{ campaign.public_id }}/p/{{ token }}/_recurring-exceptions"
-       hx-trigger="refreshExceptions from:body"
-       hx-swap="innerHTML"
-       {% endif %}>{%- include "fragments/player_recurring_exceptions_inner.html" -%}
-  </div>
+  {% if not has_recurring %}<h2 class="heading text-lg mb-4">Exceptions</h2>{% endif %}
+  <div
+    id="player-recurring-exceptions"
+    class="player-exceptions-root"
+    {% if has_recurring %}
+    hx-get="/c/{{ campaign.public_id }}/p/{{ token }}/_recurring-exceptions"
+    hx-trigger="refreshExceptions from:body"
+    hx-swap="innerHTML"
+    {% endif %}
+  >{%- include "fragments/player_recurring_exceptions_inner.html" -%}</div>
 </section>
 
 <script src="{{ url_for('static', path='js/player-bulk-dropdown.js') }}"></script>

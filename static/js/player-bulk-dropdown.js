@@ -11,6 +11,7 @@
 
   function closeDropdown(root) {
     root.classList.remove("is-open");
+    delete root.dataset.bulkDropdownOpen;
     var menu = menuFor(root);
     var toggle = toggleFor(root);
     if (menu) {
@@ -62,11 +63,7 @@
       toggleDropdown(root);
     });
 
-    if (root.dataset.bulkDropdownOpen === "true") {
-      openDropdown(root);
-    } else {
-      closeDropdown(root);
-    }
+    closeDropdown(root);
   }
 
   function syncExceptionsStickyTop() {
@@ -77,7 +74,7 @@
     document.documentElement.style.setProperty("--player-subnav-h", subnav.offsetHeight + "px");
   }
 
-  function initAll() {
+  function initToolbar() {
     document.querySelectorAll("[data-bulk-dropdown]").forEach(initRoot);
     syncExceptionsStickyTop();
   }
@@ -104,21 +101,27 @@
     if (!elt || !elt.closest) {
       return;
     }
-    var root = elt.closest("[data-bulk-dropdown]");
-    if (root) {
-      closeDropdown(root);
+    if (elt.closest("[data-bulk-dropdown]")) {
+      document.querySelectorAll("[data-bulk-dropdown].is-open").forEach(closeDropdown);
     }
   });
 
   document.body.addEventListener("htmx:afterSwap", function (e) {
-    if (e.detail.target && e.detail.target.id === "player-recurring-exceptions") {
-      initAll();
+    var target = e.detail.target;
+    if (!target) {
+      return;
+    }
+    if (
+      target.id === "player-recurring-exceptions"
+      || target.id === "player-exceptions-below-toolbar"
+    ) {
+      initToolbar();
     }
   });
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initAll);
+    document.addEventListener("DOMContentLoaded", initToolbar);
   } else {
-    initAll();
+    initToolbar();
   }
 })();

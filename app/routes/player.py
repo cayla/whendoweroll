@@ -61,7 +61,6 @@ def _recurring_exceptions_context(
     *,
     bulk_message: str | None = None,
     bulk_error: str | None = None,
-    bulk_open: bool = False,
     bulk_start_default: str | None = None,
     bulk_end_default: str | None = None,
 ) -> dict:
@@ -79,7 +78,6 @@ def _recurring_exceptions_context(
             "bulk_end_default": bulk_end,
             "bulk_message": bulk_message,
             "bulk_error": bulk_error,
-            "bulk_open": bulk_open,
         }
     availability = load_availability_map(session, [player])
     avail_by_slot = {sid: st for (_pid, sid), st in availability.items()}
@@ -105,7 +103,6 @@ def _recurring_exceptions_context(
         "bulk_end_default": bulk_end,
         "bulk_message": bulk_message,
         "bulk_error": bulk_error,
-        "bulk_open": bulk_open,
     }
 
 
@@ -123,10 +120,10 @@ def player_home(
     display_tz = effective_display_timezone(request, campaign.timezone)
     cid = campaign.id
     if cid is None:
-        all_players, full_map, opt_outs = _empty_roster_context()
+        all_players, full_map, _opt_outs = _empty_roster_context()
         can_make_pairs: dict[int, tuple[int, int]] = {}
     else:
-        all_players, full_map, opt_outs = roster_availability_context(session, cid)
+        all_players, full_map, _opt_outs = roster_availability_context(session, cid)
         can_make_pairs = slot_standing_yes_pairs(slots, full_map, all_players)
     exc_ctx = _recurring_exceptions_context(session, campaign, player, slots)
     return templates.TemplateResponse(
@@ -371,14 +368,13 @@ def apply_bulk_exceptions(
         slots,
         bulk_message=bulk_message,
         bulk_error=bulk_error,
-        bulk_open=True,
         bulk_start_default=start_default,
         bulk_end_default=end_default,
     )
 
     return templates.TemplateResponse(
         request,
-        "fragments/player_recurring_exceptions_inner.html",
+        "fragments/player_exceptions_below_toolbar.html",
         {
             "campaign": campaign,
             "player": player,
@@ -432,7 +428,7 @@ def toggle_occurrence_opt_out(
     exc_ctx = _recurring_exceptions_context(session, campaign, player, slots)
     return templates.TemplateResponse(
         request,
-        "fragments/player_recurring_exceptions_inner.html",
+        "fragments/player_exceptions_below_toolbar.html",
         {
             "campaign": campaign,
             "player": player,

@@ -1,0 +1,14 @@
+{%- if bulk_error -%}
+<div id="player-exceptions-feedback" class="px-3 pt-3">
+<p class="text-sm text-red-700 dark:text-red-300 mb-0 m-0" role="alert">{{ bulk_error }}</p>
+</div>
+{%- elif bulk_message -%}
+<div id="player-exceptions-feedback" class="px-3 pt-3">
+<p class="text-sm text-emerald-800 dark:text-emerald-300 mb-0 m-0" role="status">{{ bulk_message }}</p>
+</div>
+{%- endif -%}
+<div id="player-exceptions-table">
+{% if unified_rows %}
+{% include "fragments/recurring_opt_outs_unified.html" %}
+{% endif %}
+</div>
