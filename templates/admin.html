@@ -264,6 +264,6 @@
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', path='js/created-page.js') }}"></script>
-<script src="{{ url_for('static', path='js/admin-confirm-dialog.js') }}"></script>
+<script src="{{ url_for('static', path='js/created-page.js') }}?v={{ static_version }}"></script>
+<script src="{{ url_for('static', path='js/admin-confirm-dialog.js') }}?v={{ static_version }}"></script>
 {% endblock %}

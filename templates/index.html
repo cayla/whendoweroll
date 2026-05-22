@@ -158,5 +158,5 @@
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', path='js/home-modals.js') }}"></script>
+<script src="{{ url_for('static', path='js/home-modals.js') }}?v={{ static_version }}"></script>
 {% endblock %}

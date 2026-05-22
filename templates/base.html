@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<script src="{{ url_for('static', path='js/theme-init.js') }}"></script>
+<script src="{{ url_for('static', path='js/theme-init.js') }}?v={{ static_version }}"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}When Do We Roll{% endblock %}</title>
 <link rel="icon" href="{{ url_for('static', path='img/favicon.svg') }}" type="image/svg+xml">
-<link rel="stylesheet" href="{{ url_for('static', path='css/tailwind.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/tailwind.css') }}?v={{ static_version }}">
 <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Germania+One&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}?v={{ static_version }}">
 {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen bg-canvas text-ink antialiased">
@@ -43,7 +43,7 @@
 <footer class="max-w-5xl mx-auto px-4 mt-10 pt-6 pb-8 border-t border-line text-xs text-muted text-center">
   Links are your login. Share player URLs privately and guard your admin URL.
 </footer>
-<script src="{{ url_for('static', path='js/theme-ui.js') }}"></script>
+<script src="{{ url_for('static', path='js/theme-ui.js') }}?v={{ static_version }}"></script>
 {% block page_scripts %}{% endblock %}
 </body>
 </html>
