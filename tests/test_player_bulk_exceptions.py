@@ -62,6 +62,24 @@ def test_bulk_widget_collapsed_by_default(client):
     assert b"hidden" in menu
 
 
+def test_bulk_mark_range_without_standing_yes_does_nothing(client):
+    public_id, player_token = _campaign_with_friday_slot(client)
+    start = _today()
+    end = start + timedelta(days=56)
+    resp = client.post(
+        f"/c/{public_id}/p/{player_token}/bulk-exceptions",
+        data={
+            "action": "mark_range",
+            "calendar_start_day": start.isoformat(),
+            "calendar_end_day": end.isoformat(),
+        },
+        headers={"HX-Request": "true"},
+    )
+    assert resp.status_code == 200
+    assert b"No new conflicts" in resp.content
+    assert b"Remove conflict" not in resp.content
+
+
 def test_bulk_mark_range_marks_conflicts_after_standing_yes(client):
     public_id, player_token = _campaign_with_friday_slot(client)
     client.post(f"/c/{public_id}/p/{player_token}/availability/1", data={"status": "yes"})

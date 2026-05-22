@@ -959,6 +959,12 @@ html.dark .player-exceptions-sticky-head .heading {
   min-width: 15rem;
   max-width: calc(100vw - 1rem);
   transform-origin: top right;
+  background-color: var(--color-elevated);
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.12);
+}
+
+html.dark .player-bulk-dropdown-menu {
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.45), 0 8px 10px -6px rgb(0 0 0 / 0.35);
 }
 
 .player-bulk-dropdown.is-open .player-bulk-dropdown-chevron {

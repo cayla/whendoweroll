@@ -37,12 +37,14 @@ from app.view_timezone import effective_display_timezone, set_viewer_timezone_on
 
 router = APIRouter(prefix="/c/{public_id}/p/{token}")
 
-
-def _empty_roster_context() -> tuple[
+RosterContext = tuple[
     list[Player],
     dict[tuple[int, int], AvailabilityStatus],
     set[tuple[int, int, datetime]],
-]:
+]
+
+
+def _empty_roster_context() -> RosterContext:
     return [], {}, set()
 
 
@@ -63,6 +65,7 @@ def _recurring_exceptions_context(
     bulk_error: str | None = None,
     bulk_start_default: str | None = None,
     bulk_end_default: str | None = None,
+    roster: RosterContext | None = None,
 ) -> dict:
     has_recurring = has_recurring_slot(slots)
     bulk_start, bulk_end = _bulk_date_defaults(campaign)
@@ -81,11 +84,14 @@ def _recurring_exceptions_context(
         }
     availability = load_availability_map(session, [player])
     avail_by_slot = {sid: st for (_pid, sid), st in availability.items()}
-    cid = campaign.id
-    if cid is None:
-        all_players, full_map, opt_outs = _empty_roster_context()
+    if roster is None:
+        cid = campaign.id
+        if cid is None:
+            all_players, full_map, opt_outs = _empty_roster_context()
+        else:
+            all_players, full_map, opt_outs = roster_availability_context(session, cid)
     else:
-        all_players, full_map, opt_outs = roster_availability_context(session, cid)
+        all_players, full_map, opt_outs = roster
     unified_rows = unified_recurring_opt_out_rows(
         campaign,
         player,
@@ -120,12 +126,13 @@ def player_home(
     display_tz = effective_display_timezone(request, campaign.timezone)
     cid = campaign.id
     if cid is None:
-        all_players, full_map, _opt_outs = _empty_roster_context()
+        roster = _empty_roster_context()
         can_make_pairs: dict[int, tuple[int, int]] = {}
     else:
-        all_players, full_map, _opt_outs = roster_availability_context(session, cid)
+        roster = roster_availability_context(session, cid)
+        all_players, full_map, _opt_outs = roster
         can_make_pairs = slot_standing_yes_pairs(slots, full_map, all_players)
-    exc_ctx = _recurring_exceptions_context(session, campaign, player, slots)
+    exc_ctx = _recurring_exceptions_context(session, campaign, player, slots, roster=roster)
     return templates.TemplateResponse(
         request,
         "player.html",
