@@ -2,13 +2,19 @@
 <p class="text-sm text-muted italic m-0">
   This campaign does not have any recurring session times yet. Date-specific opt-outs apply only when your organizer adds at least one recurring time.
 </p>
-{% elif not unified_rows %}
-<p class="text-sm text-muted italic m-0">
+{% else %}
+<div class="player-exceptions-sticky-head" id="player-exceptions-toolbar">
+  <h2 class="heading text-lg mb-0 min-w-0">Exceptions</h2>
+  {% include "fragments/player_bulk_exceptions.html" %}
+</div>
+{% if not unified_rows %}
+<p class="player-exceptions-intro text-sm text-muted mb-3 mt-3 m-0">
   After you choose <strong class="font-medium text-ink">Yes</strong> on a recurring time in Availability, you can opt out of individual dates here.
 </p>
 {% else %}
-<p class="text-sm text-muted mb-4 m-0">
+<p class="player-exceptions-intro text-sm text-muted mb-3 mt-3 m-0">
   For recurring times you marked Yes in Availability, you can remove yourself from specific dates without changing your overall answer for that time.
 </p>
-{% include "fragments/recurring_opt_outs_unified.html" %}
+{% endif %}
+<div id="player-exceptions-below-toolbar">{%- include "fragments/player_exceptions_below_toolbar.html" -%}</div>
 {% endif %}

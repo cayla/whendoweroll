@@ -16,18 +16,19 @@
         </td>
         <td class="py-2 pr-3 pl-2 align-middle">
           <form hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/opt-out"
-                hx-target="#opt-outs-unified" hx-swap="outerHTML"
+                hx-target="#player-exceptions-below-toolbar"
+                hx-swap="innerHTML"
                 class="inline">
             <input type="hidden" name="slot_id" value="{{ row.slot.id }}">
             <input type="hidden" name="occurrence_start" value="{{ row.start_iso }}">
             {% if row.busy %}
             <input type="hidden" name="busy" value="0">
-            <button type="submit" class="rounded border border-emerald-400 px-2 py-0.5 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950/40">
+            <button type="submit" class="rounded border border-emerald-400 px-2 py-1 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950/40">
               Remove conflict
             </button>
             {% else %}
             <input type="hidden" name="busy" value="1">
-            <button type="submit" class="rounded border border-amber-400 px-2 py-0.5 text-amber-900 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-950/40">
+            <button type="submit" class="rounded border border-amber-400 px-2 py-1 text-amber-900 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-950/40">
               Can't make it
             </button>
             {% endif %}
