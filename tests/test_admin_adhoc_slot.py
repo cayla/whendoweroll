@@ -12,15 +12,11 @@ from app.services.timeutil import ensure_utc
 from tests.helpers import create_campaign_via_form
 
 
-def _new_campaign(client):
+def test_admin_oneoff_same_calendar_day(client, engine):
     created = create_campaign_via_form(
         client, name="Oneoff", timezone="America/New_York", player_names="", horizon_weeks=4
     )
-    return created.public_id, created.admin_secret
-
-
-def test_admin_oneoff_same_calendar_day(client, engine):
-    public_id, secret = _new_campaign(client)
+    public_id, secret = created.public_id, created.admin_secret
     r = client.post(
         f"/c/{public_id}/admin/{secret}/slots",
         data={
@@ -47,7 +43,10 @@ def test_admin_oneoff_same_calendar_day(client, engine):
 
 
 def test_admin_oneoff_duration_crosses_midnight(client, engine):
-    public_id, secret = _new_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Oneoff", timezone="America/New_York", player_names="", horizon_weeks=4
+    )
+    public_id, secret = created.public_id, created.admin_secret
     r = client.post(
         f"/c/{public_id}/admin/{secret}/slots",
         data={
@@ -73,7 +72,10 @@ def test_admin_oneoff_duration_crosses_midnight(client, engine):
 
 
 def test_admin_oneoff_rejects_past_start(client):
-    public_id, secret = _new_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Oneoff", timezone="America/New_York", player_names="", horizon_weeks=4
+    )
+    public_id, secret = created.public_id, created.admin_secret
     r = client.post(
         f"/c/{public_id}/admin/{secret}/slots",
         data={
@@ -87,7 +89,10 @@ def test_admin_oneoff_rejects_past_start(client):
 
 
 def test_admin_recurring_times_display_as_12_hour(client):
-    public_id, secret = _new_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Oneoff", timezone="America/New_York", player_names="", horizon_weeks=4
+    )
+    public_id, secret = created.public_id, created.admin_secret
     r = client.post(
         f"/c/{public_id}/admin/{secret}/slots",
         data={

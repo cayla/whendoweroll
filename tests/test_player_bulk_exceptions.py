@@ -6,6 +6,8 @@ import re
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from tests.helpers import create_campaign_with_recurring_slot
+
 _CAMPAIGN_TZ = ZoneInfo("America/New_York")
 
 
@@ -20,35 +22,17 @@ def _bulk_default_range() -> tuple[date, date]:
     return monday, monday + timedelta(days=13)
 
 
-def _campaign_with_friday_slot(client):
-    r = client.post(
-        "/",
-        data={
-            "name": "Bulk",
-            "timezone": "America/New_York",
-            "player_names": "Rogue",
-            "horizon_weeks": "8",
-        },
+def _campaign_with_friday_slot(client) -> tuple[str, str]:
+    created = create_campaign_with_recurring_slot(
+        client,
+        name="Bulk",
+        timezone="America/New_York",
+        player_names="Rogue",
+        horizon_weeks=8,
+        label="Friday",
     )
-    assert r.status_code == 200
-    m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
-    assert m
-    public_id, secret = m.group(1), m.group(2)
-    tok = re.search(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
-    assert tok
-    player_token = tok.group(1)
-    add = client.post(
-        f"/c/{public_id}/admin/{secret}/slots",
-        data={
-            "kind": "recurring",
-            "weekday": "4",
-            "start_local": "18:00",
-            "duration_hours": "3",
-            "label": "Friday",
-        },
-    )
-    assert add.status_code in (200, 303)
-    return public_id, player_token
+    assert created.player_tokens
+    return created.public_id, created.player_tokens[0]
 
 
 def test_bulk_widget_collapsed_by_default(client):

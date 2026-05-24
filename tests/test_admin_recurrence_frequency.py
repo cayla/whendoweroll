@@ -8,15 +8,11 @@ from app.models import Campaign, PublicRecurrenceMode, Slot, SlotKind
 from tests.helpers import create_campaign_via_form
 
 
-def _new_campaign(client):
+def test_admin_add_recurring_slot_does_not_change_campaign_tempo(client, engine):
     created = create_campaign_via_form(
         client, name="Public mode test", timezone="UTC", player_names="", horizon_weeks=4
     )
-    return created.public_id, created.admin_secret
-
-
-def test_admin_add_recurring_slot_does_not_change_campaign_tempo(client, engine):
-    public_id, secret = _new_campaign(client)
+    public_id, secret = created.public_id, created.admin_secret
     with Session(engine) as s:
         c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
         c.public_recurrence_mode = PublicRecurrenceMode.two_weeks
@@ -42,7 +38,10 @@ def test_admin_add_recurring_slot_does_not_change_campaign_tempo(client, engine)
 
 
 def test_admin_update_campaign_public_recurrence_mode(client, engine):
-    public_id, secret = _new_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Public mode test", timezone="UTC", player_names="", horizon_weeks=4
+    )
+    public_id, secret = created.public_id, created.admin_secret
     client.post(
         f"/c/{public_id}/admin/{secret}/slots",
         data={

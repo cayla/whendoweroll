@@ -14,7 +14,7 @@ from app.models import Availability, AvailabilityStatus, Campaign, ConsensusPoli
 from tests.helpers import create_campaign_via_form
 
 
-def _campaign(client, names: list[str]) -> tuple[str, str]:
+def _create(client, names: list[str]) -> tuple[str, str]:
     created = create_campaign_via_form(
         client, name="Policy Test", timezone="UTC", player_names=names, horizon_weeks=12
     )
@@ -51,14 +51,14 @@ def _seed_adhoc_slot(
 
 
 def test_new_campaign_defaults_to_no_two_nears(client, engine):
-    public_id, _secret = _campaign(client, ["Alice", "Bob"])
+    public_id, _secret = _create(client, ["Alice", "Bob"])
     with Session(engine) as s:
         c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
     assert c.consensus_policy is ConsensusPolicy.no_two_nears
 
 
 def test_settings_form_round_trips_consensus_policy(client, engine):
-    public_id, secret = _campaign(client, ["Alice", "Bob"])
+    public_id, secret = _create(client, ["Alice", "Bob"])
     r = client.post(
         f"/c/{public_id}/admin/{secret}/settings",
         data={
@@ -75,7 +75,7 @@ def test_settings_form_round_trips_consensus_policy(client, engine):
 
 
 def test_settings_rejects_unknown_consensus_policy(client):
-    public_id, secret = _campaign(client, ["Alice", "Bob"])
+    public_id, secret = _create(client, ["Alice", "Bob"])
     r = client.post(
         f"/c/{public_id}/admin/{secret}/settings",
         data={
@@ -100,7 +100,7 @@ def test_ics_under_strict_drops_near_consensus_windows(client, engine):
     """A campaign on the ``strict`` policy should never emit a near-consensus
     event, even though one missing player would normally qualify.
     """
-    public_id, _secret = _campaign(client, ["Alice", "Bob"])
+    public_id, _secret = _create(client, ["Alice", "Bob"])
     _seed_adhoc_slot(
         engine,
         public_id=public_id,
@@ -116,7 +116,7 @@ def test_ics_under_strict_drops_near_consensus_windows(client, engine):
 
 
 def test_ics_under_allow_one_keeps_back_to_back_nears(client, engine):
-    public_id, _secret = _campaign(client, ["Alice", "Bob"])
+    public_id, _secret = _create(client, ["Alice", "Bob"])
     for d in (3, 5):
         _seed_adhoc_slot(
             engine,
@@ -134,7 +134,7 @@ def test_ics_under_no_two_nears_skips_back_to_back_near_consensus(client, engine
     """Two consecutive near-consensus windows: under the default policy the
     feed must drop the second one to keep the calendar honest.
     """
-    public_id, _secret = _campaign(client, ["Alice", "Bob"])
+    public_id, _secret = _create(client, ["Alice", "Bob"])
     for d in (3, 5):
         _seed_adhoc_slot(
             engine,
@@ -151,7 +151,7 @@ def test_ics_under_no_two_nears_skips_back_to_back_near_consensus(client, engine
 
 def test_ics_under_no_repeat_holdout_drops_only_same_person_repeats(client, engine):
     """Same holdout twice: drop the second. Different holdouts: keep both."""
-    public_id, _secret = _campaign(client, ["Alice", "Bob", "Carol"])
+    public_id, _secret = _create(client, ["Alice", "Bob", "Carol"])
     _seed_adhoc_slot(
         engine,
         public_id=public_id,

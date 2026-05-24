@@ -2,38 +2,24 @@
 
 from __future__ import annotations
 
-import re
+from tests.helpers import create_campaign_with_recurring_slot
+
+
+def _rogue_with_friday_slot(client):
+    return create_campaign_with_recurring_slot(
+        client,
+        name="Vis",
+        timezone="America/New_York",
+        player_names="Rogue",
+        horizon_weeks=4,
+        label="Friday",
+    )
 
 
 def test_no_per_date_rows_until_standing_yes_then_cleared_on_no(client):
-    r = client.post(
-        "/",
-        data={
-            "name": "Vis",
-            "timezone": "America/New_York",
-            "player_names": "Rogue",
-            "horizon_weeks": "4",
-        },
-    )
-    assert r.status_code == 200
-    m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
-    assert m
-    public_id, secret = m.group(1), m.group(2)
-    tok = re.search(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
-    assert tok
-    player_token = tok.group(1)
-
-    add = client.post(
-        f"/c/{public_id}/admin/{secret}/slots",
-        data={
-            "kind": "recurring",
-            "weekday": "4",
-            "start_local": "18:00",
-            "duration_hours": "3",
-            "label": "Friday",
-        },
-    )
-    assert add.status_code in (200, 303)
+    created = _rogue_with_friday_slot(client)
+    public_id = created.public_id
+    player_token = created.player_tokens[0]
 
     p0 = client.get(f"/c/{public_id}/p/{player_token}")
     assert p0.status_code == 200
@@ -52,32 +38,10 @@ def test_no_per_date_rows_until_standing_yes_then_cleared_on_no(client):
 
 def test_availability_post_htmx_refreshes_exceptions_contract(client):
     """Row swap + HX-Trigger + GET fragment (Safari/Firefox-friendly; no multi-root OOB)."""
-    r = client.post(
-        "/",
-        data={
-            "name": "Vis",
-            "timezone": "America/New_York",
-            "player_names": "Rogue",
-            "horizon_weeks": "4",
-        },
-    )
-    assert r.status_code == 200
-    m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
-    assert m
-    public_id, secret = m.group(1), m.group(2)
-    tok = re.search(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
-    assert tok
-    player_token = tok.group(1)
-    client.post(
-        f"/c/{public_id}/admin/{secret}/slots",
-        data={
-            "kind": "recurring",
-            "weekday": "4",
-            "start_local": "18:00",
-            "duration_hours": "3",
-            "label": "Friday",
-        },
-    )
+    created = _rogue_with_friday_slot(client)
+    public_id = created.public_id
+    player_token = created.player_tokens[0]
+
     post = client.post(
         f"/c/{public_id}/p/{player_token}/availability/1",
         data={"status": "yes"},

@@ -8,22 +8,21 @@ from app.models import Campaign
 from tests.helpers import create_campaign_via_form
 
 
-def _new_campaign(client):
+def test_new_campaign_defaults_prefer_full_party_on(client, engine):
     created = create_campaign_via_form(
         client, name="Prefer full party test", timezone="UTC", player_names="", horizon_weeks=4
     )
-    return created.public_id, created.admin_secret
-
-
-def test_new_campaign_defaults_prefer_full_party_on(client, engine):
-    public_id, _secret = _new_campaign(client)
+    public_id = created.public_id
     with Session(engine) as s:
         c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
     assert c.prefer_full_party is True
 
 
 def test_settings_form_round_trips_prefer_full_party(client, engine):
-    public_id, secret = _new_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Prefer full party test", timezone="UTC", player_names="", horizon_weeks=4
+    )
+    public_id, secret = created.public_id, created.admin_secret
     with Session(engine) as s:
         c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
 

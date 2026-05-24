@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import re
-
 from starlette.requests import Request
 
 from app.view_timezone import COOKIE_NAME, effective_display_timezone
+from tests.helpers import create_campaign_via_form
 
 
 def test_effective_display_timezone_reads_cookie():
@@ -48,20 +47,10 @@ def test_effective_display_timezone_invalid_falls_back():
 
 
 def test_public_page_reflects_cookie(client):
-    r = client.post(
-        "/",
-        data={
-            "name": "TZ Test",
-            "timezone": "America/New_York",
-            "player_names": "",
-            "horizon_weeks": "2",
-        },
+    created = create_campaign_via_form(
+        client, name="TZ Test", timezone="America/New_York", player_names="", horizon_weeks=2
     )
-    assert r.status_code == 200
-    m = re.search(r"/c/([0-9a-f]+)", r.text)
-    assert m
-    public_id = m.group(1)
     client.cookies.set(COOKIE_NAME, "UTC")
-    page = client.get(f"/c/{public_id}")
+    page = client.get(f"/c/{created.public_id}")
     assert page.status_code == 200
     assert "UTC" in page.text
