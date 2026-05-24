@@ -130,6 +130,17 @@ def migrate_sqlite_player_is_mandatory(eng) -> None:
                 conn.execute(text("ALTER TABLE player DROP COLUMN is_dm"))
 
 
+def migrate_sqlite_campaign_prefer_full_party(eng) -> None:
+    """Add ``prefer_full_party`` to legacy ``campaign`` rows (default on)."""
+    with eng.begin() as conn:
+        info = conn.execute(text("PRAGMA table_info(campaign)")).fetchall()
+        if not info:
+            return
+        names = {row[1] for row in info}
+        if "prefer_full_party" not in names:
+            conn.execute(text("ALTER TABLE campaign ADD COLUMN prefer_full_party INTEGER NOT NULL DEFAULT 1"))
+
+
 def migrate_sqlite_campaign_consensus_policy(eng) -> None:
     """Add ``consensus_policy`` to legacy ``campaign`` rows.
 
@@ -247,6 +258,7 @@ def init_db() -> None:
         migrate_sqlite_slot_schema(engine)
         migrate_sqlite_player_is_mandatory(engine)
         migrate_sqlite_campaign_consensus_policy(engine)
+        migrate_sqlite_campaign_prefer_full_party(engine)
         migrate_sqlite_campaign_public_recurrence_mode(engine)
         migrate_sqlite_normalize_public_recurrence_mode_strings(engine)
         migrate_sqlite_strip_superseded_columns(engine)

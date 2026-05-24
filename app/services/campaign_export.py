@@ -83,6 +83,7 @@ def build_export_payload(session: Session, campaign: Campaign) -> dict:
                 if isinstance(campaign.public_recurrence_mode, PublicRecurrenceMode)
                 else str(campaign.public_recurrence_mode)
             ),
+            "prefer_full_party": bool(campaign.prefer_full_party),
             "created_at": _iso(campaign.created_at),
         },
         "players": [

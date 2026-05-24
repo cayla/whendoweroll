@@ -205,6 +205,7 @@ def update_settings(
     horizon_weeks: int = Form(12),
     consensus_policy: str = Form(...),
     public_recurrence_mode: str | None = Form("weekly"),
+    prefer_full_party: list[str] = Form(default=[]),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     campaign = require_admin(session, public_id, secret)
@@ -225,6 +226,7 @@ def update_settings(
     campaign.horizon_weeks = max(1, min(horizon_weeks, 52))
     campaign.consensus_policy = policy
     campaign.public_recurrence_mode = mode
+    campaign.prefer_full_party = "1" in prefer_full_party
     session.add(campaign)
     session.commit()
     return _redirect_to_admin(public_id, secret)

@@ -96,6 +96,14 @@ class Campaign(SQLModel, table=True):
             "player views always use full weekly expansion."
         ),
     )
+    prefer_full_party: bool = Field(
+        default=True,
+        description=(
+            "When a summary card would be all-but-one, prefer a full-consensus "
+            "window within 48 hours afterward (searches the full horizon, not "
+            "only tempo-thinned rows)."
+        ),
+    )
     created_at: datetime = Field(default_factory=_utcnow)
 
 

@@ -21,11 +21,15 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.models import AvailabilityStatus, ConsensusPolicy, Player
 from app.services.slots import Occurrence
 from app.services.timeutil import normalize_occurrence_start
+
+# When the soonest qualifying window is all-but-one, prefer a full-consensus
+# window that starts within this many hours afterward (e.g. Fri eve → Sat afternoon).
+FULL_OVER_NEAR_MAX_DELTA = timedelta(hours=48)
 
 
 @dataclass(frozen=True)
@@ -151,6 +155,57 @@ def occurrence_qualifies_under_policy(
     return len(missing_ids) <= _max_missing_for(policy)
 
 
+def _occurrence_key(result: ConsensusResult) -> tuple[int, datetime]:
+    return (result.occurrence.slot_id, normalize_occurrence_start(result.occurrence.starts_at_utc))
+
+
+def _maybe_prefer_full_over_near(
+    pick: ConsensusResult,
+    *,
+    policy: ConsensusPolicy,
+    full_pool: Sequence[ConsensusResult],
+    out: list[ConsensusResult],
+    picked_keys: set[tuple[int, datetime]],
+) -> ConsensusResult | None:
+    """Return a better full-consensus pick, or ``None`` if ``pick`` should be skipped.
+
+    Returns ``None`` when ``pick`` is all-but-one but a nearby full window was
+    already chosen (the near window is redundant).
+    """
+    if pick.missing_count != 1 or policy is ConsensusPolicy.strict:
+        return pick
+    full_nearby = _find_full_consensus_within_hours_after(full_pool, pick)
+    if full_nearby is None:
+        return pick
+    if _occurrence_key(full_nearby) in picked_keys:
+        return None
+    if out and _guardrail_blocks(policy, out[-1], full_nearby):
+        return pick
+    return full_nearby
+
+
+def _find_full_consensus_within_hours_after(
+    full_windows: Sequence[ConsensusResult],
+    near: ConsensusResult,
+    *,
+    max_delta: timedelta = FULL_OVER_NEAR_MAX_DELTA,
+) -> ConsensusResult | None:
+    """Earliest full-consensus window starting after ``near`` but within ``max_delta``."""
+    near_start = near.occurrence.starts_at_utc
+    best: ConsensusResult | None = None
+    for c in full_windows:
+        if c.missing_count != 0:
+            continue
+        start = c.occurrence.starts_at_utc
+        if start <= near_start:
+            continue
+        if start - near_start > max_delta:
+            continue
+        if best is None or start < best.occurrence.starts_at_utc:
+            best = c
+    return best
+
+
 def _guardrail_blocks(policy: ConsensusPolicy, prev: ConsensusResult, curr: ConsensusResult) -> bool:
     """Between-window guardrail: should ``curr`` be skipped given the previously picked ``prev``?
 
@@ -178,6 +233,7 @@ def find_next_meets(
     policy: ConsensusPolicy,
     opt_outs: set[tuple[int, int, datetime]] | None = None,
     limit: int = 2,
+    proximity_occurrences: Sequence[Occurrence] | None = None,
 ) -> list[ConsensusResult]:
     """Greedy forward walk picking up to ``limit`` qualifying upcoming windows.
 
@@ -191,6 +247,13 @@ def find_next_meets(
     guardrail relative to it, and so on. This keeps "the next session" as
     close to today as the rules allow, at the cost of *occasionally* surfacing
     a slightly later runner-up than a globally optimal sequence might.
+
+    **Full-over-near proximity:** Whenever a pick would be all-but-one, look for
+    the earliest **full** window within ``FULL_OVER_NEAR_MAX_DELTA`` (48 hours)
+    afterward in ``proximity_occurrences``. Public routes pass the **expanded**
+    horizon (before tempo thinning) so
+    a full Saturday is not missed when Friday is the tempo-chain row. Policies
+    that never allow a holdout (``strict``) skip this step.
 
     Used by both the public-page summary cards (``limit=2``) and the
     consensus ``.ics`` feed (large ``limit``); the ICS feed is intentionally
@@ -215,11 +278,35 @@ def find_next_meets(
         opt_outs=opt_outs,
         limit=max(limit * 4, 200),
     )
+    full_pool: list[ConsensusResult] = []
+    if proximity_occurrences is not None and policy is not ConsensusPolicy.strict:
+        full_pool = list_consensus_occurrences(
+            proximity_occurrences,
+            players,
+            availability,
+            max_missing=0,
+            opt_outs=opt_outs,
+            limit=500,
+        )
     out: list[ConsensusResult] = []
+    picked_keys: set[tuple[int, datetime]] = set()
     for c in candidates:
+        if _occurrence_key(c) in picked_keys:
+            continue
         if out and _guardrail_blocks(policy, out[-1], c):
             continue
-        out.append(c)
+        pick = c
+        if full_pool:
+            pick = _maybe_prefer_full_over_near(
+                c, policy=policy, full_pool=full_pool, out=out, picked_keys=picked_keys
+            )
+        if pick is None:
+            picked_keys.add(_occurrence_key(c))
+            continue
+        picked_keys.add(_occurrence_key(pick))
+        if pick is not c:
+            picked_keys.add(_occurrence_key(c))
+        out.append(pick)
         if len(out) >= limit:
             break
     return out
