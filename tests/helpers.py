@@ -90,6 +90,18 @@ def add_recurring_slot(
     assert r.status_code in (200, 303), r.text
 
 
+def player_token_from_html(html: str, public_id: str) -> str:
+    """Extract the first per-player capability token from an HTML fragment."""
+    m = re.search(rf"/c/{re.escape(public_id)}/p/([\w\-]+)", html)
+    assert m, "player URL not found in HTML"
+    return m.group(1)
+
+
+def admin_url(public_id: str, admin_secret: str, suffix: str = "") -> str:
+    """Build an admin path (``suffix`` should start with ``/`` when non-empty)."""
+    return f"/c/{public_id}/admin/{admin_secret}{suffix}"
+
+
 def create_campaign_with_recurring_slot(
     client,
     *,
