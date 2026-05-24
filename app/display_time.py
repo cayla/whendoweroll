@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from app.models import Campaign, PublicRecurrenceMode, Slot, SlotKind
 from app.services.slots import upcoming_occurrences_for_slot
+from app.services.timeutil import ensure_utc
 
 _WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
@@ -32,10 +33,12 @@ def format_hhmm_12h(value: str | None) -> str:
         return value
 
 
-def ensure_utc(value: datetime) -> datetime:
-    if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
+def _public_recurrence_mode(campaign: Campaign) -> PublicRecurrenceMode:
+    raw = campaign.public_recurrence_mode
+    try:
+        return raw if isinstance(raw, PublicRecurrenceMode) else PublicRecurrenceMode(str(raw))
+    except ValueError:
+        return PublicRecurrenceMode.weekly
 
 
 def _format_local_date_time_line(local: datetime) -> str:
@@ -88,11 +91,7 @@ def recurring_slot_primary_label(slot: Slot, campaign, display_tz: str) -> str:
 
 def player_campaign_tempo_caption(campaign: Campaign) -> str:
     """Short label for how recurring sessions are thinned on the public page and .ics."""
-    raw = campaign.public_recurrence_mode
-    try:
-        mode = raw if isinstance(raw, PublicRecurrenceMode) else PublicRecurrenceMode(str(raw))
-    except ValueError:
-        mode = PublicRecurrenceMode.weekly
+    mode = _public_recurrence_mode(campaign)
     if mode is PublicRecurrenceMode.weekly:
         return "Tempo: weekly — the public page and consensus calendar list every date below."
     if mode is PublicRecurrenceMode.two_weeks:
@@ -111,11 +110,7 @@ def player_campaign_tempo_caption(campaign: Campaign) -> str:
 
 def public_campaign_tempo_caption(campaign: Campaign) -> str:
     """One-line tempo for the anonymous public campaign page."""
-    raw = campaign.public_recurrence_mode
-    try:
-        mode = raw if isinstance(raw, PublicRecurrenceMode) else PublicRecurrenceMode(str(raw))
-    except ValueError:
-        mode = PublicRecurrenceMode.weekly
+    mode = _public_recurrence_mode(campaign)
     if mode is PublicRecurrenceMode.weekly:
         return (
             "Weekly — this page and the consensus calendar list every "

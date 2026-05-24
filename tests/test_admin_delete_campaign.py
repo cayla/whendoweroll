@@ -2,29 +2,15 @@
 
 from __future__ import annotations
 
-import re
-
-
-def _create_campaign(client):
-    r = client.post(
-        "/",
-        data={
-            "name": "Gone Soon",
-            "timezone": "America/New_York",
-            "player_names": "A\nB",
-            "horizon_weeks": "4",
-        },
-    )
-    assert r.status_code == 200
-    public_id, secret = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text).groups()
-    raw = re.findall(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
-    tokens = list(dict.fromkeys(raw))
-    assert len(tokens) == 2
-    return public_id, secret, tokens
+from tests.helpers import create_campaign_via_form
 
 
 def test_delete_campaign_returns_303_to_home_and_invalidates_urls(client):
-    public_id, secret, tokens = _create_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Gone Soon", timezone="America/New_York", player_names="A\nB", horizon_weeks=4
+    )
+    public_id, secret, tokens = created.public_id, created.admin_secret, created.player_tokens
+    assert len(tokens) == 2
     r = client.post(f"/c/{public_id}/admin/{secret}/delete", follow_redirects=False)
     assert r.status_code == 303
     assert r.headers.get("location") == "/"

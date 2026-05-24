@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from pathlib import Path
+from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
 
 from fastapi.templating import Jinja2Templates
@@ -17,10 +16,9 @@ from app.display_time import (
     public_campaign_tempo_caption,
     recurring_slot_primary_label,
 )
+from app.paths import TEMPLATES_DIR
+from app.services.timeutil import ensure_utc
 from app.static_version import static_asset_version
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-TEMPLATES_DIR = BASE_DIR / "templates"
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 templates.env.globals["static_version"] = static_asset_version()
@@ -33,9 +31,7 @@ def _format_local(value: datetime, tz_name: str) -> str:
     ``fragments/viewer_tz_modal.html``); repeating ``EDT`` on every row was
     just noise.
     """
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=UTC)
-    local = value.astimezone(ZoneInfo(tz_name))
+    local = ensure_utc(value).astimezone(ZoneInfo(tz_name))
     return local.strftime("%a %b ") + str(local.day) + local.strftime(" %Y, ") + format_datetime_clock_12h(local)
 
 

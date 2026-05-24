@@ -2,31 +2,17 @@
 
 from __future__ import annotations
 
-import re
-
 from sqlmodel import Session, select
 
 from app.models import Player
-
-
-def _create_two_player_campaign(client) -> tuple[str, str, int]:
-    r = client.post(
-        "/",
-        data={
-            "name": "Mandatory Test",
-            "timezone": "UTC",
-            "player_names": "Alice\nBob",
-            "horizon_weeks": "2",
-        },
-    )
-    assert r.status_code == 200
-    m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
-    assert m
-    return m.group(1), m.group(2), 0  # cid resolved by caller via DB if needed
+from tests.helpers import create_campaign_via_form
 
 
 def test_set_single_mandatory_clears_others(client, engine):
-    public_id, secret, _ = _create_two_player_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Mandatory Test", timezone="UTC", player_names=["Alice", "Bob"], horizon_weeks=2
+    )
+    public_id, secret = created.public_id, created.admin_secret
     with Session(engine) as s:
         first = s.exec(select(Player)).first()
         assert first is not None
@@ -49,7 +35,10 @@ def test_set_single_mandatory_clears_others(client, engine):
 
 
 def test_set_multiple_mandatory_attendees(client, engine):
-    public_id, secret, _ = _create_two_player_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Mandatory Test", timezone="UTC", player_names=["Alice", "Bob"], horizon_weeks=2
+    )
+    public_id, secret = created.public_id, created.admin_secret
     with Session(engine) as s:
         first = s.exec(select(Player)).first()
         assert first is not None
@@ -69,7 +58,10 @@ def test_set_multiple_mandatory_attendees(client, engine):
 
 
 def test_clear_mandatory_attendees_with_empty_form(client, engine):
-    public_id, secret, _ = _create_two_player_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Mandatory Test", timezone="UTC", player_names=["Alice", "Bob"], horizon_weeks=2
+    )
+    public_id, secret = created.public_id, created.admin_secret
     with Session(engine) as s:
         first = s.exec(select(Player)).first()
         assert first is not None
@@ -92,9 +84,11 @@ def test_clear_mandatory_attendees_with_empty_form(client, engine):
 
 
 def test_invalid_player_id_rejected(client):
-    public_id, secret, _ = _create_two_player_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Mandatory Test", timezone="UTC", player_names=["Alice", "Bob"], horizon_weeks=2
+    )
     r = client.post(
-        f"/c/{public_id}/admin/{secret}/mandatory-attendees",
+        f"/c/{created.public_id}/admin/{created.admin_secret}/mandatory-attendees",
         data={"mandatory_player_ids": ["999999"]},
     )
     assert r.status_code == 400

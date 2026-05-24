@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from datetime import UTC, datetime, timedelta
 
 from sqlmodel import Session, select
@@ -10,6 +9,7 @@ from sqlmodel import Session, select
 from app.models import AvailabilityStatus, Campaign, Player, Slot, SlotKind
 from app.services.availability import roster_can_make_occurrence, slot_standing_yes_pair
 from app.services.timeutil import normalize_occurrence_start
+from tests.helpers import create_campaign_via_form, create_campaign_with_recurring_slot
 
 
 def test_roster_can_make_skips_opt_outs():
@@ -59,23 +59,15 @@ def test_roster_all_never_is_zero_of_zero():
 
 
 def test_player_slot_row_shows_can_make_pair(client):
-    r = client.post(
-        "/",
-        data={
-            "name": "Counts",
-            "timezone": "America/New_York",
-            "player_names": "Alice\nBob",
-            "horizon_weeks": "4",
-        },
+    created = create_campaign_with_recurring_slot(
+        client,
+        name="Counts",
+        timezone="America/New_York",
+        player_names=["Alice", "Bob"],
+        horizon_weeks=4,
     )
-    assert r.status_code == 200
-    public_id, secret = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text).groups()
-    raw = re.findall(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
-    tokens = list(dict.fromkeys(raw))
-    client.post(
-        f"/c/{public_id}/admin/{secret}/slots",
-        data={"kind": "recurring", "weekday": "4", "start_local": "18:00", "duration_hours": "3"},
-    )
+    public_id, tokens = created.public_id, created.player_tokens
+    assert len(tokens) == 2
     client.post(f"/c/{public_id}/p/{tokens[1]}/availability/1", data={"status": "yes"})
     page = client.get(f"/c/{public_id}/p/{tokens[0]}")
     assert page.status_code == 200
@@ -88,7 +80,15 @@ def test_player_slot_row_shows_can_make_pair(client):
 
 
 def test_player_slot_row_counts_never_against_full_roster(client):
-    public_id, _, tokens = _three_player_campaign_with_slot(client)
+    created = create_campaign_with_recurring_slot(
+        client,
+        name="Trio",
+        timezone="America/New_York",
+        player_names=["Alice", "Bob", "Cayla"],
+        horizon_weeks=4,
+    )
+    public_id, tokens = created.public_id, created.player_tokens
+    assert len(tokens) == 3
     client.post(f"/c/{public_id}/p/{tokens[0]}/availability/1", data={"status": "yes"})
     client.post(f"/c/{public_id}/p/{tokens[1]}/availability/1", data={"status": "yes"})
     client.post(f"/c/{public_id}/p/{tokens[2]}/availability/1", data={"status": "no"})
@@ -98,7 +98,14 @@ def test_player_slot_row_counts_never_against_full_roster(client):
 
 
 def test_three_players_all_yes_shows_three_of_three(client):
-    public_id, _, tokens = _three_player_campaign_with_slot(client)
+    created = create_campaign_with_recurring_slot(
+        client,
+        name="Trio",
+        timezone="America/New_York",
+        player_names=["Alice", "Bob", "Cayla"],
+        horizon_weeks=4,
+    )
+    public_id, tokens = created.public_id, created.player_tokens
     client.post(f"/c/{public_id}/p/{tokens[1]}/availability/1", data={"status": "yes"})
     client.post(f"/c/{public_id}/p/{tokens[2]}/availability/1", data={"status": "yes"})
     page = client.get(f"/c/{public_id}/p/{tokens[0]}")
@@ -110,40 +117,16 @@ def test_three_players_all_yes_shows_three_of_three(client):
     assert "(3/3 can make it)" in page2.text
 
 
-def _three_player_campaign_with_slot(client) -> tuple[str, str, list[str]]:
-    r = client.post(
-        "/",
-        data={
-            "name": "Trio",
-            "timezone": "America/New_York",
-            "player_names": "Alice\nBob\nCayla",
-            "horizon_weeks": "4",
-        },
-    )
-    assert r.status_code == 200
-    public_id, secret = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text).groups()
-    raw = re.findall(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
-    tokens = list(dict.fromkeys(raw))
-    client.post(
-        f"/c/{public_id}/admin/{secret}/slots",
-        data={"kind": "recurring", "weekday": "4", "start_local": "18:00", "duration_hours": "3"},
-    )
-    return public_id, secret, tokens
-
-
 def test_player_cannot_change_availability_on_ended_oneoff(client, engine):
-    r = client.post(
-        "/",
-        data={
-            "name": "PastOneoff",
-            "timezone": "America/New_York",
-            "player_names": "Solo",
-            "horizon_weeks": "4",
-        },
+    created = create_campaign_via_form(
+        client,
+        name="PastOneoff",
+        timezone="America/New_York",
+        player_names="Solo",
+        horizon_weeks=4,
     )
-    assert r.status_code == 200
-    public_id, _secret = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text).groups()
-    token = re.search(r"/c/" + public_id + r"/p/([\w\-]+)", r.text).group(1)
+    public_id = created.public_id
+    token = created.player_tokens[0]
 
     with Session(engine) as s:
         campaign = s.exec(select(Campaign).where(Campaign.public_id == public_id)).first()
@@ -171,23 +154,15 @@ def test_player_cannot_change_availability_on_ended_oneoff(client, engine):
 
 
 def test_public_windows_table_hides_all_never_shows_buckets(client):
-    r = client.post(
-        "/",
-        data={
-            "name": "NeverDenom",
-            "timezone": "America/New_York",
-            "player_names": "A\nB\nC",
-            "horizon_weeks": "4",
-        },
+    created = create_campaign_with_recurring_slot(
+        client,
+        name="NeverDenom",
+        timezone="America/New_York",
+        player_names=["A", "B", "C"],
+        horizon_weeks=4,
     )
-    assert r.status_code == 200
-    public_id, secret = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text).groups()
-    raw = re.findall(r"/c/" + public_id + r"/p/([\w\-]+)", r.text)
-    tokens = list(dict.fromkeys(raw))
-    client.post(
-        f"/c/{public_id}/admin/{secret}/slots",
-        data={"kind": "recurring", "weekday": "4", "start_local": "18:00", "duration_hours": "3"},
-    )
+    public_id, tokens = created.public_id, created.player_tokens
+    assert len(tokens) == 3
     for t in tokens:
         client.post(f"/c/{public_id}/p/{t}/availability/1", data={"status": "no"})
     pub = client.get(f"/c/{public_id}")

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -14,6 +14,7 @@ from app import settings as settings_module
 from app.db import get_session
 from app.models import Availability, Campaign, OccurrenceOptOut, Player, Slot
 from app.services.campaign_delete import delete_campaign_cascade
+from app.services.timeutil import ensure_utc
 from app.super_admin_auth import (
     SESSION_COOKIE_NAME,
     SESSION_MAX_AGE_SECONDS,
@@ -35,12 +36,6 @@ class SuperAdminCampaignRow:
     created_at: datetime
     player_count: int
     last_activity_at: datetime
-
-
-def _as_utc(dt: datetime) -> datetime:
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=UTC)
-    return dt.astimezone(UTC)
 
 
 def _super_admin_campaign_rows(session: Session) -> list[SuperAdminCampaignRow]:
@@ -82,8 +77,8 @@ def _super_admin_campaign_rows(session: Session) -> list[SuperAdminCampaignRow]:
             continue
         pc = counts.get(c.id, 0)
         sub = activity.get(c.id)
-        created = _as_utc(c.created_at)
-        last = created if sub is None else max(created, _as_utc(sub))
+        created = ensure_utc(c.created_at)
+        last = created if sub is None else max(created, ensure_utc(sub))
         rows.append(
             SuperAdminCampaignRow(
                 name=c.name,

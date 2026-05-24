@@ -2,34 +2,21 @@
 
 from __future__ import annotations
 
-import re
 from datetime import date
 from zoneinfo import ZoneInfo
 
 from sqlmodel import Session, select
 
-from app.display_time import ensure_utc
 from app.models import Slot, SlotKind
-
-
-def _new_campaign(client):
-    r = client.post(
-        "/",
-        data={
-            "name": "Oneoff",
-            "timezone": "America/New_York",
-            "player_names": "",
-            "horizon_weeks": "4",
-        },
-    )
-    assert r.status_code == 200
-    m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
-    assert m
-    return m.group(1), m.group(2)
+from app.services.timeutil import ensure_utc
+from tests.helpers import create_campaign_via_form
 
 
 def test_admin_oneoff_same_calendar_day(client, engine):
-    public_id, secret = _new_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Oneoff", timezone="America/New_York", player_names="", horizon_weeks=4
+    )
+    public_id, secret = created.public_id, created.admin_secret
     r = client.post(
         f"/c/{public_id}/admin/{secret}/slots",
         data={
@@ -56,7 +43,10 @@ def test_admin_oneoff_same_calendar_day(client, engine):
 
 
 def test_admin_oneoff_duration_crosses_midnight(client, engine):
-    public_id, secret = _new_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Oneoff", timezone="America/New_York", player_names="", horizon_weeks=4
+    )
+    public_id, secret = created.public_id, created.admin_secret
     r = client.post(
         f"/c/{public_id}/admin/{secret}/slots",
         data={
@@ -82,7 +72,10 @@ def test_admin_oneoff_duration_crosses_midnight(client, engine):
 
 
 def test_admin_oneoff_rejects_past_start(client):
-    public_id, secret = _new_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Oneoff", timezone="America/New_York", player_names="", horizon_weeks=4
+    )
+    public_id, secret = created.public_id, created.admin_secret
     r = client.post(
         f"/c/{public_id}/admin/{secret}/slots",
         data={
@@ -96,7 +89,10 @@ def test_admin_oneoff_rejects_past_start(client):
 
 
 def test_admin_recurring_times_display_as_12_hour(client):
-    public_id, secret = _new_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Oneoff", timezone="America/New_York", player_names="", horizon_weeks=4
+    )
+    public_id, secret = created.public_id, created.admin_secret
     r = client.post(
         f"/c/{public_id}/admin/{secret}/slots",
         data={

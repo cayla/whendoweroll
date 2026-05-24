@@ -2,27 +2,24 @@
 
 from __future__ import annotations
 
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from zoneinfo import ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.db import get_session
 from app.deps import get_campaign_or_404
-from app.models import Player, Slot
-from app.services.availability import eligible_not_never_count_for_slot, load_availability_map
+from app.services.availability import eligible_not_never_count_for_slot
 from app.services.consensus import (
     count_availability_buckets_for_occurrence,
     find_next_meets,
     player_lookup,
 )
 from app.services.ical import IcsEvent, build_ics, placeholder_consensus_event
-from app.services.opt_outs import load_opt_out_set
-from app.services.public_occurrence_filter import filter_occurrences_for_public_display
-from app.services.slots import expand_all
+from app.services.public_consensus_data import load_public_consensus_data
 from app.templates_setup import COMMON_TIMEZONES, templates
-from app.view_timezone import effective_display_timezone, set_viewer_timezone_on_response
+from app.view_timezone import effective_display_timezone, redirect_with_viewer_timezone
 
 router = APIRouter()
 
@@ -34,46 +31,28 @@ def public_home(
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     campaign = get_campaign_or_404(session, public_id)
-    players = session.exec(select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)).all()
-    slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
+    data = load_public_consensus_data(session, campaign)
 
     display_tz = effective_display_timezone(request, campaign.timezone)
 
-    tz = ZoneInfo(campaign.timezone)
-    occurrences_full = expand_all(slots, tz=tz, horizon_weeks=campaign.horizon_weeks)
-    availability = load_availability_map(session, players)
-    player_ids = [p.id for p in players if p.id is not None]
-    opt_outs = load_opt_out_set(session, player_ids)
-
-    occurrences_public = filter_occurrences_for_public_display(
-        occurrences_full,
-        slots,
-        tz=tz,
-        players=players,
-        availability=availability,
-        policy=campaign.consensus_policy,
-        opt_outs=opt_outs,
-        public_recurrence_mode=campaign.public_recurrence_mode,
-    )
-
     upcoming_meets = find_next_meets(
-        occurrences_public,
-        players,
-        availability,
+        data.occurrences_public,
+        data.players,
+        data.availability,
         policy=campaign.consensus_policy,
-        opt_outs=opt_outs,
+        opt_outs=data.opt_outs,
         limit=2,
-        proximity_occurrences=occurrences_full if campaign.prefer_full_party else None,
+        proximity_occurrences=data.occurrences_full if campaign.prefer_full_party else None,
     )
 
-    horizon_preview = occurrences_full[:25]
+    horizon_preview = data.occurrences_full[:25]
     occurrence_rows: list[dict] = []
     for occ in horizon_preview:
-        yes_denom = eligible_not_never_count_for_slot(availability, players, occ.slot_id)
+        yes_denom = eligible_not_never_count_for_slot(data.availability, data.players, occ.slot_id)
         if yes_denom == 0:
             continue
         can_make, cant_make, no_answer = count_availability_buckets_for_occurrence(
-            occ, players, availability, opt_outs
+            occ, data.players, data.availability, data.opt_outs
         )
         occurrence_rows.append(
             {
@@ -85,8 +64,8 @@ def public_home(
         )
     occurrence_rows_were_filtered = bool(horizon_preview) and not occurrence_rows
 
-    player_lookup_map = player_lookup(players)
-    mandatory_attendees = [p for p in players if p.is_mandatory]
+    player_lookup_map = player_lookup(data.players)
+    mandatory_attendees = [p for p in data.players if p.is_mandatory]
     has_mandatory = bool(mandatory_attendees)
 
     return templates.TemplateResponse(
@@ -94,14 +73,14 @@ def public_home(
         "public.html",
         {
             "campaign": campaign,
-            "players": players,
-            "slots": slots,
+            "players": data.players,
+            "slots": data.slots,
             "display_tz": display_tz,
             "upcoming_meets": upcoming_meets,
             "occurrence_rows": occurrence_rows,
             "occurrence_rows_were_filtered": occurrence_rows_were_filtered,
             "player_lookup": player_lookup_map,
-            "total_players": len(players),
+            "total_players": len(data.players),
             "has_mandatory": has_mandatory,
             "mandatory_attendees": mandatory_attendees,
             "timezones": COMMON_TIMEZONES,
@@ -117,11 +96,9 @@ def set_public_display_timezone(
 ) -> RedirectResponse:
     get_campaign_or_404(session, public_id)
     try:
-        resp = RedirectResponse(url=f"/c/{public_id}", status_code=303)
-        set_viewer_timezone_on_response(resp, timezone)
+        return redirect_with_viewer_timezone(f"/c/{public_id}", timezone)
     except ValueError, ZoneInfoNotFoundError:
         raise HTTPException(status_code=400, detail="Unknown timezone") from None
-    return resp
 
 
 @router.get("/c/{public_id}/calendar-consensus.ics")
@@ -136,33 +113,17 @@ def calendar_consensus_ics(
     can be shared with the whole roster — there is no per-player feed.
     """
     campaign = get_campaign_or_404(session, public_id)
-    players = session.exec(select(Player).where(Player.campaign_id == campaign.id).order_by(Player.sort_order)).all()
-    slots = session.exec(select(Slot).where(Slot.campaign_id == campaign.id)).all()
-    tz = ZoneInfo(campaign.timezone)
-    occurrences_full = expand_all(slots, tz=tz, horizon_weeks=campaign.horizon_weeks)
-    availability = load_availability_map(session, players)
-    player_ids = [p.id for p in players if p.id is not None]
-    opt_outs = load_opt_out_set(session, player_ids)
-    occurrences_public = filter_occurrences_for_public_display(
-        occurrences_full,
-        slots,
-        tz=tz,
-        players=players,
-        availability=availability,
-        policy=campaign.consensus_policy,
-        opt_outs=opt_outs,
-        public_recurrence_mode=campaign.public_recurrence_mode,
-    )
+    data = load_public_consensus_data(session, campaign)
     results = find_next_meets(
-        occurrences_public,
-        players,
-        availability,
+        data.occurrences_public,
+        data.players,
+        data.availability,
         policy=campaign.consensus_policy,
-        opt_outs=opt_outs,
+        opt_outs=data.opt_outs,
         limit=50,
-        proximity_occurrences=occurrences_full if campaign.prefer_full_party else None,
+        proximity_occurrences=data.occurrences_full if campaign.prefer_full_party else None,
     )
-    name_by_id = {p.id: p.display_name for p in players if p.id is not None}
+    name_by_id = {p.id: p.display_name for p in data.players if p.id is not None}
     events: list[IcsEvent] = []
     for res in results:
         occ = res.occurrence

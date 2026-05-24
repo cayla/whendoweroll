@@ -243,6 +243,20 @@ one.
 Because tokens are sensitive, they live in path segments rather than query
 strings (so they don't end up in access logs). Use HTTPS in production.
 
+## Environment variables
+
+| Variable | Purpose |
+| --- | --- |
+| `WHENDOWEROLL_DB_URL` | SQLAlchemy database URL (default: file-backed SQLite). |
+| `WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS` | When set, home-page create/import returns 403. |
+| `WHENDOWEROLL_SUPER_ADMIN_PASSWORD` | Operator password for `/internal/super-admin` (see [deploy/fly.md](deploy/fly.md)). |
+| `WHENDOWEROLL_SUPER_ADMIN_COOKIE_SECRET` | Signs the super-admin session cookie (long random string). |
+| `WHENDOWEROLL_STATIC_VERSION` | Optional override for cache-busting query params on `/static` CSS/JS (otherwise a content hash). |
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
 ## Hosting notes
 
 SQLite + a single uvicorn worker is enough for a few campaigns and

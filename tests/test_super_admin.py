@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import re
-
 from app import settings as settings_module
 from app.super_admin_auth import SESSION_COOKIE_NAME
+from tests.helpers import create_campaign_via_form, post_create_campaign
 
 
 def _login(client):
@@ -29,49 +28,29 @@ def test_super_admin_login_bad_password(client):
 
 
 def test_super_admin_list_and_delete_campaign(client):
-    cr = client.post(
-        "/",
-        data={
-            "name": "Listed",
-            "timezone": "UTC",
-            "player_names": "",
-            "horizon_weeks": "2",
-        },
-    )
-    assert cr.status_code == 200
-    public_id = re.search(r"/c/([0-9a-f]+)/admin/", cr.text).group(1)
+    created = create_campaign_via_form(client, name="Listed", timezone="UTC", player_names="", horizon_weeks=2)
 
     _login(client)
     r = client.get("/internal/super-admin")
     assert r.status_code == 200
     assert "Listed" in r.text
-    assert public_id in r.text
+    assert created.public_id in r.text
     assert " AM" in r.text or " PM" in r.text
 
     d = client.post(
-        f"/internal/super-admin/campaigns/{public_id}/delete",
+        f"/internal/super-admin/campaigns/{created.public_id}/delete",
         follow_redirects=False,
     )
     assert d.status_code == 303
-    assert client.get(f"/c/{public_id}").status_code == 404
+    assert client.get(f"/c/{created.public_id}").status_code == 404
 
 
 def test_super_admin_delete_requires_session(client):
-    cr = client.post(
-        "/",
-        data={
-            "name": "Guarded",
-            "timezone": "UTC",
-            "player_names": "",
-            "horizon_weeks": "2",
-        },
-    )
-    assert cr.status_code == 200
-    public_id = re.search(r"/c/([0-9a-f]+)/admin/", cr.text).group(1)
+    created = create_campaign_via_form(client, name="Guarded", timezone="UTC", player_names="", horizon_weeks=2)
 
-    r = client.post(f"/internal/super-admin/campaigns/{public_id}/delete", follow_redirects=False)
+    r = client.post(f"/internal/super-admin/campaigns/{created.public_id}/delete", follow_redirects=False)
     assert r.status_code == 303
-    assert client.get(f"/c/{public_id}").status_code == 200
+    assert client.get(f"/c/{created.public_id}").status_code == 200
 
 
 def test_super_admin_new_campaigns_override(client, monkeypatch):
@@ -84,15 +63,7 @@ def test_super_admin_new_campaigns_override(client, monkeypatch):
         follow_redirects=True,
     )
     assert settings_module.new_campaigns_disabled() is True
-    blocked = client.post(
-        "/",
-        data={
-            "name": "Nope",
-            "timezone": "UTC",
-            "player_names": "",
-            "horizon_weeks": "2",
-        },
-    )
+    blocked = post_create_campaign(client, name="Nope", timezone="UTC", player_names="", horizon_weeks=2)
     assert blocked.status_code == 403
 
     client.post(
@@ -101,15 +72,7 @@ def test_super_admin_new_campaigns_override(client, monkeypatch):
         follow_redirects=True,
     )
     assert settings_module.new_campaigns_disabled() is False
-    ok = client.post(
-        "/",
-        data={
-            "name": "Yes",
-            "timezone": "UTC",
-            "player_names": "",
-            "horizon_weeks": "2",
-        },
-    )
+    ok = post_create_campaign(client, name="Yes", timezone="UTC", player_names="", horizon_weeks=2)
     assert ok.status_code == 200
 
     monkeypatch.setenv("WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS", "1")

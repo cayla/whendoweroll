@@ -15,6 +15,8 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import text
 from sqlmodel import Session, SQLModel, create_engine
 
+from app.services.timeutil import ensure_utc
+
 DATABASE_URL = os.environ.get(
     "WHENDOWEROLL_DB_URL",
     "sqlite:///./whendoweroll.sqlite3",
@@ -54,9 +56,7 @@ def _utc_dt(value: object) -> datetime | None:
     if value is None:
         return None
     if isinstance(value, datetime):
-        if value.tzinfo is None:
-            return value.replace(tzinfo=UTC)
-        return value.astimezone(UTC)
+        return ensure_utc(value)
     if isinstance(value, str):
         v = value.replace("Z", "+00:00")
         dt = datetime.fromisoformat(v)

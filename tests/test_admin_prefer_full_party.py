@@ -2,38 +2,27 @@
 
 from __future__ import annotations
 
-import re
-
 from sqlmodel import Session, select
 
 from app.models import Campaign
-
-
-def _new_campaign(client):
-    r = client.post(
-        "/",
-        data={
-            "name": "Prefer full party test",
-            "timezone": "UTC",
-            "player_names": "",
-            "horizon_weeks": "4",
-        },
-    )
-    assert r.status_code == 200
-    m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
-    assert m
-    return m.group(1), m.group(2)
+from tests.helpers import create_campaign_via_form
 
 
 def test_new_campaign_defaults_prefer_full_party_on(client, engine):
-    public_id, _secret = _new_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Prefer full party test", timezone="UTC", player_names="", horizon_weeks=4
+    )
+    public_id = created.public_id
     with Session(engine) as s:
         c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
     assert c.prefer_full_party is True
 
 
 def test_settings_form_round_trips_prefer_full_party(client, engine):
-    public_id, secret = _new_campaign(client)
+    created = create_campaign_via_form(
+        client, name="Prefer full party test", timezone="UTC", player_names="", horizon_weeks=4
+    )
+    public_id, secret = created.public_id, created.admin_secret
     with Session(engine) as s:
         c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
 

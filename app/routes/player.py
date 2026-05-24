@@ -11,7 +11,6 @@ from sqlmodel import Session, select
 
 from app.db import get_session
 from app.deps import require_player
-from app.display_time import ensure_utc
 from app.models import AvailabilityStatus, Campaign, Player, Slot, SlotKind
 from app.services.availability import load_availability_map, set_availability, slot_standing_yes_pair
 from app.services.occurrence_match import resolve_occurrence
@@ -32,8 +31,9 @@ from app.services.player_view import (
     slot_standing_yes_pairs,
     unified_recurring_opt_out_rows,
 )
+from app.services.timeutil import ensure_utc
 from app.templates_setup import COMMON_TIMEZONES, templates
-from app.view_timezone import effective_display_timezone, set_viewer_timezone_on_response
+from app.view_timezone import effective_display_timezone, redirect_with_viewer_timezone
 
 router = APIRouter(prefix="/c/{public_id}/p/{token}")
 
@@ -159,11 +159,9 @@ def set_player_display_timezone(
 ) -> RedirectResponse:
     require_player(session, public_id, token)
     try:
-        resp = RedirectResponse(url=f"/c/{public_id}/p/{token}", status_code=303)
-        set_viewer_timezone_on_response(resp, timezone)
+        return redirect_with_viewer_timezone(f"/c/{public_id}/p/{token}", timezone)
     except ValueError, ZoneInfoNotFoundError:
         raise HTTPException(status_code=400, detail="Unknown timezone") from None
-    return resp
 
 
 @router.post("/availability/{slot_id}", response_class=HTMLResponse)

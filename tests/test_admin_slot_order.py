@@ -6,10 +6,10 @@ from datetime import UTC, datetime, timedelta
 
 from sqlmodel import Session
 
-from app.display_time import ensure_utc
 from app.models import Campaign, Slot, SlotKind
 from app.routes import admin as admin_routes
 from app.security import hash_token
+from app.services.timeutil import ensure_utc
 
 
 def test_slots_ordered_for_admin_weekday_then_time_then_adhoc(engine):

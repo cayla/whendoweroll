@@ -24,6 +24,7 @@ from datetime import time as time_t
 from zoneinfo import ZoneInfo
 
 from app.models import Slot, SlotKind
+from app.services.timeutil import ensure_utc
 
 
 @dataclass(frozen=True)
@@ -122,18 +123,11 @@ def expand_adhoc(slot: Slot) -> Iterable[Occurrence]:
     yield Occurrence(
         slot_id=slot.id,  # type: ignore[arg-type]
         label=slot.label or "One-off session",
-        starts_at_utc=_ensure_utc(slot.starts_at_utc),
-        ends_at_utc=_ensure_utc(slot.ends_at_utc),
+        starts_at_utc=ensure_utc(slot.starts_at_utc),
+        ends_at_utc=ensure_utc(slot.ends_at_utc),
         kind=SlotKind.adhoc,
         user_label=slot.label,
     )
-
-
-def _ensure_utc(value: datetime) -> datetime:
-    # SQLite drops tzinfo on read; we know we wrote UTC so re-attach it.
-    if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
 
 
 def upcoming_occurrences_for_slot(

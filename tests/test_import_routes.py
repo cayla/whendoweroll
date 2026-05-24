@@ -31,22 +31,12 @@ from app.models import (
     Slot,
     SlotKind,
 )
+from tests.helpers import create_campaign_via_form
 
 
-def _create_campaign(client, names: list[str]):
-    r = client.post(
-        "/",
-        data={
-            "name": "Import Test",
-            "timezone": "UTC",
-            "player_names": "\n".join(names),
-            "horizon_weeks": "4",
-        },
-    )
-    assert r.status_code == 200
-    m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
-    assert m
-    return m.group(1), m.group(2)
+def _create(client, names: list[str]):
+    created = create_campaign_via_form(client, name="Import Test", timezone="UTC", player_names=names, horizon_weeks=4)
+    return created.public_id, created.admin_secret
 
 
 def _seed(engine, *, public_id: str) -> dict:
@@ -119,7 +109,7 @@ def _post_import(client, payload: dict):
 
 
 def test_export_then_import_roundtrips_full_campaign(client, engine):
-    public_id, secret = _create_campaign(client, ["Alice", "Bob"])
+    public_id, secret = _create(client, ["Alice", "Bob"])
     fixture = _seed(engine, public_id=public_id)
 
     export = client.get(f"/c/{public_id}/admin/{secret}/export")
@@ -178,8 +168,8 @@ def test_export_then_import_roundtrips_full_campaign(client, engine):
 
 def test_import_without_public_id_leaves_existing_campaigns(client, engine):
     """Hand-built backups with no ``campaign.public_id`` must not delete anything."""
-    public_id_a, _ = _create_campaign(client, ["X"])
-    public_id_b, _ = _create_campaign(client, ["Y"])
+    public_id_a, _ = _create(client, ["X"])
+    public_id_b, _ = _create(client, ["Y"])
     payload = {
         "export_version": 3,
         "campaign": {"name": "Fresh", "timezone": "UTC"},
@@ -204,7 +194,7 @@ def test_import_without_public_id_leaves_existing_campaigns(client, engine):
 
 
 def test_import_links_in_response_open_admin_dashboard(client):
-    public_id, secret = _create_campaign(client, ["Solo"])
+    public_id, secret = _create(client, ["Solo"])
     payload = client.get(f"/c/{public_id}/admin/{secret}/export").json()
 
     imported = _post_import(client, payload)
@@ -219,7 +209,7 @@ def test_import_links_in_response_open_admin_dashboard(client):
 
 
 def test_import_v2_payload_without_consensus_policy_uses_default(client, engine):
-    public_id, secret = _create_campaign(client, ["A"])
+    public_id, secret = _create(client, ["A"])
     payload = client.get(f"/c/{public_id}/admin/{secret}/export").json()
     payload["export_version"] = 2
     payload["campaign"].pop("consensus_policy", None)
@@ -328,7 +318,7 @@ def test_import_rejects_dangling_availability_reference(client):
 
 
 def test_import_blocked_when_new_campaigns_disabled(client, monkeypatch):
-    public_id, secret = _create_campaign(client, [])
+    public_id, secret = _create(client, [])
     payload = client.get(f"/c/{public_id}/admin/{secret}/export").json()
     monkeypatch.setenv("WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS", "1")
     r = _post_import(client, payload)
