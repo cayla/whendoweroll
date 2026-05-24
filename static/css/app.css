@@ -955,12 +955,59 @@ html.dark .player-exceptions-sticky-head .heading {
   top: calc(100% + 0.25rem);
   right: 0;
   left: auto;
-  width: min(37.5vw, 30rem);
-  min-width: 15rem;
-  max-width: calc(100vw - 1rem);
+  width: 20rem;
+  max-width: calc(100vw - 2rem);
+  min-width: 0;
+  overflow-x: clip;
   transform-origin: top right;
   background-color: var(--color-elevated);
   box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.12);
+}
+
+/* Native date inputs ignore width unless the field and its parents can shrink. */
+.player-bulk-dropdown-menu fieldset,
+.player-bulk-dropdown-menu form,
+.player-bulk-dropdown-menu form > div {
+  min-width: 0;
+}
+
+.player-bulk-dropdown-menu input[type="date"].form-field {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+}
+
+.player-bulk-dropdown-menu input[type="date"]::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
+}
+
+.player-bulk-dropdown-menu input[type="date"]::-webkit-calendar-picker-indicator {
+  margin-left: 0;
+}
+
+@media (max-width: 639px) {
+  .player-exceptions-sticky-head {
+    flex-wrap: wrap;
+  }
+
+  .player-bulk-dropdown {
+    position: static;
+    flex: 1 1 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .player-bulk-dropdown-menu {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+    transform-origin: top center;
+  }
 }
 
 html.dark .player-bulk-dropdown-menu {
