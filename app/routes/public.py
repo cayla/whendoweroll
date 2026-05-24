@@ -63,6 +63,7 @@ def public_home(
         policy=campaign.consensus_policy,
         opt_outs=opt_outs,
         limit=2,
+        proximity_occurrences=occurrences_full if campaign.prefer_full_party else None,
     )
 
     horizon_preview = occurrences_full[:25]
@@ -159,6 +160,7 @@ def calendar_consensus_ics(
         policy=campaign.consensus_policy,
         opt_outs=opt_outs,
         limit=50,
+        proximity_occurrences=occurrences_full if campaign.prefer_full_party else None,
     )
     name_by_id = {p.id: p.display_name for p in players if p.id is not None}
     events: list[IcsEvent] = []

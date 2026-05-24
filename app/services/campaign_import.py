@@ -94,12 +94,24 @@ def _parse_campaign(payload: dict) -> dict:
             pub_raw,
             field="campaign.public_recurrence_mode",
         )
+    prefer_raw = c.get("prefer_full_party")
+    if prefer_raw is None:
+        prefer_full_party = True
+    elif isinstance(prefer_raw, bool):
+        prefer_full_party = prefer_raw
+    elif isinstance(prefer_raw, (int, float)):
+        prefer_full_party = bool(prefer_raw)
+    elif isinstance(prefer_raw, str):
+        prefer_full_party = prefer_raw.strip().lower() in ("1", "true", "yes", "on")
+    else:
+        raise CampaignImportError("prefer_full_party must be a boolean")
     return {
         "name": name,
         "timezone": tz,
         "horizon_weeks": horizon_weeks,
         "consensus_policy": policy,
         "public_recurrence_mode": public_recurrence_mode,
+        "prefer_full_party": prefer_full_party,
     }
 
 
@@ -309,6 +321,7 @@ def import_campaign(session: Session, payload: Any) -> tuple[Campaign, str, list
         horizon_weeks=campaign_fields["horizon_weeks"],
         consensus_policy=campaign_fields["consensus_policy"],
         public_recurrence_mode=campaign_fields["public_recurrence_mode"],
+        prefer_full_party=campaign_fields["prefer_full_party"],
     )
     session.add(campaign)
     session.flush()  # need campaign.id

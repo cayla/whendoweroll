@@ -87,6 +87,12 @@ on that already-thinned list. That step adds **between-window** guardrails
 card is not always the first tempo-chain row: it is the first window that
 passes **both** the tempo pass and the guardrail pass.
 
+With **Prefer full party** enabled in admin → Settings (on by default), whenever
+a summary card would be **all-but-one** (one holdout), the picker checks the
+**full expanded horizon** (not just tempo-thinned rows) for a **full** window
+within **48 hours** afterward and promotes it when found (e.g. Friday short one
+vs Saturday everyone). Policies that never allow a holdout skip this rule.
+
 With **no players** on the roster, public/ICS recurring listings stay empty
 until someone exists to satisfy the policy bar.
 

@@ -206,6 +206,142 @@ def test_next_meets_returns_single_when_only_one_window_exists():
     assert out[0].missing_count == 0
 
 
+def test_next_meets_prefers_full_group_within_48h_over_sooner_near():
+    """Fri all-but-one + Sat full ~19h later -> promote the full session."""
+    t_near = datetime.now(UTC) + timedelta(hours=24)
+    t_full = t_near + timedelta(hours=19)
+    occs = [
+        Occurrence(1, "fri", t_near, t_near + timedelta(hours=4)),
+        Occurrence(2, "sat", t_full, t_full + timedelta(hours=3)),
+    ]
+    players = [_player(1, "A"), _player(2, "B"), _player(3, "C")]
+    availability = {
+        (1, 1): AvailabilityStatus.yes,
+        (2, 1): AvailabilityStatus.yes,
+        (1, 2): AvailabilityStatus.yes,
+        (2, 2): AvailabilityStatus.yes,
+        (3, 2): AvailabilityStatus.yes,
+    }
+    out = find_next_meets(
+        occs,
+        players,
+        availability,
+        policy=ConsensusPolicy.no_two_nears,
+        limit=2,
+        proximity_occurrences=occs,
+    )
+    assert len(out) >= 1
+    assert out[0].occurrence.slot_id == 2
+    assert out[0].missing_count == 0
+
+
+def test_full_over_near_uses_expanded_horizon_when_tempo_omits_full_day():
+    """Tempo-thinned list can skip a full Saturday; expanded horizon still promotes it."""
+    t_near = datetime.now(UTC) + timedelta(hours=24)
+    t_full = t_near + timedelta(hours=19)
+    t_far = t_near + timedelta(days=14)
+    thinned = [
+        Occurrence(1, "fri", t_near, t_near + timedelta(hours=4)),
+        Occurrence(3, "later", t_far, t_far + timedelta(hours=3)),
+    ]
+    expanded = [
+        thinned[0],
+        Occurrence(2, "sat", t_full, t_full + timedelta(hours=3)),
+        thinned[1],
+    ]
+    players = [_player(1, "A"), _player(2, "B"), _player(3, "C")]
+    availability = {
+        (1, 1): AvailabilityStatus.yes,
+        (2, 1): AvailabilityStatus.yes,
+        (1, 2): AvailabilityStatus.yes,
+        (2, 2): AvailabilityStatus.yes,
+        (3, 2): AvailabilityStatus.yes,
+        (1, 3): AvailabilityStatus.yes,
+        (2, 3): AvailabilityStatus.yes,
+        (3, 3): AvailabilityStatus.yes,
+    }
+    out = find_next_meets(
+        thinned,
+        players,
+        availability,
+        policy=ConsensusPolicy.no_two_nears,
+        limit=1,
+        proximity_occurrences=expanded,
+    )
+    assert out[0].occurrence.slot_id == 2
+    assert out[0].missing_count == 0
+
+
+def test_second_card_also_promotes_nearby_full_from_expanded_horizon():
+    """Second summary card: near pick upgrades when full session is within 48h."""
+    t1 = datetime.now(UTC) + timedelta(hours=24)
+    t2 = t1 + timedelta(hours=19)
+    t3 = t1 + timedelta(days=14)
+    t4 = t3 + timedelta(hours=19)
+    thinned = [
+        Occurrence(1, "a", t1, t1 + timedelta(hours=3)),
+        Occurrence(3, "c", t3, t3 + timedelta(hours=3)),
+    ]
+    expanded = [
+        thinned[0],
+        Occurrence(2, "b", t2, t2 + timedelta(hours=3)),
+        thinned[1],
+        Occurrence(4, "d", t4, t4 + timedelta(hours=3)),
+    ]
+    players = [_player(1, "A"), _player(2, "B"), _player(3, "C")]
+    availability = {
+        (1, 1): AvailabilityStatus.yes,
+        (2, 1): AvailabilityStatus.yes,
+        (1, 2): AvailabilityStatus.yes,
+        (2, 2): AvailabilityStatus.yes,
+        (3, 2): AvailabilityStatus.yes,
+        (1, 3): AvailabilityStatus.yes,
+        (2, 3): AvailabilityStatus.yes,
+        (1, 4): AvailabilityStatus.yes,
+        (2, 4): AvailabilityStatus.yes,
+        (3, 4): AvailabilityStatus.yes,
+    }
+    out = find_next_meets(
+        thinned,
+        players,
+        availability,
+        policy=ConsensusPolicy.no_two_nears,
+        limit=2,
+        proximity_occurrences=expanded,
+    )
+    assert out[0].occurrence.slot_id == 2
+    assert out[0].missing_count == 0
+    assert out[1].occurrence.slot_id == 4
+    assert out[1].missing_count == 0
+
+
+def test_next_meets_keeps_sooner_near_when_full_is_beyond_48h():
+    t_near = datetime.now(UTC) + timedelta(hours=24)
+    t_full = t_near + timedelta(hours=49)
+    occs = [
+        Occurrence(1, "near", t_near, t_near + timedelta(hours=4)),
+        Occurrence(2, "full", t_full, t_full + timedelta(hours=3)),
+    ]
+    players = [_player(1, "A"), _player(2, "B"), _player(3, "C")]
+    availability = {
+        (1, 1): AvailabilityStatus.yes,
+        (2, 1): AvailabilityStatus.yes,
+        (1, 2): AvailabilityStatus.yes,
+        (2, 2): AvailabilityStatus.yes,
+        (3, 2): AvailabilityStatus.yes,
+    }
+    out = find_next_meets(
+        occs,
+        players,
+        availability,
+        policy=ConsensusPolicy.no_two_nears,
+        limit=1,
+        proximity_occurrences=occs,
+    )
+    assert out[0].occurrence.slot_id == 1
+    assert out[0].missing_count == 1
+
+
 def test_next_meets_no_two_nears_returns_solo_near_when_no_full_exists():
     """Pathological campaign: no full-consensus window in the horizon. The
     no-two-nears rule forbids padding with a second near, so we honestly

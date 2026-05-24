@@ -84,6 +84,21 @@
         </p>
       </div>
     </div>
+    <div class="min-w-0">
+      <label class="inline-flex items-start gap-2 text-sm text-ink cursor-pointer">
+        <input id="admin-settings-prefer-full-party" type="checkbox" name="prefer_full_party" value="1"
+               {% if campaign.prefer_full_party %}checked{% endif %}
+               class="mt-0.5 rounded border-line accent-brand focus:ring-brand shrink-0">
+        <span>
+          <span class="font-medium">Prefer full party</span>
+          <span class="mt-1 block text-xs text-muted font-normal">
+            When a summary card would be one person short, check the full schedule for a session where
+            everyone can make it within 48 hours afterward (for example, promote Saturday when Friday is
+            all-but-one). Applies to the public summary cards and consensus calendar feed.
+          </span>
+        </span>
+      </label>
+    </div>
     <div>
       <button class="btn px-3 py-1.5 text-sm">Save settings</button>
     </div>
