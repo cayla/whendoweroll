@@ -4,6 +4,7 @@
     "build:css": "tailwindcss -i ./static/css/tailwind-src.css -o ./static/css/tailwind.css --minify"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.17"
+    "@tailwindcss/cli": "^4.0.0",
+    "tailwindcss": "^4.0.0"
   }
 }

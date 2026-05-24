@@ -1,3 +1,25 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.js";
+
+/* Conditional classes in templates (v4: safelist moved from tailwind.config.js). */
+@source inline("bg-[var(--color-btn-primary)]");
+@source inline("text-[var(--color-on-btn-primary)]");
+@source inline("hover:bg-emerald-50");
+@source inline("text-emerald-800");
+@source inline("dark:hover:bg-emerald-950/40");
+@source inline("dark:text-emerald-300");
+@source inline("bg-neutral-600");
+@source inline("text-white");
+@source inline("dark:bg-neutral-700");
+@source inline("hover:bg-elevated");
+@source inline("border-emerald-500");
+@source inline("dark:border-emerald-400");
+@source inline("border-amber-500");
+@source inline("border-dashed");
+@source inline("dark:border-amber-400");
+@source inline("text-amber-800");
+@source inline("dark:text-amber-200");
+@source inline("text-emerald-900");
+@source inline("dark:text-emerald-300/90");
+@source inline("text-amber-900");
+@source inline("dark:text-amber-200/90");
