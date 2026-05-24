@@ -2,27 +2,17 @@
 
 from __future__ import annotations
 
-import re
-
 from sqlmodel import Session, select
 
 from app.models import Campaign, PublicRecurrenceMode, Slot, SlotKind
+from tests.helpers import create_campaign_via_form
 
 
 def _new_campaign(client):
-    r = client.post(
-        "/",
-        data={
-            "name": "Public mode test",
-            "timezone": "UTC",
-            "player_names": "",
-            "horizon_weeks": "4",
-        },
+    created = create_campaign_via_form(
+        client, name="Public mode test", timezone="UTC", player_names="", horizon_weeks=4
     )
-    assert r.status_code == 200
-    m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
-    assert m
-    return m.group(1), m.group(2)
+    return created.public_id, created.admin_secret
 
 
 def test_admin_add_recurring_slot_does_not_change_campaign_tempo(client, engine):

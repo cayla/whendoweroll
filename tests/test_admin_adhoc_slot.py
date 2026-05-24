@@ -2,30 +2,21 @@
 
 from __future__ import annotations
 
-import re
 from datetime import date
 from zoneinfo import ZoneInfo
 
 from sqlmodel import Session, select
 
-from app.display_time import ensure_utc
 from app.models import Slot, SlotKind
+from app.services.timeutil import ensure_utc
+from tests.helpers import create_campaign_via_form
 
 
 def _new_campaign(client):
-    r = client.post(
-        "/",
-        data={
-            "name": "Oneoff",
-            "timezone": "America/New_York",
-            "player_names": "",
-            "horizon_weeks": "4",
-        },
+    created = create_campaign_via_form(
+        client, name="Oneoff", timezone="America/New_York", player_names="", horizon_weeks=4
     )
-    assert r.status_code == 200
-    m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
-    assert m
-    return m.group(1), m.group(2)
+    return created.public_id, created.admin_secret
 
 
 def test_admin_oneoff_same_calendar_day(client, engine):

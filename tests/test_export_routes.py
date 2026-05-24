@@ -10,23 +10,14 @@ from sqlmodel import Session, select
 
 from app.models import Availability, AvailabilityStatus, Campaign, Player, Slot, SlotKind
 from app.services.campaign_export import campaign_export_download_filename
+from tests.helpers import create_campaign_via_form
 
 
-def _create_campaign_with_players(client, names: list[str], horizon_weeks: int = 12):
-    """POST a new campaign and return ``(public_id, admin_secret, response_text)``."""
-    r = client.post(
-        "/",
-        data={
-            "name": "ICS",
-            "timezone": "UTC",
-            "player_names": "\n".join(names),
-            "horizon_weeks": str(horizon_weeks),
-        },
+def _campaign(client, names: list[str], *, horizon_weeks: int = 12) -> tuple[str, str, str]:
+    created = create_campaign_via_form(
+        client, name="ICS", timezone="UTC", player_names=names, horizon_weeks=horizon_weeks
     )
-    assert r.status_code == 200
-    m = re.search(r"/c/([0-9a-f]+)/admin/([\w\-]+)", r.text)
-    assert m
-    return m.group(1), m.group(2), r.text
+    return created.public_id, created.admin_secret, created.response_text
 
 
 def _seed_adhoc_slot_with_availability(
@@ -96,7 +87,7 @@ def test_export_json_requires_admin_secret(client):
 
 
 def test_consensus_ics_is_public_no_secret_required(client):
-    public_id, _secret, _ = _create_campaign_with_players(client, [])
+    public_id, _secret, _ = _campaign(client, [])
     ok = client.get(f"/c/{public_id}/calendar-consensus.ics")
     assert ok.status_code == 200
     assert ok.headers["content-type"].startswith("text/calendar")
@@ -109,7 +100,7 @@ def test_consensus_ics_is_public_no_secret_required(client):
 
 def test_consensus_ics_admin_path_removed(client):
     """The old admin-secret URL is gone — only the public path serves the feed."""
-    public_id, secret, _ = _create_campaign_with_players(client, [])
+    public_id, secret, _ = _campaign(client, [])
     r = client.get(f"/c/{public_id}/admin/{secret}/calendar-consensus.ics")
     assert r.status_code == 404
 
@@ -120,7 +111,7 @@ def test_consensus_ics_unknown_campaign_returns_404(client):
 
 
 def test_consensus_ics_marks_near_consensus_with_missing_prefix(client, engine):
-    public_id, _secret, _ = _create_campaign_with_players(client, ["Alice", "Bob"])
+    public_id, _secret, _ = _campaign(client, ["Alice", "Bob"])
     _seed_adhoc_slot_with_availability(
         engine,
         public_id=public_id,
@@ -136,7 +127,7 @@ def test_consensus_ics_marks_near_consensus_with_missing_prefix(client, engine):
 
 
 def test_consensus_ics_with_real_events_has_no_placeholder(client, engine):
-    public_id, _secret, _ = _create_campaign_with_players(client, ["Alice", "Bob"])
+    public_id, _secret, _ = _campaign(client, ["Alice", "Bob"])
     _seed_adhoc_slot_with_availability(
         engine,
         public_id=public_id,
@@ -150,7 +141,7 @@ def test_consensus_ics_with_real_events_has_no_placeholder(client, engine):
 
 
 def test_consensus_ics_full_consensus_has_no_missing_prefix(client, engine):
-    public_id, _secret, _ = _create_campaign_with_players(client, ["Alice", "Bob"])
+    public_id, _secret, _ = _campaign(client, ["Alice", "Bob"])
     _seed_adhoc_slot_with_availability(
         engine,
         public_id=public_id,
@@ -167,7 +158,7 @@ def test_consensus_ics_full_consensus_has_no_missing_prefix(client, engine):
 
 def test_consensus_ics_skips_occurrences_with_too_many_missing(client, engine):
     """Two missing players exceeds the all-but-one bound — the slot stays out of the feed."""
-    public_id, _secret, _ = _create_campaign_with_players(client, ["Alice", "Bob", "Carol"])
+    public_id, _secret, _ = _campaign(client, ["Alice", "Bob", "Carol"])
     _seed_adhoc_slot_with_availability(
         engine,
         public_id=public_id,
@@ -182,7 +173,7 @@ def test_consensus_ics_skips_occurrences_with_too_many_missing(client, engine):
 
 
 def test_consensus_ics_link_appears_on_admin_public_and_player_pages(client):
-    public_id, secret, page_html = _create_campaign_with_players(client, ["Alice"])
+    public_id, secret, page_html = _campaign(client, ["Alice"])
     expected_link = f"/c/{public_id}/calendar-consensus.ics"
 
     admin = client.get(f"/c/{public_id}/admin/{secret}")
@@ -206,7 +197,7 @@ def test_consensus_ics_link_appears_on_admin_public_and_player_pages(client):
 
 
 def test_player_calendar_ics_route_removed(client):
-    public_id, _secret, page_html = _create_campaign_with_players(client, ["Alice"])
+    public_id, _secret, page_html = _campaign(client, ["Alice"])
     m = re.search(rf"/c/{public_id}/p/([\w\-]+)", page_html)
     assert m
     token = m.group(1)

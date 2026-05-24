@@ -22,6 +22,15 @@ from app.templates_setup import templates, timezone_select_options
 router = APIRouter()
 
 _MAX_IMPORT_BYTES = 5 * 1024 * 1024  # 5 MiB; backups for this app are tiny.
+_DEFAULT_CREATE_TZ = "America/New_York"
+
+
+def _landing_template_context(*, new_campaigns_disabled: bool) -> dict[str, Any]:
+    return {
+        "timezone_options": timezone_select_options(),
+        "default_tz": _DEFAULT_CREATE_TZ,
+        "new_campaigns_disabled": new_campaigns_disabled,
+    }
 
 
 def _safe_filename_stub(name: str) -> str:
@@ -108,11 +117,7 @@ def landing(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         request,
         "index.html",
-        {
-            "timezone_options": timezone_select_options(),
-            "default_tz": "America/New_York",
-            "new_campaigns_disabled": new_campaigns_disabled(),
-        },
+        _landing_template_context(new_campaigns_disabled=new_campaigns_disabled()),
     )
 
 
@@ -129,11 +134,7 @@ def create_campaign(
         return templates.TemplateResponse(
             request,
             "index.html",
-            {
-                "timezone_options": timezone_select_options(),
-                "default_tz": "America/New_York",
-                "new_campaigns_disabled": True,
-            },
+            _landing_template_context(new_campaigns_disabled=True),
             status_code=403,
         )
     name = name.strip()
@@ -207,11 +208,7 @@ async def import_campaign_route(
         return templates.TemplateResponse(
             request,
             "index.html",
-            {
-                "timezone_options": timezone_select_options(),
-                "default_tz": "America/New_York",
-                "new_campaigns_disabled": True,
-            },
+            _landing_template_context(new_campaigns_disabled=True),
             status_code=403,
         )
 

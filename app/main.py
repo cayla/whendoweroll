@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -13,11 +12,9 @@ from app import settings as settings_module
 from app import super_admin_auth
 from app.db import init_db
 from app.middleware.static_cache import StaticCacheControlMiddleware
+from app.paths import STATIC_DIR
 from app.routes import admin, index, player, public, super_admin
 from app.templates_setup import templates
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-STATIC_DIR = BASE_DIR / "static"
 
 
 @asynccontextmanager
