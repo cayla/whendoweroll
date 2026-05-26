@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="admin-page">
-<header class="mb-6 flex items-baseline justify-between flex-wrap gap-2">
+<div class="page-intro mb-6 flex items-baseline justify-between flex-wrap gap-2">
   <div class="min-w-0">
     <h1 class="heading text-3xl text-brand-fg mb-4">Admin Dashboard: {{ campaign.name }}</h1>
     <p class="text-sm mb-4">Times shown in {{ campaign.timezone|pretty_tz }}.</p>
@@ -17,7 +17,7 @@
       </a>
     </div>
   </div>
-</header>
+</div>
 
 <nav class="admin-subnav" aria-label="Admin sections">
   <a href="#settings">Settings</a>
@@ -133,7 +133,7 @@
   <div id="new-player-info" class="mt-4"></div>
 
   <form method="post" action="{{ admin_path }}/mandatory-attendees" class="mt-6 rounded-md border border-line bg-elevated p-4">
-    <h3 class="text-sm font-medium text-ink">Mandatory attendees</h3>
+    <h3 id="mandatory-attendees-heading" class="text-sm font-medium text-ink">Mandatory attendees</h3>
     <p class="text-xs text-muted mt-2">
       Mandatory attendees (e.g. the GM, or co-GMs) must <em>all</em> be available for any window to count toward consensus on the Public Campaign page.
       Select none or any number of players below.
