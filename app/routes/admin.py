@@ -80,25 +80,14 @@ _PUBLIC_RECURRENCE_MODE_CHOICES: tuple[tuple[PublicRecurrenceMode, str, str], ..
     (
         PublicRecurrenceMode.weekly,
         "Weekly",
-        "Public next-game cards and consensus calendar list every scheduled recurring session.",
+        "Aim to play once a week.",
     ),
     (
         PublicRecurrenceMode.two_weeks,
-        "Every two weeks (~14 days)",
-        (
-            "Public page and calendar: earliest qualifying session, then each next pick near "
-            "fourteen days after the previous kept listing (closest match in a bracket). "
-            "Player pages still list every date."
-        ),
+        "Every other week",
+        "Aim to play every other week.",
     ),
-    (
-        PublicRecurrenceMode.once_per_month,
-        "About once a month",
-        (
-            "Public page and calendar: earliest qualifying session, then each next pick near the "
-            "same calendar date one month after the previous kept listing. Player pages still list every date."
-        ),
-    ),
+    (PublicRecurrenceMode.once_per_month, "Monthly", "Aim to play once a month."),
 )
 
 _CONSENSUS_POLICY_CHOICES: tuple[tuple[ConsensusPolicy, str, str], ...] = (
