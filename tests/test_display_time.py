@@ -70,7 +70,7 @@ def test_player_campaign_tempo_caption():
         admin_secret_hash="h",
         public_recurrence_mode=PublicRecurrenceMode.two_weeks,
     )
-    assert "two weeks" in player_campaign_tempo_caption(c).lower()
+    assert "other week" in player_campaign_tempo_caption(c).lower()
 
 
 def test_public_campaign_tempo_caption():
@@ -82,5 +82,6 @@ def test_public_campaign_tempo_caption():
         public_recurrence_mode=PublicRecurrenceMode.weekly,
     )
     cap = public_campaign_tempo_caption(c)
-    assert "this page" in cap
+    assert "about once a week" in cap.lower()
+    assert "how sessions are scheduled" in cap.lower()
     assert not cap.lower().startswith("tempo:")

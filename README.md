@@ -97,8 +97,8 @@ windows. The **public** campaign page and the **consensus `.ics` feed** use
 | Mode                           | Meaning                                                                                 |
 | ------------------------------ | --------------------------------------------------------------------------------------- |
 | **Weekly**                     | Momentum chain with a **7-day** anchor between kept listings.                           |
-| **Every two weeks (~14 days)** | Same idea with a **14-day** anchor (this is _not_ “two sessions per calendar month”).   |
-| **About once a month**         | Anchors advance by **one calendar month** (same local time-of-day; short months clamp). |
+| **Every other week**           | Same idea with a **14-day** anchor (this is _not_ “two sessions per calendar month”).   |
+| **Monthly**                    | Anchors advance by **one calendar month** (same local time-of-day; short months clamp). |
 
 How it works: the **first** kept row is the earliest recurring start that meets
 the same **per-window** bar as the summary cards (full vs one missing, per

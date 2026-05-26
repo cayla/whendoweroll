@@ -90,42 +90,25 @@ def recurring_slot_primary_label(slot: Slot, campaign, display_tz: str) -> str:
 
 
 def player_campaign_tempo_caption(campaign: Campaign) -> str:
-    """Short label for how recurring sessions are thinned on the public page and .ics."""
+    """Short tempo label on the player availability page."""
     mode = _public_recurrence_mode(campaign)
     if mode is PublicRecurrenceMode.weekly:
-        return "Tempo: weekly — the public page and consensus calendar list every date below."
+        return "Tempo: about once a week."
     if mode is PublicRecurrenceMode.two_weeks:
-        return (
-            "Tempo: every two weeks — the public page and calendar walk forward from the "
-            "earliest qualifying session, then each next pick is the best match near fourteen days "
-            "after the last one shown. You still see every date here."
-        )
+        return "Tempo: about every other week."
     if mode is PublicRecurrenceMode.once_per_month:
-        return (
-            "Tempo: about once a month — same walk, but each next pick is chosen near the same "
-            "calendar date one month after the last one shown. You still see every date here."
-        )
+        return "Tempo: about once a month."
     return ""
 
 
 def public_campaign_tempo_caption(campaign: Campaign) -> str:
-    """One-line tempo for the anonymous public campaign page."""
+    """Tempo blurb for the public campaign page (cadence plus scheduling disclaimer)."""
     mode = _public_recurrence_mode(campaign)
+    disclaimer_text = "Exact dates will vary based on player availability and how sessions are scheduled."
     if mode is PublicRecurrenceMode.weekly:
-        return (
-            "Weekly — this page and the consensus calendar list every "
-            "qualifying session. Player links list every occurrence."
-        )
+        return f"About once a week. {disclaimer_text}"
     if mode is PublicRecurrenceMode.two_weeks:
-        return (
-            "Every two weeks — earliest qualifying session first, then each next "
-            "listing near fourteen days after the previous one here and on the calendar. "
-            "Player links list every occurrence."
-        )
+        return f"About every other week. {disclaimer_text}"
     if mode is PublicRecurrenceMode.once_per_month:
-        return (
-            "About once a month — earliest qualifying session first, then each next listing "
-            "near the same calendar date one month out from the last one here and on the calendar. "
-            "Player links list every occurrence."
-        )
+        return f"About once a month. {disclaimer_text}"
     return ""
