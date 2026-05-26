@@ -69,9 +69,9 @@
     id="player-recurring-exceptions"
     class="player-exceptions-root"
     {% if has_recurring %}
-    hx-get="/c/{{ campaign.public_id }}/p/{{ token }}/_recurring-exceptions"
-    hx-trigger="refreshExceptions from:body"
-    hx-swap="innerHTML"
+    data-hx-get="/c/{{ campaign.public_id }}/p/{{ token }}/_recurring-exceptions"
+    data-hx-trigger="refreshExceptions from:body"
+    data-hx-swap="innerHTML"
     {% endif %}
   >{%- include "fragments/player_recurring_exceptions_inner.html" -%}</div>
 </section>

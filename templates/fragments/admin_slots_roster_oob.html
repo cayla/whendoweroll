@@ -1,4 +1,4 @@
-<div hx-swap-oob="innerHTML:#times-card-status">
+<div data-hx-swap-oob="innerHTML:#times-card-status">
 {% if times_status_message %}
   <div class="relative rounded-md border border-emerald-400 bg-emerald-50 p-3 pr-10 mb-4 text-sm dark:border-emerald-700 dark:bg-emerald-950/35">
     {% include "fragments/admin_success_dismiss_button.html" %}
@@ -6,6 +6,6 @@
   </div>
 {% endif %}
 </div>
-<div hx-swap-oob="innerHTML:#admin-slots-roster">
+<div data-hx-swap-oob="innerHTML:#admin-slots-roster">
 {% include "fragments/admin_times_roster.html" %}
 </div>

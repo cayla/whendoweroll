@@ -44,8 +44,8 @@
         </td>
         <td class="py-2.5 pr-3 pl-2 align-middle text-right whitespace-nowrap">
           <form method="post" action="{{ admin_path }}/slots/{{ slot.id }}/delete" class="inline-block"
-                hx-post="{{ admin_path }}/slots/{{ slot.id }}/delete"
-                hx-swap="none">
+                data-hx-post="{{ admin_path }}/slots/{{ slot.id }}/delete"
+                data-hx-swap="none">
             <button type="button"
                     class="text-xs rounded border border-line px-2 py-1 hover:bg-elevated text-ink"
                     data-admin-confirm

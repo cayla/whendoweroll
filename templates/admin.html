@@ -114,9 +114,9 @@
   </div>
 
   <form class="mt-4"
-        hx-post="{{ admin_path }}/players"
-        hx-target="#new-player-info" hx-swap="innerHTML"
-        hx-on::after-request="this.reset()">
+        data-hx-post="{{ admin_path }}/players"
+        data-hx-target="#new-player-info" data-hx-swap="innerHTML"
+        data-hx-on::after-request="this.reset()">
     <label class="block text-sm font-medium text-ink" for="admin-add-player-display-name">Add player</label>
     <div class="mt-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2 items-stretch">
       <input id="admin-add-player-display-name" name="display_name" required placeholder="Display name"
@@ -159,8 +159,8 @@
 
   <div class="grid gap-6 md:grid-cols-2">
     <form method="post" action="{{ admin_path }}/slots" class="border border-line rounded-md p-4"
-          hx-post="{{ admin_path }}/slots" hx-swap="none"
-          hx-on::after-request="if (event.detail.successful) this.reset()">
+          data-hx-post="{{ admin_path }}/slots" data-hx-swap="none"
+          data-hx-on::after-request="if (event.detail.successful) this.reset()">
       <h3 class="font-medium mb-3">Recurring weekly</h3>
       <input type="hidden" name="kind" value="recurring">
       <label class="block text-sm font-medium text-ink" for="admin-slot-weekday">Day</label>
@@ -181,8 +181,8 @@
     </form>
 
     <form method="post" action="{{ admin_path }}/slots" class="border border-line rounded-md p-4"
-          hx-post="{{ admin_path }}/slots" hx-swap="none"
-          hx-on::after-request="if (event.detail.successful) this.reset()">
+          data-hx-post="{{ admin_path }}/slots" data-hx-swap="none"
+          data-hx-on::after-request="if (event.detail.successful) this.reset()">
       <h3 class="font-medium mb-3">One-off session</h3>
       <input type="hidden" name="kind" value="adhoc">
       <label class="block text-sm font-medium text-ink" for="admin-adhoc-date">Date</label>
