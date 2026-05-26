@@ -45,9 +45,9 @@
         <div role="group" aria-label="Availability for {{ slot_status_label }}"
              class="inline-flex rounded-md border border-line overflow-hidden text-xs divide-x divide-line shrink-0">
           <form class="inline m-0"
-                hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/availability/{{ slot.id }}"
-                hx-target="#slot-row-{{ slot.id }}"
-                hx-swap="outerHTML">
+                data-hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/availability/{{ slot.id }}"
+                data-hx-target="#slot-row-{{ slot.id }}"
+                data-hx-swap="outerHTML">
             <input type="hidden" name="status" value="{% if status_value == 'yes' %}clear{% else %}yes{% endif %}">
             <button type="submit"
                     aria-pressed="{% if status_value == 'yes' %}true{% else %}false{% endif %}"
@@ -56,9 +56,9 @@
             </button>
           </form>
           <form class="inline m-0"
-                hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/availability/{{ slot.id }}"
-                hx-target="#slot-row-{{ slot.id }}"
-                hx-swap="outerHTML">
+                data-hx-post="/c/{{ campaign.public_id }}/p/{{ token }}/availability/{{ slot.id }}"
+                data-hx-target="#slot-row-{{ slot.id }}"
+                data-hx-swap="outerHTML">
             <input type="hidden" name="status" value="{% if status_value == 'no' %}clear{% else %}no{% endif %}">
             <button type="submit"
                     aria-pressed="{% if status_value == 'no' %}true{% else %}false{% endif %}"

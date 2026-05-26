@@ -15,15 +15,15 @@
         <td class="py-2.5 pr-3 pl-2 align-middle text-right whitespace-nowrap">
           <span class="inline-flex flex-wrap items-center justify-end gap-2">
             <form method="post" action="{{ admin_path }}/players/{{ player.id }}/regenerate"
-                  hx-post="{{ admin_path }}/players/{{ player.id }}/regenerate"
-                  hx-target="#new-player-info" hx-swap="innerHTML">
+                  data-hx-post="{{ admin_path }}/players/{{ player.id }}/regenerate"
+                  data-hx-target="#new-player-info" data-hx-swap="innerHTML">
               <button class="text-xs rounded border border-line px-2 py-1 hover:bg-elevated text-ink">
                 Regenerate link
               </button>
             </form>
             <form method="post" action="{{ admin_path }}/players/{{ player.id }}/delete"
-                  hx-post="{{ admin_path }}/players/{{ player.id }}/delete"
-                  hx-swap="none">
+                  data-hx-post="{{ admin_path }}/players/{{ player.id }}/delete"
+                  data-hx-swap="none">
               <button type="button"
                       class="text-xs rounded border border-line px-2 py-1 hover:bg-elevated text-ink"
                       data-admin-confirm

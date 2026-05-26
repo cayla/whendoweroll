@@ -1,4 +1,4 @@
-<div hx-swap-oob="innerHTML:#players-card-status"></div>
+<div data-hx-swap-oob="innerHTML:#players-card-status"></div>
 {% set dismiss_target = 'new-player-info' %}
 <div class="relative rounded-md border border-emerald-400 bg-emerald-50 p-3 pr-10 mb-4 text-sm dark:border-emerald-700 dark:bg-emerald-950/35">
   {% include "fragments/admin_success_dismiss_button.html" %}
@@ -36,9 +36,9 @@
     </div>
   </div>
 </div>
-<div hx-swap-oob="innerHTML:#admin-players-roster">
+<div data-hx-swap-oob="innerHTML:#admin-players-roster">
 {% include "fragments/admin_players_roster.html" %}
 </div>
-<div hx-swap-oob="innerHTML:#mandatory-attendees-inner">
+<div data-hx-swap-oob="innerHTML:#mandatory-attendees-inner">
 {% include "fragments/mandatory_attendees_inner.html" %}
 </div>
