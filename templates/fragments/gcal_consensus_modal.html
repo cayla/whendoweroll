@@ -1,18 +1,5 @@
 {# Expects: gcal_modal_prefix (unique per page). campaign.public_id in outer scope. #}
 {% set _feed_path = "/c/" ~ campaign.public_id ~ "/calendar-consensus.ics" %}
-<style>
-#gcal-{{ gcal_modal_prefix }}-dlg::backdrop { background: var(--color-backdrop); }
-#gcal-{{ gcal_modal_prefix }}-dlg {
-  position: fixed;
-  top: max(1rem, env(safe-area-inset-top));
-  margin: 0;
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
-  max-height: min(calc(100vh - 2rem), 90vh);
-  overflow-y: auto;
-}
-</style>
 <button type="button"
         id="gcal-{{ gcal_modal_prefix }}-open"
         class="btn-secondary px-3 py-1.5 text-sm inline-flex items-center justify-center gap-1.5"

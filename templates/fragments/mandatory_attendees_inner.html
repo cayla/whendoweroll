@@ -1,18 +1,21 @@
 {% if players %}
-<div class="mt-3 flex flex-wrap gap-2">
-  {% for player in players %}
-    <label class="inline-flex items-center gap-2 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm"
-           for="mandatory-player-{{ player.id }}">
-      <input id="mandatory-player-{{ player.id }}" type="checkbox" name="mandatory_player_ids" value="{{ player.id }}"
-             {% if player.is_mandatory %}checked{% endif %}
-             class="rounded border-line accent-brand focus:ring-brand">
-      <span>{{ player.display_name }}</span>
-    </label>
-  {% endfor %}
-</div>
-<div class="mt-3">
-  <button type="submit" class="btn px-3 py-1.5 text-sm">Save mandatory attendees</button>
-</div>
+<fieldset class="mt-3 border-0 p-0 m-0" aria-labelledby="mandatory-attendees-heading">
+  <legend class="sr-only">Select mandatory attendees</legend>
+  <div class="flex flex-wrap gap-2">
+    {% for player in players %}
+      <label class="inline-flex items-center gap-2 rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm"
+             for="mandatory-player-{{ player.id }}">
+        <input id="mandatory-player-{{ player.id }}" type="checkbox" name="mandatory_player_ids" value="{{ player.id }}"
+               {% if player.is_mandatory %}checked{% endif %}
+               class="rounded border-line accent-brand focus:ring-brand">
+        <span>{{ player.display_name }}</span>
+      </label>
+    {% endfor %}
+  </div>
+  <div class="mt-3">
+    <button type="submit" class="btn px-3 py-1.5 text-sm">Save mandatory attendees</button>
+  </div>
+</fieldset>
 {% else %}
 <p class="mt-3 text-xs text-muted italic">Add players above first.</p>
 {% endif %}

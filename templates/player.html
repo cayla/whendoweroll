@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="player-page">
-<header class="mb-6">
+<div class="page-intro mb-6">
   <div class="min-w-0">
     <h1 class="heading text-3xl text-brand-fg mb-4">Player: {{ player.display_name }}</h1>
     <p class="text-sm mb-4">
@@ -25,7 +25,7 @@
       {% endwith %}
     </div>
   </div>
-</header>
+</div>
 
 <nav class="player-subnav" aria-label="Page sections">
   <a href="#availability">Availability</a>
@@ -63,8 +63,8 @@
   {% endif %}
 </section>
 
-<section id="exceptions" class="player-exceptions-section player-anchor-target bg-surface border border-line rounded-lg p-6 shadow-sm mb-6">
-  {% if not has_recurring %}<h2 class="heading text-lg mb-4">Exceptions</h2>{% endif %}
+<section id="exceptions" class="player-exceptions-section player-anchor-target bg-surface border border-line rounded-lg p-6 shadow-sm mb-6" aria-labelledby="player-exceptions-heading">
+  {% if not has_recurring %}<h2 id="player-exceptions-heading" class="heading text-lg mb-4">Exceptions</h2>{% endif %}
   <div
     id="player-recurring-exceptions"
     class="player-exceptions-root"
@@ -77,16 +77,6 @@
 </section>
 
 <script src="{{ url_for('static', path='js/player-bulk-dropdown.js') }}?v={{ static_version }}"></script>
-<script>
-(function () {
-  try {
-    if (document.cookie.split(';').some(function (c) { return c.trim().indexOf('whendoweroll_viewer_tz=') === 0; })) return;
-    var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (!tz) return;
-    document.cookie = 'whendoweroll_viewer_tz=' + encodeURIComponent(tz) + ';path=/;max-age=34560000;SameSite=Lax';
-    location.reload();
-  } catch (e) {}
-})();
-</script>
+<script src="{{ url_for('static', path='js/viewer-tz-cookie.js') }}?v={{ static_version }}"></script>
 </div>
 {% endblock %}

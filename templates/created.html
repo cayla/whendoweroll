@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="max-w-3xl mx-auto">
-  <header class="border-b border-line pb-6">
+  <div class="page-intro border-b border-line pb-6">
     <div class="flex gap-4 items-start">
       <span class="hidden shrink-0 sm:mt-0.5 sm:inline-flex sm:h-28 sm:w-28 sm:items-center sm:justify-center sm:rounded-full sm:bg-brand-fg/10 sm:text-brand-fg" aria-hidden="true">
         {% include "fragments/bullseye_success_icon.svg" %}
@@ -34,7 +34,7 @@
       <strong class="font-medium">Important:</strong>
       Save player links now. We can&rsquo;t look them up later. To regenerate links, use the Admin Dashboard. The old links will be invalid.
     </div>
-  </header>
+  </div>
 
   <div class="mt-8 flex flex-wrap items-center gap-3">
     <button type="button" id="created-download-csv" class="btn-secondary px-4 py-2 text-sm font-medium inline-flex items-center gap-2">
