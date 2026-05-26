@@ -92,6 +92,7 @@
       <div>
         <label class="block text-sm font-medium text-ink" for="create-campaign-timezone">Timezone</label>
         <select id="create-campaign-timezone" name="timezone" required class="form-field">
+          <option value="" disabled {% if not default_tz %}selected{% endif %} hidden>Select a timezone</option>
           {% for value, label in timezone_options %}
             <option value="{{ value }}" {% if value == default_tz %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
