@@ -1,8 +1,14 @@
 # When Do We Roll
 
 A lightweight Python web app for scheduling tabletop sessions. No accounts —
-each campaign hands out three kinds of unguessable URL: an admin link, a
+each campaign hands out three kinds of unguessable URLs: an admin link, a
 public read-only link, and one private link per player.
+
+Note, this was a vibe coded product. I work in tech, though I am not a dev, and
+this project is me scratching a specific pain point I have. I understand AI is a
+fraught topic, but I wanted to be transparent and provide the source so folks can
+see under the covers and that their data remains free and portable. Open data is
+an important thing to me.
 
 ## What it does
 
@@ -12,7 +18,7 @@ public read-only link, and one private link per player.
   (Friday 18:00–21:00, Sunday 11:00–14:00, …) plus one-off sessions.
 - Each player gets a private URL. Opening it shows every slot with
   Yes / No buttons. Their answers stick "indefinitely" — saying yes to
-  Friday means yes to *every* future Friday until they change it.
+  Friday means yes to _every_ future Friday until they change it.
 - For **recurring** slots only, players can add **one-off conflicts** (for
   example "I'm free every Friday except May 29th"). Those exceptions feed
   into consensus, the public "yes" counts, and their personal calendar.
@@ -40,7 +46,7 @@ public read-only link, and one private link per player.
   member out — so the difference reads at a glance for color-blind
   viewers too.
 - A campaign can mark **any number of players as mandatory attendees**
-  (e.g. the GM, or co-GMs). When set, *all* mandatory attendees must be
+  (e.g. the GM, or co-GMs). When set, _all_ mandatory attendees must be
   available for any window to count toward consensus on the public page
   and the ICS feed, regardless of policy.
 
@@ -49,31 +55,50 @@ calculations, so the organizer never over-promises.
 
 ### Scheduling policy
 
-The campaign's **scheduling policy** decides which upcoming windows count
-as a real session — it drives both the two summary cards on the public
-page and the consensus calendar feed (so subscribers can rely on it as
-the actual play schedule). Mandatory-attendee rules apply on top of every
-policy. Pick one in admin → Settings:
+Admin → **Settings** controls how the **public** summary cards and the
+**consensus `.ics` feed** pick upcoming sessions (player pages always list
+every expanded window). Mandatory-attendee rules apply on top of every
+option below.
 
-| Policy | What it surfaces |
-| --- | --- |
-| **Strict — everyone every time** | Only windows where every player is available. The "near-consensus" card disappears. |
-| **Allow one missing — never two in a row** *(default)* | Windows with at most one holdout, but never two short-handed sessions back-to-back. |
-| **Allow one missing — but rotate who** | Windows with at most one holdout, and the same player can't be the holdout in two consecutive sessions. |
-| **Allow one missing — always** | Windows with at most one holdout, no further constraint. |
+**Scheduling policy** — how many holdouts a single window may have, plus
+sequence guardrails between picked sessions:
+
+| Policy                                                 | What it surfaces                                                                                        |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| **Strict — everyone every time**                       | Only windows where every player is available. The "near-consensus" card disappears.                     |
+| **Allow one missing — never two in a row** _(default)_ | Windows with at most one holdout, but never two short-handed sessions back-to-back.                     |
+| **Allow one missing — but rotate who**                 | Windows with at most one holdout, and the same player can't be the holdout in two consecutive sessions. |
+| **Allow one missing — always**                         | Windows with at most one holdout, no further constraint.                                                |
+
+**Prefer full party** _(checkbox; on by default)_ — when a pick would be
+**all-but-one** (one holdout), the picker searches the **full expanded
+horizon** (not just tempo-thinned rows) for a **full** window within
+**48 hours** afterward and promotes it when found (for example, Friday
+short one vs Saturday everyone). Applies to the summary cards and
+consensus calendar. **Strict** policy skips this (holdouts are never
+allowed). If promoting the full window would break the policy's
+**between-window** guardrail (for example two near-consensus sessions in a
+row under **never two in a row**), the nearer all-but-one window is kept
+instead. Turn the checkbox off to disable proximity promotion entirely.
+
+**Meeting tempo** — thins _recurring_ rows on the public page and ICS so
+the roster is not overwhelming; see [Public tempo](#public-tempo-cards--calendar-only)
+below. **Horizon (weeks)** limits how far slots are expanded for everyone.
+
+With **no players** on the roster, public/ICS recurring listings stay empty
+until someone exists to satisfy the policy bar.
 
 ### Public tempo (cards + calendar only)
 
 **Player** pages always show the full expanded list of recurring and ad-hoc
-windows. The **public** campaign page and the **consensus `.ics` feed** use a
-campaign-level **tempo** setting (admin → Settings) to thin *recurring* rows
-so the roster is not overwhelmed:
+windows. The **public** campaign page and the **consensus `.ics` feed** use
+**Meeting tempo** (admin → Settings) to thin _recurring_ rows:
 
-| Mode | Meaning |
-| --- | --- |
-| **Weekly** | Momentum chain with a **7-day** anchor between kept listings. |
-| **Every two weeks (~14 days)** | Same idea with a **14-day** anchor (this is *not* “two sessions per calendar month”). |
-| **About once a month** | Anchors advance by **one calendar month** (same local time-of-day; short months clamp). |
+| Mode                           | Meaning                                                                                 |
+| ------------------------------ | --------------------------------------------------------------------------------------- |
+| **Weekly**                     | Momentum chain with a **7-day** anchor between kept listings.                           |
+| **Every two weeks (~14 days)** | Same idea with a **14-day** anchor (this is _not_ “two sessions per calendar month”).   |
+| **About once a month**         | Anchors advance by **one calendar month** (same local time-of-day; short months clamp). |
 
 How it works: the **first** kept row is the earliest recurring start that meets
 the same **per-window** bar as the summary cards (full vs one missing, per
@@ -85,16 +110,8 @@ The two **summary cards** and the ICS builder then run **`find_next_meets`**
 on that already-thinned list. That step adds **between-window** guardrails
 (e.g. never two near-consensus sessions in a row). So the first solid-green
 card is not always the first tempo-chain row: it is the first window that
-passes **both** the tempo pass and the guardrail pass.
-
-With **Prefer full party** enabled in admin → Settings (on by default), whenever
-a summary card would be **all-but-one** (one holdout), the picker checks the
-**full expanded horizon** (not just tempo-thinned rows) for a **full** window
-within **48 hours** afterward and promotes it when found (e.g. Friday short one
-vs Saturday everyone). Policies that never allow a holdout skip this rule.
-
-With **no players** on the roster, public/ICS recurring listings stay empty
-until someone exists to satisfy the policy bar.
+passes **both** the tempo pass and the guardrail pass (and any
+**Prefer full party** promotion — see [Scheduling policy](#scheduling-policy)).
 
 **JSON import** still accepts the legacy string `twice_per_month` on old
 exports; it is normalized to **`two_weeks`**.
@@ -129,23 +146,25 @@ page with a fresh admin link and per-player links.
 
 ## Frontend (Tailwind CSS)
 
-Templates use **Tailwind CSS v3** utility classes. Shared component styling and theme tokens live in [`static/css/app.css`](static/css/app.css) (plain CSS variables — not `@apply`). The compiled utility bundle is [`static/css/tailwind.css`](static/css/tailwind.css); **do not edit that file by hand**.
+Templates use **Tailwind CSS v4** utility classes. Utilities are **compiled at build time** with `@tailwindcss/cli` and served from [`static/css/tailwind.css`](static/css/tailwind.css) (linked in [`templates/base.html`](templates/base.html) before [`app.css`](static/css/app.css)). **Do not edit `tailwind.css` by hand.**
 
-| File | Role |
-| --- | --- |
-| [`package.json`](package.json) / [`package-lock.json`](package-lock.json) | npm scripts and Tailwind dev dependency. |
-| [`tailwind.config.js`](tailwind.config.js) | Scans `templates/` and `static/js/`; theme colors map to CSS variables from `app.css`. |
-| [`static/css/tailwind-src.css`](static/css/tailwind-src.css) | Tailwind entry (`@tailwind` directives). |
-| [`static/css/tailwind.css`](static/css/tailwind.css) | **Build output** — linked from [`templates/base.html`](templates/base.html) before `app.css`. |
+Shared component styling and theme tokens live in [`static/css/app.css`](static/css/app.css) (plain CSS variables — not `@apply`). [`tailwind.config.js`](tailwind.config.js) maps semantic color names to those variables and sets `content` paths; [`static/css/tailwind-src.css`](static/css/tailwind-src.css) is the CLI entry (`@import "tailwindcss"`, `@config`, and `@source inline(...)` safelist entries for classes built dynamically in templates).
 
-Build (required after changing classes in templates or JS):
+| File                                                                      | Role                                                                             |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| [`package.json`](package.json) / [`package-lock.json`](package-lock.json) | `tailwindcss` + `@tailwindcss/cli` (dev only).                                   |
+| [`tailwind.config.js`](tailwind.config.js)                                | Content globs, `darkMode: "class"`, theme colors → CSS variables from `app.css`. |
+| [`static/css/tailwind-src.css`](static/css/tailwind-src.css)              | Tailwind v4 entry and inline `@source` safelist.                                 |
+| [`static/css/tailwind.css`](static/css/tailwind.css)                      | **Build output** (minified).                                                     |
+
+Build (required after changing classes in templates, JS, or the safelist):
 
 ```bash
 npm ci              # first time, or when package-lock.json changes
 npm run build:css   # writes static/css/tailwind.css (minified)
 ```
 
-**htmx** is still loaded from jsDelivr in `base.html`; only Tailwind moved off the CDN (which logged a production warning in the browser).
+**htmx** is loaded from jsDelivr in `base.html`; there is no Tailwind CDN script or stylesheet.
 
 **Docker / CI:** The [`Dockerfile`](Dockerfile) `assets` stage runs `npm run build:css` and copies the result into the `test` and `production` images. Deployed environments do not need Node installed.
 
@@ -203,39 +222,39 @@ and the capability URL boundaries.
 
 ## Layout
 
-| File | What it does |
-|------|----|
-| [app/main.py](app/main.py) | FastAPI app + lifespan that creates SQLite tables on boot. |
-| [app/db.py](app/db.py) | Engine, session factory, and small SQLite startup migrations. |
-| [app/settings.py](app/settings.py) | Process-level env settings (e.g. disable new campaigns) + super-admin runtime override. |
-| [app/models.py](app/models.py) | SQLModel tables: campaigns, players, slots, availability, occurrence opt-outs. |
-| [app/security.py](app/security.py) | Token generation + SHA-256 hashing for the capability URLs. |
-| [app/super_admin_auth.py](app/super_admin_auth.py) | Operator challenge password + signed session cookie for `/internal/super-admin`. |
-| [app/deps.py](app/deps.py) | Lookups that resolve a public id + secret/token to a row. |
-| [app/display_time.py](app/display_time.py) | Viewer-local time formatting for player / public templates. |
-| [app/templates_setup.py](app/templates_setup.py) | Single Jinja environment + custom filters, plus the timezone choice list. |
-| [app/view_timezone.py](app/view_timezone.py) | Per-viewer display-timezone cookie helpers. |
-| [app/services/slots.py](app/services/slots.py) | Expands recurring + ad-hoc slots into concrete occurrences. |
-| [app/services/consensus.py](app/services/consensus.py) | Finds upcoming qualifying windows under the campaign's scheduling policy (honoring mandatory attendees and per-occurrence opt-outs); sequence guardrails run after public tempo thinning. |
-| [app/services/public_occurrence_filter.py](app/services/public_occurrence_filter.py) | Thins recurring occurrences for the public page and consensus ICS by campaign tempo (player pages use full expansion). |
-| [app/services/availability.py](app/services/availability.py) | Reads/writes the availability rows. |
-| [app/services/opt_outs.py](app/services/opt_outs.py) | Per-date opt-outs on top of standing "yes" answers. |
-| [app/services/occurrence_match.py](app/services/occurrence_match.py) | Validates a client-submitted instant against a slot's expansion. |
-| [app/services/timeutil.py](app/services/timeutil.py) | UTC normalization for occurrence keys (DB round-trips). |
-| [app/services/ical.py](app/services/ical.py) | Minimal RFC 5545 calendar file builder. |
-| [app/services/campaign_export.py](app/services/campaign_export.py) | JSON backup payload (no secrets). |
-| [app/services/campaign_import.py](app/services/campaign_import.py) | Restore an export into a brand-new campaign. |
-| [app/services/campaign_delete.py](app/services/campaign_delete.py) | Cascade delete a campaign and all its dependent rows. |
-| [app/routes/](app/routes) | Index, public, admin, player, and super-admin route modules. |
-| [templates/](templates) | Jinja templates + htmx partial updates. |
-| [static/css/app.css](static/css/app.css) | Theme tokens and component classes (buttons, tables, home page, …). |
-| [static/css/tailwind.css](static/css/tailwind.css) | Compiled Tailwind utilities (generated; run `npm run build:css`). |
-| [static/js/](static/js/) | Small page scripts (theme, modals, admin confirm dialog). |
-| [package.json](package.json) | `npm run build:css` — Tailwind CLI for local dev and Docker `assets` stage. |
+| File                                                                                 | What it does                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [app/main.py](app/main.py)                                                           | FastAPI app + lifespan that creates SQLite tables on boot.                                                                                                                                |
+| [app/db.py](app/db.py)                                                               | Engine, session factory, and small SQLite startup migrations.                                                                                                                             |
+| [app/settings.py](app/settings.py)                                                   | Process-level env settings (e.g. disable new campaigns) + super-admin runtime override.                                                                                                   |
+| [app/models.py](app/models.py)                                                       | SQLModel tables: campaigns, players, slots, availability, occurrence opt-outs.                                                                                                            |
+| [app/security.py](app/security.py)                                                   | Token generation + SHA-256 hashing for the capability URLs.                                                                                                                               |
+| [app/super_admin_auth.py](app/super_admin_auth.py)                                   | Operator challenge password + signed session cookie for `/internal/super-admin`.                                                                                                          |
+| [app/deps.py](app/deps.py)                                                           | Lookups that resolve a public id + secret/token to a row.                                                                                                                                 |
+| [app/display_time.py](app/display_time.py)                                           | Viewer-local time formatting for player / public templates.                                                                                                                               |
+| [app/templates_setup.py](app/templates_setup.py)                                     | Single Jinja environment + custom filters, plus the timezone choice list.                                                                                                                 |
+| [app/view_timezone.py](app/view_timezone.py)                                         | Per-viewer display-timezone cookie helpers.                                                                                                                                               |
+| [app/services/slots.py](app/services/slots.py)                                       | Expands recurring + ad-hoc slots into concrete occurrences.                                                                                                                               |
+| [app/services/consensus.py](app/services/consensus.py)                               | Finds upcoming qualifying windows under the campaign's scheduling policy (honoring mandatory attendees and per-occurrence opt-outs); sequence guardrails run after public tempo thinning. |
+| [app/services/public_occurrence_filter.py](app/services/public_occurrence_filter.py) | Thins recurring occurrences for the public page and consensus ICS by campaign tempo (player pages use full expansion).                                                                    |
+| [app/services/availability.py](app/services/availability.py)                         | Reads/writes the availability rows.                                                                                                                                                       |
+| [app/services/opt_outs.py](app/services/opt_outs.py)                                 | Per-date opt-outs on top of standing "yes" answers.                                                                                                                                       |
+| [app/services/occurrence_match.py](app/services/occurrence_match.py)                 | Validates a client-submitted instant against a slot's expansion.                                                                                                                          |
+| [app/services/timeutil.py](app/services/timeutil.py)                                 | UTC normalization for occurrence keys (DB round-trips).                                                                                                                                   |
+| [app/services/ical.py](app/services/ical.py)                                         | Minimal RFC 5545 calendar file builder.                                                                                                                                                   |
+| [app/services/campaign_export.py](app/services/campaign_export.py)                   | JSON backup payload (no secrets).                                                                                                                                                         |
+| [app/services/campaign_import.py](app/services/campaign_import.py)                   | Restore an export into a brand-new campaign.                                                                                                                                              |
+| [app/services/campaign_delete.py](app/services/campaign_delete.py)                   | Cascade delete a campaign and all its dependent rows.                                                                                                                                     |
+| [app/routes/](app/routes)                                                            | Index, public, admin, player, and super-admin route modules.                                                                                                                              |
+| [templates/](templates)                                                              | Jinja templates + htmx partial updates.                                                                                                                                                   |
+| [static/css/app.css](static/css/app.css)                                             | Theme tokens and component classes (buttons, tables, home page, …).                                                                                                                       |
+| [static/css/tailwind.css](static/css/tailwind.css)                                   | Compiled Tailwind utilities (generated; run `npm run build:css`).                                                                                                                         |
+| [static/js/](static/js/)                                                             | Small page scripts (theme, modals, admin confirm dialog).                                                                                                                                 |
+| [package.json](package.json)                                                         | `npm run build:css` — Tailwind CLI for local dev and Docker `assets` stage.                                                                                                               |
 
 ## Security model
 
-URLs *are* the credentials. Tokens are stored only as SHA-256 hashes, so a
+URLs _are_ the credentials. Tokens are stored only as SHA-256 hashes, so a
 leaked database file does not give anyone access. If a player URL leaks,
 the admin can regenerate it from the dashboard, which invalidates the old
 one.
@@ -245,13 +264,13 @@ strings (so they don't end up in access logs). Use HTTPS in production.
 
 ## Environment variables
 
-| Variable | Purpose |
-| --- | --- |
-| `WHENDOWEROLL_DB_URL` | SQLAlchemy database URL (default: file-backed SQLite). |
-| `WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS` | When set, home-page create/import returns 403. |
-| `WHENDOWEROLL_SUPER_ADMIN_PASSWORD` | Operator password for `/internal/super-admin` (see [deploy/fly.md](deploy/fly.md)). |
-| `WHENDOWEROLL_SUPER_ADMIN_COOKIE_SECRET` | Signs the super-admin session cookie (long random string). |
-| `WHENDOWEROLL_STATIC_VERSION` | Optional override for cache-busting query params on `/static` CSS/JS (otherwise a content hash). |
+| Variable                                 | Purpose                                                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `WHENDOWEROLL_DB_URL`                    | SQLAlchemy database URL (default: file-backed SQLite).                                           |
+| `WHENDOWEROLL_DISABLE_NEW_CAMPAIGNS`     | When set, home-page create/import returns 403.                                                   |
+| `WHENDOWEROLL_SUPER_ADMIN_PASSWORD`      | Operator password for `/internal/super-admin` (see [deploy/fly.md](deploy/fly.md)).              |
+| `WHENDOWEROLL_SUPER_ADMIN_COOKIE_SECRET` | Signs the super-admin session cookie (long random string).                                       |
+| `WHENDOWEROLL_STATIC_VERSION`            | Optional override for cache-busting query params on `/static` CSS/JS (otherwise a content hash). |
 
 ## License
 
