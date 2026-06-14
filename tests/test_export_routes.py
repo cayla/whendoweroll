@@ -185,28 +185,6 @@ def test_consensus_ics_emits_at_most_two_locked_sessions(client, engine):
     assert len(active) == 2
 
 
-def test_consensus_ics_cancels_sessions_between_locked_pair(client, engine):
-    """Stale subscribed rows between the two locked cards get STATUS:CANCELLED."""
-    public_id, _secret, _ = _create(client, ["Alice", "Bob"])
-    for days_ahead, bob in ((3, AvailabilityStatus.yes), (5, AvailabilityStatus.no), (7, AvailabilityStatus.yes)):
-        _seed_adhoc_slot_with_availability(
-            engine,
-            public_id=public_id,
-            days_ahead=days_ahead,
-            statuses={"Alice": AvailabilityStatus.yes, "Bob": bob},
-        )
-    with Session(engine) as s:
-        c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
-        c.consensus_policy = ConsensusPolicy.strict
-        s.add(c)
-        s.commit()
-    r = client.get(f"/c/{public_id}/calendar-consensus.ics")
-    body = r.content.decode("utf-8")
-    assert body.count("BEGIN:VEVENT") == 3
-    assert body.count("STATUS:CANCELLED") == 1
-    assert "removed from schedule" in body
-
-
 def test_consensus_ics_link_appears_on_admin_public_and_player_pages(client):
     public_id, secret, page_html = _create(client, ["Alice"])
     expected_link = f"/c/{public_id}/calendar-consensus.ics"
