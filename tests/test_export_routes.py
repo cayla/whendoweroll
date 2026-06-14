@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlmodel import Session, select
 
-from app.models import Availability, AvailabilityStatus, Campaign, Player, Slot, SlotKind
+from app.models import Availability, AvailabilityStatus, Campaign, ConsensusPolicy, Player, Slot, SlotKind
 from app.services.campaign_export import campaign_export_download_filename
 from tests.helpers import create_campaign_via_form
 
@@ -159,6 +159,52 @@ def test_consensus_ics_skips_occurrences_with_too_many_missing(client, engine):
     body = r.content.decode("utf-8")
     assert "everyone available" not in body
     assert f"UID:{public_id}-placeholder@whendoweroll.com" in body
+
+
+def test_consensus_ics_emits_at_most_two_locked_sessions(client, engine):
+    """ICS feed must match the public cards' two-session lock, not every qualifying window."""
+    public_id, _secret, _ = _create(client, ["Alice", "Bob"])
+    for days_ahead in (3, 5, 7, 9):
+        _seed_adhoc_slot_with_availability(
+            engine,
+            public_id=public_id,
+            days_ahead=days_ahead,
+            statuses={"Alice": AvailabilityStatus.yes, "Bob": AvailabilityStatus.yes},
+        )
+    with Session(engine) as s:
+        c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
+        c.consensus_policy = ConsensusPolicy.strict
+        s.add(c)
+        s.commit()
+    r = client.get(f"/c/{public_id}/calendar-consensus.ics")
+    assert r.status_code == 200
+    body = r.content.decode("utf-8")
+    active = [
+        line for line in body.splitlines() if line.startswith("SUMMARY:") and "removed from schedule" not in line
+    ]
+    assert len(active) == 2
+
+
+def test_consensus_ics_cancels_sessions_between_locked_pair(client, engine):
+    """Stale subscribed rows between the two locked cards get STATUS:CANCELLED."""
+    public_id, _secret, _ = _create(client, ["Alice", "Bob"])
+    for days_ahead, bob in ((3, AvailabilityStatus.yes), (5, AvailabilityStatus.no), (7, AvailabilityStatus.yes)):
+        _seed_adhoc_slot_with_availability(
+            engine,
+            public_id=public_id,
+            days_ahead=days_ahead,
+            statuses={"Alice": AvailabilityStatus.yes, "Bob": bob},
+        )
+    with Session(engine) as s:
+        c = s.exec(select(Campaign).where(Campaign.public_id == public_id)).one()
+        c.consensus_policy = ConsensusPolicy.strict
+        s.add(c)
+        s.commit()
+    r = client.get(f"/c/{public_id}/calendar-consensus.ics")
+    body = r.content.decode("utf-8")
+    assert body.count("BEGIN:VEVENT") == 3
+    assert body.count("STATUS:CANCELLED") == 1
+    assert "removed from schedule" in body
 
 
 def test_consensus_ics_link_appears_on_admin_public_and_player_pages(client):

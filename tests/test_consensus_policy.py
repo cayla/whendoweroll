@@ -185,7 +185,8 @@ def test_ics_under_no_repeat_holdout_drops_only_same_person_repeats(client, engi
     _set_policy(engine, public_id, ConsensusPolicy.no_repeat_holdout)
     r = client.get(f"/c/{public_id}/calendar-consensus.ics")
     body = r.content.decode("utf-8")
-    assert body.count("BEGIN:VEVENT") == 2
+    assert body.count("BEGIN:VEVENT") == 3
+    assert body.count("STATUS:CANCELLED") == 1
     # First Carol-out window survived; second was dropped; Bob-out window kept.
     assert "[missing: Carol]" in body
     assert "[missing: Bob]" in body

@@ -16,7 +16,8 @@ from app.services.consensus import (
     find_next_meets,
     player_lookup,
 )
-from app.services.ical import IcsEvent, build_ics, placeholder_consensus_event
+from app.services.consensus_ics import PUBLIC_LOCKED_SESSION_LIMIT, build_consensus_ics_events
+from app.services.ical import build_ics
 from app.services.public_consensus_data import load_public_consensus_data
 from app.templates_setup import COMMON_TIMEZONES, templates
 from app.view_timezone import effective_display_timezone, redirect_with_viewer_timezone
@@ -41,7 +42,7 @@ def public_home(
         data.availability,
         policy=campaign.consensus_policy,
         opt_outs=data.opt_outs,
-        limit=2,
+        limit=PUBLIC_LOCKED_SESSION_LIMIT,
         proximity_occurrences=data.occurrences_full if campaign.prefer_full_party else None,
     )
 
@@ -114,29 +115,7 @@ def calendar_consensus_ics(
     """
     campaign = get_campaign_or_404(session, public_id)
     data = load_public_consensus_data(session, campaign)
-    results = find_next_meets(
-        data.occurrences_public,
-        data.players,
-        data.availability,
-        policy=campaign.consensus_policy,
-        opt_outs=data.opt_outs,
-        limit=50,
-        proximity_occurrences=data.occurrences_full if campaign.prefer_full_party else None,
-    )
-    name_by_id = {p.id: p.display_name for p in data.players if p.id is not None}
-    events: list[IcsEvent] = []
-    for res in results:
-        occ = res.occurrence
-        uid = f"{campaign.public_id}-s{occ.slot_id}-{int(occ.starts_at_utc.timestamp())}@whendoweroll.com"
-        if res.missing_player_ids:
-            missing_names = ", ".join(name_by_id.get(pid, "?") for pid in res.missing_player_ids)
-            summary = f"[missing: {missing_names}] {campaign.name} — {occ.label}"
-        else:
-            summary = f"{campaign.name} — everyone available ({occ.label})"
-        events.append(IcsEvent(uid=uid, start=occ.starts_at_utc, end=occ.ends_at_utc, summary=summary))
-    if not events:
-        events = [placeholder_consensus_event(campaign.public_id, campaign.name)]
-    body = build_ics(events)
+    body = build_ics(build_consensus_ics_events(campaign, data))
     return Response(
         content=body,
         media_type="text/calendar; charset=utf-8",
