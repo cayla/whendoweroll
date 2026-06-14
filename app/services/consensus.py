@@ -255,10 +255,10 @@ def find_next_meets(
     a full Saturday is not missed when Friday is the tempo-chain row. Policies
     that never allow a holdout (``strict``) skip this step.
 
-    Used by both the public-page summary cards (``limit=2``) and the
-    consensus ``.ics`` feed (large ``limit``); the ICS feed is intentionally
-    tight to match the cards so subscribers can rely on it as the actual
-    play schedule.
+    Used by both the public-page summary cards and the consensus ``.ics`` feed
+    (both use ``PUBLIC_LOCKED_SESSION_LIMIT`` from ``consensus_ics``); the feed
+    is intentionally tight to match the cards so subscribers can rely on it as
+    the actual play schedule.
 
     **Ordering vs tempo:** Callers (e.g. the public routes) usually pass
     occurrences that have already been **tempo-thinned** by

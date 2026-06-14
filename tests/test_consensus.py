@@ -111,7 +111,7 @@ def test_returns_none_when_nothing_qualifies():
 
 # ---------------------------------------------------------------------------
 # find_next_meets: greedy forward walk that drives both the public summary
-# cards (limit=2) and the consensus ICS feed (large limit). Each policy has
+# cards and the consensus ICS feed (see PUBLIC_LOCKED_SESSION_LIMIT). Each policy
 # its own per-window bound and between-window guardrail.
 # ---------------------------------------------------------------------------
 
