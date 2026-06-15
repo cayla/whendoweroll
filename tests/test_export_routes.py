@@ -205,7 +205,7 @@ def test_consensus_ics_link_appears_on_admin_public_and_player_pages(client):
     assert expected_link in player_page.text
     for html in (admin.text, public.text, player_page.text):
         assert "Subscribe to Calendar" in html
-        assert "Alternately, download the .ics file" in html
+        assert "Alternately, download the .ics file" not in html
         assert "Download Calendar (ics)" not in html
 
 
