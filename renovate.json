@@ -2,5 +2,22 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "description": "Bundle pyproject.toml / uv.lock dependency updates",
+      "groupName": "python",
+      "matchManagers": ["pep621"]
+    },
+    {
+      "description": "Bundle Astral tooling and Python runtime image updates",
+      "groupName": "python",
+      "matchPackageNames": [
+        "ghcr.io/astral-sh/uv",
+        "astral-sh/ruff-action",
+        "astral-sh/ruff-pre-commit",
+        "python"
+      ]
+    }
   ]
 }
