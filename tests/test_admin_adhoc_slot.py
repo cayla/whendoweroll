@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from sqlmodel import Session, select
@@ -11,8 +11,16 @@ from app.models import Slot, SlotKind
 from app.services.timeutil import ensure_utc
 from tests.helpers import create_campaign_via_form
 
+_NY = ZoneInfo("America/New_York")
+
+
+def _future_session_date(*, days_ahead: int = 30) -> date:
+    """Calendar date in the campaign TZ far enough ahead to pass past-start validation."""
+    return (datetime.now(_NY) + timedelta(days=days_ahead)).date()
+
 
 def test_admin_oneoff_same_calendar_day(client, engine):
+    session_date = _future_session_date()
     created = create_campaign_via_form(
         client, name="Oneoff", timezone="America/New_York", player_names="", horizon_weeks=4
     )
@@ -22,7 +30,7 @@ def test_admin_oneoff_same_calendar_day(client, engine):
         data={
             "kind": "adhoc",
             "label": "bash",
-            "adhoc_date": "2026-07-04",
+            "adhoc_date": session_date.isoformat(),
             "adhoc_start_time": "14:00",
             "duration_hours": "4.5",
         },
@@ -33,16 +41,16 @@ def test_admin_oneoff_same_calendar_day(client, engine):
     assert slot is not None
     assert slot.label == "bash"
     assert slot.duration_hours == 4.5
-    ny = ZoneInfo("America/New_York")
-    a = ensure_utc(slot.starts_at_utc).astimezone(ny)
-    b = ensure_utc(slot.ends_at_utc).astimezone(ny)
-    assert a.date() == date(2026, 7, 4)
+    a = ensure_utc(slot.starts_at_utc).astimezone(_NY)
+    b = ensure_utc(slot.ends_at_utc).astimezone(_NY)
+    assert a.date() == session_date
     assert (a.hour, a.minute) == (14, 0)
-    assert b.date() == date(2026, 7, 4)
+    assert b.date() == session_date
     assert (b.hour, b.minute) == (18, 30)
 
 
 def test_admin_oneoff_duration_crosses_midnight(client, engine):
+    session_date = _future_session_date()
     created = create_campaign_via_form(
         client, name="Oneoff", timezone="America/New_York", player_names="", horizon_weeks=4
     )
@@ -52,7 +60,7 @@ def test_admin_oneoff_duration_crosses_midnight(client, engine):
         data={
             "kind": "adhoc",
             "label": "late",
-            "adhoc_date": "2026-07-04",
+            "adhoc_date": session_date.isoformat(),
             "adhoc_start_time": "22:00",
             "duration_hours": "4",
         },
@@ -62,12 +70,11 @@ def test_admin_oneoff_duration_crosses_midnight(client, engine):
         slot = s.exec(select(Slot).where(Slot.kind == SlotKind.adhoc)).first()
     assert slot is not None
     assert slot.duration_hours == 4.0
-    ny = ZoneInfo("America/New_York")
-    a = ensure_utc(slot.starts_at_utc).astimezone(ny)
-    b = ensure_utc(slot.ends_at_utc).astimezone(ny)
-    assert a.date() == date(2026, 7, 4)
+    a = ensure_utc(slot.starts_at_utc).astimezone(_NY)
+    b = ensure_utc(slot.ends_at_utc).astimezone(_NY)
+    assert a.date() == session_date
     assert (a.hour, a.minute) == (22, 0)
-    assert b.date() == date(2026, 7, 5)
+    assert b.date() == session_date + timedelta(days=1)
     assert (b.hour, b.minute) == (2, 0)
 
 
