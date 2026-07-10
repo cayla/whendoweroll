@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM ghcr.io/astral-sh/uv:0.11.21 AS uv
+FROM ghcr.io/astral-sh/uv:0.11.28 AS uv
 
 FROM node:24-bookworm-slim AS assets
 WORKDIR /build
