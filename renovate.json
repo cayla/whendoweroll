@@ -3,11 +3,22 @@
   "extends": [
     "config:recommended"
   ],
+  "constraints": {
+    "python": "3.14.7"
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "at any time"
+    ]
+  },
   "packageRules": [
     {
       "description": "Bundle pyproject.toml / uv.lock dependency updates",
       "groupName": "python",
-      "matchManagers": ["pep621"]
+      "matchManagers": [
+        "pep621"
+      ]
     },
     {
       "description": "Bundle Astral tooling and Python runtime image updates",
