@@ -4,11 +4,13 @@ A lightweight Python web app for scheduling tabletop sessions. No accounts —
 each campaign hands out three kinds of unguessable URLs: an admin link, a
 public read-only link, and one private link per player.
 
-Note, this was a vibe coded product. I work in tech, though I am not a dev, and
-this project is me scratching a specific pain point I have. I understand AI is a
-fraught topic, but I wanted to be transparent and provide the source so folks can
-see under the covers and that their data remains free and portable. Open data is
-an important thing to me.
+## AI disclosure
+
+Note, this was a AI authored product.
+
+I work in software engineering and I find the quality of AI code to be quite good at this point. At least I am not overly concerned with it at projects of this level. But I do want to disclose it because I know people have strong feelings.
+
+Please note, none of the art assets are AI generated. Only the code is.
 
 ## What it does
 
