@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM ghcr.io/astral-sh/uv:0.12.3 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.6 AS uv
 
 FROM node:24-bookworm-slim AS assets
 WORKDIR /build
@@ -13,7 +13,7 @@ COPY static/js ./static/js
 RUN npm run build:css
 
 # Test image: pytest + dev deps (CI and `docker compose --profile test run test`).
-FROM python:3.14-slim-trixie AS test
+FROM python:3.15-slim-trixie AS test
 ENV UV_LINK_MODE=copy
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
@@ -30,7 +30,7 @@ COPY tests ./tests
 CMD ["pytest"]
 
 # Production image (default stage for `docker build` with no --target).
-FROM python:3.14-slim-trixie AS production
+FROM python:3.15-slim-trixie AS production
 ENV UV_LINK_MODE=copy
 ENV WHENDOWEROLL_DB_URL=sqlite:////data/whendoweroll.sqlite3
 ENV PATH="/app/.venv/bin:$PATH"
