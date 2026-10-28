@@ -2,7 +2,7 @@
 
 FROM ghcr.io/astral-sh/uv:0.13.6 AS uv
 
-FROM node:24-bookworm-slim AS assets
+FROM node:26-bookworm-slim AS assets
 WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci
