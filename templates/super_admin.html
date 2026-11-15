@@ -50,6 +50,41 @@
     </form>
   </section>
 
+  {% if spam_candidates %}
+  <section class="bg-surface border border-amber-700/40 rounded-lg p-6 shadow-sm dark:border-amber-600/40">
+    <h2 class="text-lg font-semibold text-ink">Likely spam</h2>
+    <p class="mt-1 text-sm text-muted max-w-2xl">
+      Campaigns with no schedules and long player-name pitch text
+      ({{ spam_candidates|length }}).
+      Previews below are the roster fields used as an outreach message.
+    </p>
+    <ul class="mt-5 space-y-4">
+      {% for s in spam_candidates %}
+      <li class="rounded-md border border-line bg-elevated/40 p-4">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <p class="font-medium text-ink">{{ s.name }}</p>
+          <p class="text-xs text-muted tabular-nums">{{ s.player_count }} players · {{ s.created_at|datetime_12h }}</p>
+        </div>
+        <p class="mt-1 font-mono text-xs text-muted">
+          <a href="/c/{{ s.public_id }}">{{ s.public_id }}</a>
+        </p>
+        <pre class="mt-3 max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded border border-line bg-[color:var(--color-code-bg)] p-3 text-xs text-ink leading-relaxed">{{ s.pitch_preview }}</pre>
+      </li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="/internal/super-admin/cleanup-spam" class="mt-5">
+      <button type="button"
+              class="rounded-md bg-red-700 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500"
+              data-admin-confirm
+              data-confirm-title="Delete spam campaigns?"
+              data-confirm-body="Delete {{ spam_candidates|length }} campaign{{ 's' if spam_candidates|length != 1 else '' }} with no schedules? This cannot be undone."
+              data-confirm-ok="Delete spam">
+        Delete {{ spam_candidates|length }} spam campaign{{ 's' if spam_candidates|length != 1 else '' }}
+      </button>
+    </form>
+  </section>
+  {% endif %}
+
   <section>
     <h2 class="text-lg font-semibold text-ink mb-3">Campaigns</h2>
     <p class="text-xs text-muted mb-3 max-w-2xl">

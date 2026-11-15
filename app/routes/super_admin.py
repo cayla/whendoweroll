@@ -14,6 +14,7 @@ from app import settings as settings_module
 from app.db import get_session
 from app.models import Availability, Campaign, OccurrenceOptOut, Player, Slot
 from app.services.campaign_delete import delete_campaign_cascade
+from app.services.spam_campaigns import list_spam_candidates
 from app.services.timeutil import ensure_utc
 from app.super_admin_auth import (
     SESSION_COOKIE_NAME,
@@ -115,11 +116,13 @@ def super_admin_page(
     if not verify_session_token(request.cookies.get(SESSION_COOKIE_NAME)):
         return templates.TemplateResponse(request, "super_admin_login.html", {"error": None})
     campaigns = _super_admin_campaign_rows(session)
+    spam_candidates = list_spam_candidates(session)
     return templates.TemplateResponse(
         request,
         "super_admin.html",
         {
             "campaigns": campaigns,
+            "spam_candidates": spam_candidates,
             "new_campaigns_disabled": settings_module.new_campaigns_disabled(),
             "new_campaigns_override": settings_module.new_campaigns_override(),
         },
@@ -165,6 +168,22 @@ def super_admin_delete_campaign(
     if campaign is None:
         raise HTTPException(status_code=404, detail="Campaign not found")
     delete_campaign_cascade(session, campaign)
+    return RedirectResponse(url="/internal/super-admin", status_code=303)
+
+
+@router.post("/cleanup-spam", response_class=RedirectResponse)
+def super_admin_cleanup_spam(
+    request: Request,
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    """Delete campaigns that currently match the spam heuristic (re-queried server-side)."""
+    guard = _redirect_unless_session(request)
+    if guard is not None:
+        return guard
+    for candidate in list_spam_candidates(session):
+        campaign = session.exec(select(Campaign).where(Campaign.public_id == candidate.public_id)).first()
+        if campaign is not None:
+            delete_campaign_cascade(session, campaign)
     return RedirectResponse(url="/internal/super-admin", status_code=303)
 
 
